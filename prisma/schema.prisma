@@ -6,3 +6,185 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+enum SystemRole {
+  SUPER_ADMIN
+  ORG_ADMIN
+  ORG_STAFF
+}
+
+enum PaymentMode {
+  CASH
+  BANK
+}
+
+enum ReceiptStatus {
+  ACTIVE
+  CANCELLED
+}
+
+enum TransactionType {
+  FEE_COLLECTION
+  EXPENSE
+  CASH_DEPOSIT
+  CASH_WITHDRAWAL
+}
+
+enum AccountType {
+  CASH
+  BANK
+}
+
+model Organization {
+  id                   String   @id @default(uuid())
+  name                 String
+  openingCashBalance   Decimal  @db.Decimal(14, 2)
+  openingBankBalance   Decimal  @db.Decimal(14, 2)
+  currentCashBalance   Decimal  @db.Decimal(14, 2)
+  currentBankBalance   Decimal  @db.Decimal(14, 2)
+  receiptCounter       Int      @default(0)
+  isFirstTransactionDone Boolean @default(false)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  users                User[]
+  students             Student[]
+  transactions         TransactionHistory[]
+  receipts             Receipt[]
+  expenses             Expense[]
+  auditLogs            AuditLog[]
+}
+
+model User {
+  id                String       @id @default(uuid())
+  name              String
+  email             String       @unique
+  passwordHash      String
+  role              SystemRole
+
+  organizationId    String?
+  organization      Organization? @relation(fields: [organizationId], references: [id])
+
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  auditLogs         AuditLog[]
+  receiptsCreated   Receipt[]            @relation("ReceiptCreatedBy")
+  receiptsCancelled Receipt[]            @relation("ReceiptCancelledBy")
+  transactions      TransactionHistory[] @relation("TransactionCreatedBy")
+}
+
+model Student {
+  id                String       @id @default(uuid())
+  name              String
+  class             String
+  totalFeesAssigned Decimal      @db.Decimal(14, 2)
+  totalPaid         Decimal      @db.Decimal(14, 2) @default(0)
+
+  organizationId    String
+  organization      Organization @relation(fields: [organizationId], references: [id])
+
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  receipts          Receipt[]
+
+  @@index([organizationId])
+}
+
+model Receipt {
+  id             String        @id @default(uuid())
+  receiptNumber  String
+  amount         Decimal       @db.Decimal(14, 2)
+  paymentMode    PaymentMode
+  date           DateTime
+  remarks        String?
+  status         ReceiptStatus @default(ACTIVE)
+
+  studentId      String
+  student        Student       @relation(fields: [studentId], references: [id])
+  organizationId String
+  organization   Organization  @relation(fields: [organizationId], references: [id])
+
+  createdBy      String
+  createdByUser  User          @relation("ReceiptCreatedBy", fields: [createdBy], references: [id])
+
+  cancelledAt    DateTime?
+  cancelledBy    String?
+  cancelledByUser User?        @relation("ReceiptCancelledBy", fields: [cancelledBy], references: [id])
+
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  transactions   TransactionHistory[]
+
+  @@unique([receiptNumber, organizationId])
+  @@index([organizationId])
+  @@index([studentId])
+  @@index([date])
+}
+
+model Expense {
+  id             String          @id @default(uuid())
+  date           DateTime
+  amount         Decimal         @db.Decimal(14, 2)
+  paidFrom       PaymentMode
+  category       String
+  description    String
+
+  organizationId String
+  organization   Organization    @relation(fields: [organizationId], references: [id])
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  transactions   TransactionHistory[]
+
+  @@index([organizationId])
+  @@index([date])
+}
+
+model TransactionHistory {
+  id                      String          @id @default(uuid())
+  date                    DateTime
+  type                    TransactionType
+
+  receiptId               String?
+  receipt                 Receipt?        @relation(fields: [receiptId], references: [id])
+  expenseId               String?
+  expense                 Expense?        @relation(fields: [expenseId], references: [id])
+
+  description             String?
+  impactedAccount         AccountType     // CASH or BANK
+  debitAmount             Decimal         @db.Decimal(14, 2) @default(0)
+  creditAmount            Decimal         @db.Decimal(14, 2) @default(0)
+  balanceAfter            Decimal         @db.Decimal(14, 2)
+
+  createdBy               String
+  user                    User            @relation("TransactionCreatedBy", fields: [createdBy], references: [id])
+
+  organizationId          String
+  organization            Organization    @relation(fields: [organizationId], references: [id])
+
+  createdAt               DateTime        @default(now())
+
+  @@index([organizationId])
+  @@index([date])
+  @@index([type])
+}
+
+model AuditLog {
+  id             String       @id @default(uuid())
+  action         String
+  entity         String
+  entityId       String
+  oldValue       Json?
+  newValue       Json?
+  timestamp      DateTime     @default(now())
+
+  userId         String
+  user           User         @relation(fields: [userId], references: [id])
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  @@index([organizationId])
+}
