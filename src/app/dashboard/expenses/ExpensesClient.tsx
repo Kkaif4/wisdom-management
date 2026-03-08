@@ -1,7 +1,7 @@
 "use client";
 
 import { ExpenseEntryModal } from "@/components/forms/ExpenseEntryModal";
-import React, { useState, useMemo } from "react";
+import { useState, useMemo } from "react";
 import {
   Plus,
   Search,
@@ -13,8 +13,10 @@ import {
   Info,
   ArrowUpRight,
   History,
-  FileText,
+  Loader2,
 } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Pagination } from "@/components/shared/Pagination";
 
 interface Expense {
   id: string;
@@ -25,6 +27,12 @@ interface Expense {
   paidFrom: string;
 }
 
+interface ExpensesClientProps {
+  expenses: Expense[];
+  currentPage: number;
+  totalPages: number;
+}
+
 const fmt = (val: number) =>
   new Intl.NumberFormat("en-IN", {
     style: "currency",
@@ -32,10 +40,16 @@ const fmt = (val: number) =>
     maximumFractionDigits: 0,
   }).format(val);
 
-export function ExpensesClient({ expenses: initial }: { expenses: Expense[] }) {
-  const [expenses, setExpenses] = useState(initial);
+export function ExpensesClient({
+  expenses,
+  currentPage,
+  totalPages,
+}: ExpensesClientProps) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [showEntry, setShowEntry] = useState(false);
   const [search, setSearch] = useState("");
+  const [isPending, setIsPending] = useState(false);
 
   const filtered = useMemo(() => {
     if (!search) return expenses;
@@ -49,8 +63,16 @@ export function ExpensesClient({ expenses: initial }: { expenses: Expense[] }) {
 
   const total = expenses.reduce((acc, e) => acc + e.amount, 0);
 
+  const handlePageChange = (page: number) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("p", page.toString());
+    setIsPending(true);
+    router.push(`?${params.toString()}`);
+    setTimeout(() => setIsPending(false), 500);
+  };
+
   return (
-    <div className="space-y-8 animate-fade-in">
+    <div className="space-y-8 animate-fade-in mb-10">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
           <h1 className="text-3xl font-black tracking-tight text-foreground">
@@ -73,14 +95,14 @@ export function ExpensesClient({ expenses: initial }: { expenses: Expense[] }) {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
         <div className="glass rounded-2xl p-6 border-rose-500/10 bg-rose-500/[0.02]">
           <p className="text-[10px] font-black uppercase tracking-[0.2em] text-rose-600/80 mb-2">
-            Total Outflow
+            View Total
           </p>
           <p className="text-2xl font-black text-rose-600 tracking-tight">
             {fmt(total)}
           </p>
           <div className="mt-2 text-[10px] font-bold text-rose-600 uppercase tracking-tighter flex items-center gap-1">
             <ArrowUpRight className="h-3 w-3" />
-            Verified Disbursements
+            Page Summary
           </div>
         </div>
 
@@ -103,18 +125,22 @@ export function ExpensesClient({ expenses: initial }: { expenses: Expense[] }) {
 
       <div className="flex items-center gap-4">
         <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          {isPending ? (
+            <Loader2 className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-rose-500 animate-spin" />
+          ) : (
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          )}
           <input
             type="text"
-            placeholder="Filter by category or details..."
-            className="w-full bg-card/50 border border-border/50 rounded-2xl pl-11 pr-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-rose-500/20 transition-all"
+            placeholder="Filter current view..."
+            className="w-full bg-card/50 border border-border/50 rounded-2xl pl-11 pr-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-rose-500/20 transition-all font-bold"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
       </div>
 
-      <div className="glass rounded-3xl overflow-hidden border-border/50">
+      <div className="glass rounded-3xl overflow-hidden border-border/50 shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-left">
             <thead>
@@ -195,10 +221,17 @@ export function ExpensesClient({ expenses: initial }: { expenses: Expense[] }) {
         </div>
       </div>
 
+      <Pagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPageChange={handlePageChange}
+        isLoading={isPending}
+      />
+
       {showEntry && (
         <ExpenseEntryModal
           onClose={() => setShowEntry(false)}
-          onSuccess={() => window.location.reload()}
+          onSuccess={() => router.refresh()}
         />
       )}
     </div>

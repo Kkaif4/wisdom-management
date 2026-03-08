@@ -30,9 +30,6 @@ export const LedgerTable: React.FC<LedgerTableProps> = ({ transactions }) => {
         <h3 className="font-bold text-gray-800 text-lg tracking-tight">
           Unified Transaction Ledger
         </h3>
-        <span className="text-xs text-gray-400 font-mono">
-          Last 100 Transactions
-        </span>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full text-left">

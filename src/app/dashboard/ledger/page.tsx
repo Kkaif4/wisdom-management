@@ -4,18 +4,34 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { LedgerTable } from "@/components/dashboard/LedgerTable";
 
-export default async function LedgerPage() {
+import { LedgerClient } from "./LedgerClient";
+
+interface PageProps {
+  searchParams: Promise<{ p?: string }>;
+}
+
+export default async function LedgerPage({ searchParams }: PageProps) {
   const session = await auth();
   if (!session?.user?.organizationId) redirect("/login");
 
   const orgId = session.user.organizationId;
+  const { p: pageNum } = await searchParams;
+  const page = parseInt(pageNum || "1");
+  const limit = 20;
+  const skip = (page - 1) * limit;
 
-  // Fetch the last 100 transactions for the ledger
-  const recentTransactions = await prisma.transactionHistory.findMany({
-    where: { organizationId: orgId },
-    orderBy: { createdAt: "desc" },
-    take: 100,
-  });
+  // Fetch Current Page of Transactions + Total Count
+  const [total, recentTransactions] = await Promise.all([
+    prisma.transactionHistory.count({
+      where: { organizationId: orgId },
+    }),
+    prisma.transactionHistory.findMany({
+      where: { organizationId: orgId },
+      orderBy: { createdAt: "desc" },
+      skip,
+      take: limit,
+    }),
+  ]);
 
   const transactions = recentTransactions.map((tx) => ({
     id: tx.id,
@@ -29,17 +45,11 @@ export default async function LedgerPage() {
   }));
 
   return (
-    <div className="p-6">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold tracking-tight text-gray-900">
-          Organization Ledger
-        </h1>
-        <p className="text-sm text-gray-500 mt-1">
-          View all incoming and outgoing financial transactions.
-        </p>
-      </div>
-
-      <LedgerTable transactions={transactions} />
-    </div>
+    <LedgerClient
+      transactions={transactions}
+      currentPage={page}
+      totalPages={Math.ceil(total / limit)}
+      totalRecords={total}
+    />
   );
 }

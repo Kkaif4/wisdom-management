@@ -11,19 +11,12 @@ import {
   Banknote,
   CheckCircle2,
   XCircle,
-  Clock,
   ArrowDownRight,
-  User,
   GraduationCap,
+  Loader2,
 } from "lucide-react";
-
-interface Student {
-  id: string;
-  name: string;
-  class: string;
-  totalFeesAssigned: number;
-  totalPaid: number;
-}
+import { useRouter, useSearchParams } from "next/navigation";
+import { Pagination } from "@/components/shared/Pagination";
 
 interface Receipt {
   id: string;
@@ -40,6 +33,8 @@ interface Receipt {
 
 interface ReceiptsClientProps {
   receipts: Receipt[];
+  currentPage: number;
+  totalPages: number;
 }
 
 const fmt = (val: number) =>
@@ -50,11 +45,15 @@ const fmt = (val: number) =>
   }).format(val);
 
 export function ReceiptsClient({
-  receipts: initialReceipts,
+  receipts,
+  currentPage,
+  totalPages,
 }: ReceiptsClientProps) {
-  const [receipts, setReceipts] = useState(initialReceipts);
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [showEntry, setShowEntry] = useState(false);
   const [search, setSearch] = useState("");
+  const [isPending, setIsPending] = useState(false);
 
   const filtered = useMemo(() => {
     if (!search) return receipts;
@@ -80,12 +79,20 @@ export function ReceiptsClient({
     };
   }, [receipts]);
 
-  const handleCreated = (newReceipt: any) => {
-    window.location.reload();
+  const handleCreated = () => {
+    router.refresh();
+  };
+
+  const handlePageChange = (page: number) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("p", page.toString());
+    setIsPending(true);
+    router.push(`?${params.toString()}`);
+    setTimeout(() => setIsPending(false), 500);
   };
 
   return (
-    <div className="space-y-8 animate-fade-in">
+    <div className="space-y-8 animate-fade-in mb-10">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
           <h1 className="text-3xl font-black tracking-tight text-foreground">
@@ -109,38 +116,38 @@ export function ReceiptsClient({
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
         <div className="glass rounded-2xl p-6 border-emerald-500/10 bg-emerald-500/[0.02]">
           <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-600/80 mb-2">
-            Today's Intake
+            View Intake
           </p>
           <p className="text-2xl font-black text-foreground">
             {fmt(stats.todayTotal)}
           </p>
           <div className="mt-2 text-[10px] font-bold text-emerald-600 uppercase tracking-tighter flex items-center gap-1">
             <ArrowDownRight className="h-3 w-3" />
-            Direct Credit to Ledger
+            Page Summary
           </div>
         </div>
         <div className="glass rounded-2xl p-6 border-primary/10 bg-primary/[0.02]">
           <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary/70 mb-2">
-            Active Receipts
+            Active Records
           </p>
           <p className="text-2xl font-black text-foreground">
             {stats.activeCount}
           </p>
           <div className="mt-2 text-[10px] font-bold text-primary/70 uppercase tracking-tighter flex items-center gap-1">
             <CheckCircle2 className="h-3 w-3" />
-            Verified Submissions
+            Verification Log
           </div>
         </div>
         <div className="glass rounded-2xl p-6 border-destructive/10 bg-destructive/[0.02]">
           <p className="text-[10px] font-black uppercase tracking-[0.2em] text-destructive/70 mb-2">
-            Cancelled Entries
+            Void Entries
           </p>
           <p className="text-2xl font-black text-foreground">
             {stats.cancelledCount}
           </p>
           <div className="mt-2 text-[10px] font-bold text-destructive/70 uppercase tracking-tighter flex items-center gap-1">
             <XCircle className="h-3 w-3" />
-            Fraud Audit Log
+            Cancel Audit
           </div>
         </div>
       </div>
@@ -148,11 +155,15 @@ export function ReceiptsClient({
       {/* Search and Filters */}
       <div className="flex items-center gap-4">
         <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          {isPending ? (
+            <Loader2 className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-primary animate-spin" />
+          ) : (
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          )}
           <input
             type="text"
-            placeholder="Search by student name or receipt number..."
-            className="w-full bg-card/50 border border-border/50 rounded-2xl pl-11 pr-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+            placeholder="Filter current view..."
+            className="w-full bg-card/50 border border-border/50 rounded-2xl pl-11 pr-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all font-bold"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -160,7 +171,7 @@ export function ReceiptsClient({
       </div>
 
       {/* Table Section */}
-      <div className="glass rounded-3xl overflow-hidden border-border/50">
+      <div className="glass rounded-3xl overflow-hidden border-border/50 shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-left">
             <thead>
@@ -257,6 +268,13 @@ export function ReceiptsClient({
           </table>
         </div>
       </div>
+
+      <Pagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPageChange={handlePageChange}
+        isLoading={isPending}
+      />
 
       {showEntry && (
         <ReceiptEntryModal
