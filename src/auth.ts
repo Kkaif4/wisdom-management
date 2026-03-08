@@ -12,8 +12,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const email = credentials?.email as string | undefined;
         const password = credentials?.password as string | undefined;
 
-        console.log(`[AUTH] Authorize attempt: email=${email}`);
-
         if (!email || !password) return null;
 
         try {
@@ -35,8 +33,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             console.warn(`[AUTH] Password mismatch for: ${email}`);
             return null;
           }
-
-          console.log(`[AUTH] Success: ${email} authenticated`);
 
           return {
             id: user.id,

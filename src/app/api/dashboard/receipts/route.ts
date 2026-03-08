@@ -25,11 +25,11 @@ export async function POST(req: Request) {
     // Execute in transaction to ensure atomicity
     const result = await prisma.$transaction(
       async (tx) => {
-        // 1. Atomically increment Organization counter and update balances in ONE round-trip
+        // 1. Atomically increment Organization counter and update balances
         const balanceField =
           paymentMode === "CASH" ? "currentCashBalance" : "currentBankBalance";
 
-        const org = await tx.organization.update({
+        let org = await tx.organization.update({
           where: { id: orgId },
           data: {
             receiptCounter: { increment: 1 },
@@ -38,8 +38,44 @@ export async function POST(req: Request) {
           },
         });
 
-        // 2. Generate Receipt Number using the new counter value
-        const receiptNumber = `REC-${new Date().getFullYear()}-${org.receiptCounter.toString().padStart(4, "0")}`;
+        // 2. Generate Receipt Number and check for collisions (Self-healing logic for migrations)
+        let receiptCounter = org.receiptCounter;
+        let receiptNumber = `REC-${new Date().getFullYear()}-${receiptCounter.toString().padStart(4, "0")}`;
+
+        // Verify if this receipt number already exists
+        const existing = await tx.receipt.findUnique({
+          where: {
+            receiptNumber_organizationId: {
+              receiptNumber,
+              organizationId: orgId,
+            },
+          },
+        });
+
+        if (existing) {
+          // Counter is out of sync. Find the max and jump.
+          const lastReceipt = await tx.receipt.findFirst({
+            where: {
+              organizationId: orgId,
+              receiptNumber: { startsWith: `REC-${new Date().getFullYear()}-` },
+            },
+            orderBy: { receiptNumber: "desc" },
+          });
+
+          if (lastReceipt) {
+            const parts = lastReceipt.receiptNumber.split("-");
+            const maxIdx = parseInt(parts[parts.length - 1]);
+            const nextIdx = maxIdx + 1;
+
+            // Sync the organization counter to the next valid index
+            org = await tx.organization.update({
+              where: { id: orgId },
+              data: { receiptCounter: nextIdx },
+            });
+            receiptCounter = nextIdx;
+            receiptNumber = `REC-${new Date().getFullYear()}-${receiptCounter.toString().padStart(4, "0")}`;
+          }
+        }
 
         // 3. Create Receipt
         const receipt = await tx.receipt.create({
@@ -86,8 +122,8 @@ export async function POST(req: Request) {
         return receipt;
       },
       {
-        maxWait: 15000, // 15 seconds max wait to connect to prisma
-        timeout: 20000, // 20 seconds timeout for the transaction
+        maxWait: 15000,
+        timeout: 20000,
       },
     );
 
