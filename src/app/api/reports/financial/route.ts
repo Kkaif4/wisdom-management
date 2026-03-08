@@ -153,7 +153,6 @@ export async function GET(req: NextRequest) {
       studentSummary, // Showing unpaid students as the payment report requirement
     });
   } catch (error: any) {
-    console.error("Financial Report API Error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 },

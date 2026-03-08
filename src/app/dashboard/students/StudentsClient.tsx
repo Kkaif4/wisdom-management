@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useTransition } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import {
   Plus,
   Search,
@@ -11,6 +11,7 @@ import {
   UserPlus,
   Upload,
   Loader2,
+  AlertCircle,
 } from "lucide-react";
 import { AddStudentDialog } from "@/components/forms/AddStudentDialog";
 import { BulkImportDialog } from "@/components/forms/BulkImportDialog";
@@ -29,6 +30,8 @@ interface StudentsClientProps {
   totalCount: number;
   currentPage: number;
   totalPages: number;
+  initialSearch: string;
+  error?: string;
 }
 
 const fmt = (val: number) =>
@@ -43,19 +46,21 @@ export function StudentsClient({
   totalCount,
   currentPage,
   totalPages,
+  initialSearch,
+  error,
 }: StudentsClientProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
-  const [search, setSearch] = useState(searchParams.get("q") || "");
-  const [isPending, setIsPending] = useState(false);
+  const [search, setSearch] = useState(initialSearch);
+  const [isPending, startTransition] = useTransition();
   const [showAdd, setShowAdd] = useState(false);
   const [showImport, setShowImport] = useState(false);
 
   // Debounced URL search update
   useEffect(() => {
     const handler = setTimeout(() => {
-      const currentQ = searchParams.get("q") || "";
-      if (search === currentQ) return;
+      if (search === initialSearch) return;
 
       const params = new URLSearchParams(searchParams.toString());
       if (search) {
@@ -64,20 +69,21 @@ export function StudentsClient({
         params.delete("q");
       }
       params.set("p", "1"); // Reset to page 1 on search
-      setIsPending(true);
-      router.push(`?${params.toString()}`);
-      setTimeout(() => setIsPending(false), 500);
+
+      startTransition(() => {
+        router.push(`${pathname}?${params.toString()}`);
+      });
     }, 500);
 
     return () => clearTimeout(handler);
-  }, [search, router, searchParams]);
+  }, [search, router, searchParams, initialSearch, pathname]);
 
   const handlePageChange = (page: number) => {
     const params = new URLSearchParams(searchParams.toString());
     params.set("p", page.toString());
-    setIsPending(true);
-    router.push(`?${params.toString()}`);
-    setTimeout(() => setIsPending(false), 500);
+    startTransition(() => {
+      router.push(`${pathname}?${params.toString()}`);
+    });
   };
 
   return (
@@ -111,6 +117,15 @@ export function StudentsClient({
         </div>
       </div>
 
+      {error && (
+        <div className="animate-in fade-in slide-in-from-top-4 duration-300">
+          <div className="flex items-center gap-3 p-4 rounded-2xl bg-destructive/10 border border-destructive/20 text-destructive font-bold text-sm">
+            <AlertCircle className="h-5 w-5 shrink-0" />
+            {error}
+          </div>
+        </div>
+      )}
+
       {/* Search and Filters */}
       <div className="flex items-center gap-4">
         <div className="relative flex-1 max-w-md">
@@ -130,7 +145,12 @@ export function StudentsClient({
       </div>
 
       {/* Table Section */}
-      <div className="glass rounded-3xl overflow-hidden border-border/50 shadow-sm">
+      <div className="glass rounded-3xl overflow-hidden border-border/50 shadow-sm relative">
+        {isPending && (
+          <div className="absolute inset-0 bg-background/20 backdrop-blur-[1px] z-10 flex items-center justify-center">
+            <Loader2 className="h-8 w-8 text-primary animate-spin" />
+          </div>
+        )}
         <div className="overflow-x-auto">
           <table className="w-full text-left">
             <thead>
@@ -148,7 +168,7 @@ export function StudentsClient({
                   <td colSpan={5} className="px-8 py-24 text-center">
                     <div className="flex flex-col items-center justify-center opacity-40">
                       <GraduationCap className="h-10 w-10 mb-4" />
-                      <p className="text-sm font-black tracking-tight">
+                      <p className="text-sm font-bold tracking-tight">
                         No student records found
                       </p>
                     </div>

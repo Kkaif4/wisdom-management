@@ -67,7 +67,6 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ created, skipped });
   } catch (error: any) {
-    console.error("Error bulk importing students:", error);
     return NextResponse.json(
       { error: error.message || "Failed to import students" },
       { status: 500 },

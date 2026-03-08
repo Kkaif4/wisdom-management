@@ -7,7 +7,7 @@ import {
   LayoutDashboard,
   Users,
   Receipt,
-  ArrowLeftRight,
+  Wallet,
   Library,
   LogOut,
   Settings,
@@ -18,10 +18,10 @@ import {
 
 const NAV_ITEMS = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { label: "Students", href: "/dashboard/students", icon: Users },
   { label: "Receipts", href: "/dashboard/receipts", icon: Receipt },
   { label: "Expenses", href: "/dashboard/expenses", icon: TrendingUp },
-  { label: "Transfers", href: "/dashboard/transfers", icon: ArrowLeftRight },
+  { label: "Students", href: "/dashboard/students", icon: Users },
+  { label: "Accounts", href: "/dashboard/accounts", icon: Wallet },
   { label: "Ledger", href: "/dashboard/ledger", icon: Library },
 ];
 

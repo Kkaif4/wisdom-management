@@ -32,8 +32,10 @@ const fmt = (val: number) =>
 
 export function TransfersClient({
   transfers: initial,
+  error,
 }: {
   transfers: Transfer[];
+  error?: string;
 }) {
   const [transfers, setTransfers] = useState(initial);
   const [showModal, setShowModal] = useState(false);
@@ -58,6 +60,13 @@ export function TransfersClient({
           New Transfer
         </button>
       </div>
+
+      {error && (
+        <div className="p-4 rounded-2xl bg-destructive/10 border border-destructive/20 text-destructive text-sm font-bold flex items-center gap-3 animate-shake">
+          <Info className="h-5 w-5 flex-shrink-0" />
+          {error}
+        </div>
+      )}
 
       <div className="glass rounded-3xl overflow-hidden border-border/50">
         <div className="px-8 py-6 border-b border-border/50 bg-muted/20 flex items-center justify-between">

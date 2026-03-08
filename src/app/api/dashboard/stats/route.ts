@@ -49,7 +49,6 @@ export const GET = auth(async (req) => {
       outstandingFees: totalAssigned - totalPaid,
     });
   } catch (error) {
-    console.error("Dashboard stats error:", error);
     return NextResponse.json(
       { error: "Failed to fetch dashboard stats" },
       { status: 500 },

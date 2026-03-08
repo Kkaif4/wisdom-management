@@ -129,7 +129,6 @@ export async function POST(req: Request) {
 
     return NextResponse.json(result);
   } catch (error: any) {
-    console.error("Error creating receipt:", error);
     return NextResponse.json(
       { error: error.message || "Failed to create receipt" },
       { status: 500 },

@@ -16,7 +16,6 @@ export const GET = auth(async (req, { params }: any) => {
     );
     return NextResponse.json(statement);
   } catch (error: any) {
-    console.error("Statement fetch error:", error);
     return NextResponse.json(
       { error: "Failed to fetch student statement" },
       { status: 500 },

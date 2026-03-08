@@ -196,6 +196,7 @@ export function DashboardClient({ stats, transactions }: DashboardClientProps) {
                 <thead>
                   <tr className="text-[10px] font-black uppercase tracking-[0.15em] text-muted-foreground/70 bg-muted/5">
                     <th className="px-8 py-4">Status</th>
+                    <th className="px-8 py-4">Timestamp</th>
                     <th className="px-8 py-4">Transaction Details</th>
                     <th className="px-8 py-4 text-right">Amount</th>
                     <th className="px-8 py-4 text-right">Running Balance</th>
@@ -221,7 +222,27 @@ export function DashboardClient({ stats, transactions }: DashboardClientProps) {
                           </div>
                         </td>
                         <td className="px-8 py-4">
-                          <p className="text-sm font-bold text-foreground group-hover:text-primary transition-colors">
+                          <div className="flex items-center gap-2 text-sm font-bold text-foreground/80">
+                            <Clock className="h-3.5 w-3.5 text-primary/60" />
+                            <div className="flex flex-col">
+                              <span className="text-[11px] uppercase tracking-tighter">
+                                {new Date(tx.date).toLocaleDateString("en-IN", {
+                                  day: "2-digit",
+                                  month: "short",
+                                })}
+                              </span>
+                              <span className="text-[10px] font-black text-muted-foreground">
+                                {new Date(tx.date).toLocaleTimeString("en-IN", {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                  hour12: true,
+                                })}
+                              </span>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-8 py-4">
+                          <p className="text-sm font-bold text-foreground group-hover:text-primary transition-colors line-clamp-1 max-w-[200px] md:max-w-xs">
                             {tx.description}
                           </p>
                           <div className="flex items-center gap-2 mt-1">
@@ -229,17 +250,6 @@ export function DashboardClient({ stats, transactions }: DashboardClientProps) {
                               className={`text-[9px] font-black px-1.5 py-0.5 rounded tracking-widest uppercase ${tx.impactedAccount === "CASH" ? "bg-emerald-500/10 text-emerald-700" : "bg-blue-500/10 text-blue-700"}`}
                             >
                               {tx.impactedAccount}
-                            </span>
-                            <span className="text-[10px] text-muted-foreground font-medium">
-                              •
-                            </span>
-                            <span className="text-[10px] text-muted-foreground font-medium">
-                              {new Date(tx.date).toLocaleDateString("en-IN", {
-                                day: "2-digit",
-                                month: "short",
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })}
                             </span>
                           </div>
                         </td>

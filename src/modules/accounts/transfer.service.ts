@@ -15,7 +15,7 @@ export class TransferService {
     return await prisma.$transaction(
       async (tx) => {
         // 1. Decrease Cash
-        await AccountService.updateBalance({
+        const cashBalanceAfter = await AccountService.updateBalance({
           tx,
           organizationId,
           accountType: "CASH",
@@ -32,7 +32,21 @@ export class TransferService {
           mutationType: "INCREASE",
         });
 
-        // 3. Log into TransactionHistory
+        // 3. Log into TransactionHistory (Double Entry)
+
+        // Cash Side (Credit/Out)
+        await AccountService.logTransaction({
+          tx,
+          organizationId,
+          userId,
+          type: "CASH_DEPOSIT",
+          impactedAccount: "CASH",
+          creditAmount: amount,
+          balanceAfter: cashBalanceAfter,
+          description: `Transfer to Bank: ${remarks || "Internal deposit"}`,
+        });
+
+        // Bank Side (Debit/In)
         await AccountService.logTransaction({
           tx,
           organizationId,
@@ -41,7 +55,7 @@ export class TransferService {
           impactedAccount: "BANK",
           debitAmount: amount,
           balanceAfter: bankBalanceAfter,
-          description: remarks || "Cash deposit to bank",
+          description: `Transfer from Cash: ${remarks || "Internal deposit"}`,
         });
 
         return { success: true };
@@ -68,7 +82,7 @@ export class TransferService {
     return await prisma.$transaction(
       async (tx) => {
         // 1. Decrease Bank
-        await AccountService.updateBalance({
+        const bankBalanceAfter = await AccountService.updateBalance({
           tx,
           organizationId,
           accountType: "BANK",
@@ -85,7 +99,21 @@ export class TransferService {
           mutationType: "INCREASE",
         });
 
-        // 3. Log into TransactionHistory
+        // 3. Log into TransactionHistory (Double Entry)
+
+        // Bank Side (Credit/Out)
+        await AccountService.logTransaction({
+          tx,
+          organizationId,
+          userId,
+          type: "CASH_WITHDRAWAL",
+          impactedAccount: "BANK",
+          creditAmount: amount,
+          balanceAfter: bankBalanceAfter,
+          description: `Transfer to Cash: ${remarks || "Internal withdrawal"}`,
+        });
+
+        // Cash Side (Debit/In)
         await AccountService.logTransaction({
           tx,
           organizationId,
@@ -94,7 +122,7 @@ export class TransferService {
           impactedAccount: "CASH",
           debitAmount: amount,
           balanceAfter: cashBalanceAfter,
-          description: remarks || "Bank withdrawal to cash",
+          description: `Transfer from Bank: ${remarks || "Internal withdrawal"}`,
         });
 
         return { success: true };

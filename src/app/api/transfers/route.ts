@@ -39,7 +39,6 @@ export const POST = auth(async (req) => {
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    console.error("Transfer error:", error);
     return NextResponse.json(
       { error: error.message || "Failed to process transfer" },
       { status: 500 },

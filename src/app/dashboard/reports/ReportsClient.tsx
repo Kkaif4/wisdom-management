@@ -86,7 +86,6 @@ export function ReportsClient() {
       const json = await res.json();
       setData(json);
     } catch (err: any) {
-      console.error(err);
       setError(err.message);
       showToast(err.message, "error");
     } finally {
@@ -232,7 +231,6 @@ export function ReportsClient() {
       XLSX.writeFile(wb, `financial_report_${startDate}_to_${endDate}.xlsx`);
       showToast("Excel report generated successfully", "success");
     } catch (err) {
-      console.error("Export Error:", err);
       showToast("Failed to export Excel report", "error");
     }
   };

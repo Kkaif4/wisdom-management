@@ -21,7 +21,6 @@ export const POST = auth(async (req, { params }: any) => {
 
     return NextResponse.json(updatedReceipt);
   } catch (error: any) {
-    console.error("Receipt cancellation error:", error);
     return NextResponse.json(
       { error: error.message || "Failed to cancel receipt" },
       { status: 500 },

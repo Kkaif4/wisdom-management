@@ -28,6 +28,7 @@ enum TransactionType {
   EXPENSE
   CASH_DEPOSIT
   CASH_WITHDRAWAL
+  ACCOUNT_ADJUSTMENT
 }
 
 enum AccountType {

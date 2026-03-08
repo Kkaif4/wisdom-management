@@ -26,7 +26,6 @@ export const POST = auth(async (req) => {
 
     return NextResponse.json(receipt);
   } catch (error: any) {
-    console.error("Fee collection error:", error);
     return NextResponse.json(
       { error: error.message || "Failed to collect fee" },
       { status: 500 },
@@ -44,7 +43,6 @@ export const GET = auth(async (req) => {
     );
     return NextResponse.json(receipts);
   } catch (error) {
-    console.error("Receipt list error:", error);
     return NextResponse.json(
       { error: "Failed to list receipts" },
       { status: 500 },

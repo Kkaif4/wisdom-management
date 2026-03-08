@@ -22,7 +22,6 @@ export const GET = auth(async (req) => {
 
     return NextResponse.json(ledger);
   } catch (error) {
-    console.error("Ledger fetch error:", error);
     return NextResponse.json(
       { error: "Failed to fetch ledger" },
       { status: 500 },

@@ -42,7 +42,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             organizationId: user.organizationId ?? undefined,
           };
         } catch (error) {
-          console.error("[AUTH] Database error during authorize:", error);
           return null;
         }
       },

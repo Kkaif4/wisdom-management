@@ -20,7 +20,6 @@ export const GET = auth(async (req, { params }: any) => {
 
     return NextResponse.json(receipt);
   } catch (error: any) {
-    console.error("Receipt fetch error:", error);
     return NextResponse.json(
       { error: "Failed to fetch receipt" },
       { status: 500 },

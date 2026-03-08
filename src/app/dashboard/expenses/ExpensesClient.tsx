@@ -1,7 +1,7 @@
 "use client";
 
 import { ExpenseEntryModal } from "@/components/forms/ExpenseEntryModal";
-import { useState, useMemo } from "react";
+import { useState, useEffect, useMemo, useTransition } from "react";
 import {
   Plus,
   Search,
@@ -14,8 +14,9 @@ import {
   ArrowUpRight,
   History,
   Loader2,
+  AlertCircle,
 } from "lucide-react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { Pagination } from "@/components/shared/Pagination";
 
 interface Expense {
@@ -31,6 +32,10 @@ interface ExpensesClientProps {
   expenses: Expense[];
   currentPage: number;
   totalPages: number;
+  filters: {
+    query: string;
+  };
+  error?: string;
 }
 
 const fmt = (val: number) =>
@@ -44,31 +49,42 @@ export function ExpensesClient({
   expenses,
   currentPage,
   totalPages,
+  filters,
+  error,
 }: ExpensesClientProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
+  const [isPending, startTransition] = useTransition();
   const [showEntry, setShowEntry] = useState(false);
-  const [search, setSearch] = useState("");
-  const [isPending, setIsPending] = useState(false);
+  const [searchVal, setSearchVal] = useState(filters.query);
 
-  const filtered = useMemo(() => {
-    if (!search) return expenses;
-    const q = search.toLowerCase();
-    return expenses.filter(
-      (e) =>
-        e.category.toLowerCase().includes(q) ||
-        (e.description && e.description.toLowerCase().includes(q)),
-    );
-  }, [expenses, search]);
+  useEffect(() => {
+    setSearchVal(filters.query);
+  }, [filters.query]);
 
   const total = expenses.reduce((acc, e) => acc + e.amount, 0);
 
   const handlePageChange = (page: number) => {
     const params = new URLSearchParams(searchParams.toString());
     params.set("p", page.toString());
-    setIsPending(true);
-    router.push(`?${params.toString()}`);
-    setTimeout(() => setIsPending(false), 500);
+    startTransition(() => {
+      router.push(`${pathname}?${params.toString()}`);
+    });
+  };
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    const params = new URLSearchParams(searchParams.toString());
+    if (searchVal) {
+      params.set("q", searchVal);
+    } else {
+      params.delete("q");
+    }
+    params.set("p", "1");
+    startTransition(() => {
+      router.push(`${pathname}?${params.toString()}`);
+    });
   };
 
   return (
@@ -92,17 +108,26 @@ export function ExpensesClient({
         </button>
       </div>
 
+      {error && (
+        <div className="animate-in fade-in slide-in-from-top-4 duration-300">
+          <div className="flex items-center gap-3 p-4 rounded-2xl bg-destructive/10 border border-destructive/20 text-destructive font-bold text-sm">
+            <AlertCircle className="h-5 w-5 shrink-0" />
+            {error}
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
         <div className="glass rounded-2xl p-6 border-rose-500/10 bg-rose-500/[0.02]">
           <p className="text-[10px] font-black uppercase tracking-[0.2em] text-rose-600/80 mb-2">
-            View Total
+            Page Total
           </p>
           <p className="text-2xl font-black text-rose-600 tracking-tight">
             {fmt(total)}
           </p>
           <div className="mt-2 text-[10px] font-bold text-rose-600 uppercase tracking-tighter flex items-center gap-1">
             <ArrowUpRight className="h-3 w-3" />
-            Page Summary
+            Current View
           </div>
         </div>
 
@@ -110,7 +135,9 @@ export function ExpensesClient({
           <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary/70 mb-2">
             Top Category
           </p>
-          <p className="text-xl font-black text-foreground">Maintenance</p>
+          <p className="text-xl font-black text-foreground">
+            {expenses[0]?.category || "—"}
+          </p>
         </div>
 
         <div className="glass rounded-2xl p-6 border-primary/10 flex flex-col justify-center">
@@ -124,7 +151,7 @@ export function ExpensesClient({
       </div>
 
       <div className="flex items-center gap-4">
-        <div className="relative flex-1 max-w-md">
+        <form onSubmit={handleSearch} className="relative flex-1 max-w-md">
           {isPending ? (
             <Loader2 className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-rose-500 animate-spin" />
           ) : (
@@ -132,15 +159,20 @@ export function ExpensesClient({
           )}
           <input
             type="text"
-            placeholder="Filter current view..."
+            placeholder="Search by category or details..."
             className="w-full bg-card/50 border border-border/50 rounded-2xl pl-11 pr-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-rose-500/20 transition-all font-bold"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            value={searchVal}
+            onChange={(e) => setSearchVal(e.target.value)}
           />
-        </div>
+        </form>
       </div>
 
-      <div className="glass rounded-3xl overflow-hidden border-border/50 shadow-sm">
+      <div className="glass rounded-3xl overflow-hidden border-border/50 shadow-sm relative">
+        {isPending && (
+          <div className="absolute inset-0 bg-background/20 backdrop-blur-[1px] z-10 flex items-center justify-center">
+            <Loader2 className="h-8 w-8 text-rose-500 animate-spin" />
+          </div>
+        )}
         <div className="overflow-x-auto">
           <table className="w-full text-left">
             <thead>
@@ -153,7 +185,7 @@ export function ExpensesClient({
               </tr>
             </thead>
             <tbody className="divide-y divide-border/30">
-              {filtered.length === 0 ? (
+              {expenses.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="px-8 py-24 text-center">
                     <div className="flex flex-col items-center justify-center opacity-40">
@@ -165,14 +197,14 @@ export function ExpensesClient({
                   </td>
                 </tr>
               ) : (
-                filtered.map((e) => (
+                expenses.map((e) => (
                   <tr
                     key={e.id}
                     className="group hover:bg-muted/30 transition-colors"
                   >
                     <td className="px-8 py-5">
                       <div className="flex items-center gap-2 text-sm font-bold text-foreground/80">
-                        <Calendar className="h-3 w-3 text-rose-500/60" />
+                        <Calendar className="h-3.5 w-3.5 text-rose-500/60" />
                         {new Date(e.date).toLocaleDateString("en-IN", {
                           day: "2-digit",
                           month: "short",
