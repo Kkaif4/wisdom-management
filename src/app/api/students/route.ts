@@ -8,11 +8,30 @@ export const GET = auth(async (req) => {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const { searchParams } = new URL(req.url);
+  const query = searchParams.get("q") || undefined;
+  const page = parseInt(searchParams.get("p") || "1");
+  const limit = parseInt(searchParams.get("l") || "15");
+  const skip = (page - 1) * limit;
+
   try {
-    const students = await StudentService.getStudents(
-      req.auth.user.organizationId,
-    );
-    return NextResponse.json(students);
+    const [students, total] = await Promise.all([
+      StudentService.getStudents({
+        organizationId: req.auth.user.organizationId,
+        search: query,
+        skip,
+        take: limit,
+      }),
+      StudentService.countStudents(req.auth.user.organizationId, query),
+    ]);
+
+    return NextResponse.json({
+      data: students,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    });
   } catch (error) {
     return NextResponse.json(
       { error: "Failed to fetch students" },

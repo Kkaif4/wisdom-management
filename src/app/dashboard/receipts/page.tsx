@@ -9,20 +9,7 @@ export default async function ReceiptsPage() {
 
   const orgId = session.user.organizationId;
 
-  // 1. Fetch Students for the entry dropdown
-  const students = await prisma.student.findMany({
-    where: { organizationId: orgId },
-    select: {
-      id: true,
-      name: true,
-      class: true,
-      totalFeesAssigned: true,
-      totalPaid: true,
-    },
-    orderBy: { name: "asc" },
-  });
-
-  // 2. Fetch Recent Receipts
+  // Fetch Recent Receipts
   const receipts = await prisma.receipt.findMany({
     where: { organizationId: orgId },
     include: {
@@ -32,14 +19,6 @@ export default async function ReceiptsPage() {
     orderBy: { date: "desc" },
     take: 40,
   });
-
-  const serializedStudents = students.map((s) => ({
-    id: s.id,
-    name: s.name,
-    class: s.class,
-    totalFeesAssigned: Number(s.totalFeesAssigned),
-    totalPaid: Number(s.totalPaid),
-  }));
 
   const serializedReceipts = receipts.map((r) => ({
     id: r.id,
@@ -54,10 +33,5 @@ export default async function ReceiptsPage() {
     recordedBy: r.createdByUser.name,
   }));
 
-  return (
-    <ReceiptsClient
-      students={serializedStudents}
-      receipts={serializedReceipts}
-    />
-  );
+  return <ReceiptsClient receipts={serializedReceipts} />;
 }

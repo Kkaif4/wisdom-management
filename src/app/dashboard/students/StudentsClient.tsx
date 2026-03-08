@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Plus,
   Search,
@@ -9,9 +10,11 @@ import {
   ChevronRight,
   UserPlus,
   Upload,
+  Loader2,
 } from "lucide-react";
 import { AddStudentDialog } from "@/components/forms/AddStudentDialog";
 import { BulkImportDialog } from "@/components/forms/BulkImportDialog";
+import { Pagination } from "@/components/shared/Pagination";
 
 interface Student {
   id: string;
@@ -23,6 +26,9 @@ interface Student {
 
 interface StudentsClientProps {
   students: Student[];
+  totalCount: number;
+  currentPage: number;
+  totalPages: number;
 }
 
 const fmt = (val: number) =>
@@ -32,22 +38,50 @@ const fmt = (val: number) =>
     maximumFractionDigits: 0,
   }).format(val);
 
-export function StudentsClient({ students }: StudentsClientProps) {
-  const [search, setSearch] = useState("");
+export function StudentsClient({
+  students,
+  totalCount,
+  currentPage,
+  totalPages,
+}: StudentsClientProps) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [search, setSearch] = useState(searchParams.get("q") || "");
+  const [isPending, setIsPending] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
   const [showImport, setShowImport] = useState(false);
 
-  const filtered = useMemo(() => {
-    if (!search) return students;
-    const q = search.toLowerCase();
-    return students.filter(
-      (s) =>
-        s.name.toLowerCase().includes(q) || s.class.toLowerCase().includes(q),
-    );
-  }, [students, search]);
+  // Debounced URL search update
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      const currentQ = searchParams.get("q") || "";
+      if (search === currentQ) return;
+
+      const params = new URLSearchParams(searchParams.toString());
+      if (search) {
+        params.set("q", search);
+      } else {
+        params.delete("q");
+      }
+      params.set("p", "1"); // Reset to page 1 on search
+      setIsPending(true);
+      router.push(`?${params.toString()}`);
+      setTimeout(() => setIsPending(false), 500);
+    }, 500);
+
+    return () => clearTimeout(handler);
+  }, [search, router, searchParams]);
+
+  const handlePageChange = (page: number) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("p", page.toString());
+    setIsPending(true);
+    router.push(`?${params.toString()}`);
+    setTimeout(() => setIsPending(false), 500);
+  };
 
   return (
-    <div className="space-y-8 animate-fade-in">
+    <div className="space-y-8 animate-fade-in mb-10">
       {/* Header Section */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
@@ -56,7 +90,7 @@ export function StudentsClient({ students }: StudentsClientProps) {
           </h1>
           <p className="text-muted-foreground font-medium flex items-center gap-2 mt-1">
             <GraduationCap className="h-4 w-4 text-primary" />
-            Manage student records and fee assignments
+            Showing {students.length} of {totalCount} records
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -80,11 +114,15 @@ export function StudentsClient({ students }: StudentsClientProps) {
       {/* Search and Filters */}
       <div className="flex items-center gap-4">
         <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          {isPending ? (
+            <Loader2 className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-primary animate-spin" />
+          ) : (
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          )}
           <input
             type="text"
-            placeholder="Search by student name or class..."
-            className="w-full bg-card/50 border border-border/50 rounded-2xl pl-11 pr-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all font-medium"
+            placeholder="Search by student name..."
+            className="w-full bg-card/50 border border-border/50 rounded-2xl pl-11 pr-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all font-bold"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -92,7 +130,7 @@ export function StudentsClient({ students }: StudentsClientProps) {
       </div>
 
       {/* Table Section */}
-      <div className="glass rounded-3xl overflow-hidden border-border/50">
+      <div className="glass rounded-3xl overflow-hidden border-border/50 shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-left">
             <thead>
@@ -105,19 +143,19 @@ export function StudentsClient({ students }: StudentsClientProps) {
               </tr>
             </thead>
             <tbody className="divide-y divide-border/30">
-              {filtered.length === 0 ? (
+              {students.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="px-8 py-24 text-center">
                     <div className="flex flex-col items-center justify-center opacity-40">
                       <GraduationCap className="h-10 w-10 mb-4" />
-                      <p className="text-sm font-bold tracking-tight">
+                      <p className="text-sm font-black tracking-tight">
                         No student records found
                       </p>
                     </div>
                   </td>
                 </tr>
               ) : (
-                filtered.map((s) => {
+                students.map((s) => {
                   const remaining = s.totalFeesAssigned - s.totalPaid;
                   return (
                     <tr
@@ -132,10 +170,10 @@ export function StudentsClient({ students }: StudentsClientProps) {
                           {s.class}
                         </p>
                       </td>
-                      <td className="px-8 py-5 text-right font-mono font-bold text-sm text-muted-foreground">
+                      <td className="px-8 py-5 text-right font-mono font-bold text-sm text-muted-foreground/60">
                         {fmt(s.totalFeesAssigned)}
                       </td>
-                      <td className="px-8 py-5 text-right font-mono font-bold text-sm text-emerald-600">
+                      <td className="px-8 py-5 text-right font-mono font-bold text-sm text-emerald-600/80">
                         {fmt(s.totalPaid)}
                       </td>
                       <td
@@ -161,17 +199,24 @@ export function StudentsClient({ students }: StudentsClientProps) {
         </div>
       </div>
 
+      <Pagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPageChange={handlePageChange}
+        isLoading={isPending}
+      />
+
       {showAdd && (
         <AddStudentDialog
           onClose={() => setShowAdd(false)}
-          onSuccess={() => window.location.reload()}
+          onSuccess={() => router.refresh()}
         />
       )}
 
       {showImport && (
         <BulkImportDialog
           onClose={() => setShowImport(false)}
-          onSuccess={() => window.location.reload()}
+          onSuccess={() => router.refresh()}
         />
       )}
     </div>

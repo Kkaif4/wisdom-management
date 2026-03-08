@@ -22,18 +22,16 @@ interface Student {
 }
 
 interface ReceiptEntryModalProps {
-  students: Student[];
   onSuccess: (receipt: any) => void;
   onClose: () => void;
 }
 
 export function ReceiptEntryModal({
-  students: initialStudents,
   onSuccess,
   onClose,
 }: ReceiptEntryModalProps) {
   const [loading, setLoading] = useState(false);
-  const [students, setStudents] = useState<Student[]>(initialStudents);
+  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [formData, setFormData] = useState({
     studentId: "",
     amount: "",
@@ -41,10 +39,6 @@ export function ReceiptEntryModal({
     date: new Date().toISOString().split("T")[0],
     remarks: "",
   });
-
-  const handleStudentCreated = (newStudent: Student) => {
-    setStudents((prev) => [...prev, newStudent]);
-  };
 
   const formRef = React.useRef<HTMLFormElement>(null);
 
@@ -59,7 +53,6 @@ export function ReceiptEntryModal({
     return () => window.removeEventListener("keydown", handleGlobalKeyDown);
   }, []);
 
-  const selectedStudent = students.find((s) => s.id === formData.studentId);
   const pendingAmount = selectedStudent
     ? Number(selectedStudent.totalFeesAssigned || 0) -
       Number(selectedStudent.totalPaid || 0)
@@ -136,10 +129,11 @@ export function ReceiptEntryModal({
                 Select Student
               </label>
               <StudentSearchSelect
-                students={students}
                 value={formData.studentId}
-                onChange={(id) => setFormData({ ...formData, studentId: id })}
-                onStudentCreated={handleStudentCreated}
+                onChange={(id, student) => {
+                  setFormData({ ...formData, studentId: id });
+                  if (student) setSelectedStudent(student);
+                }}
               />
             </div>
 

@@ -25,12 +25,49 @@ export class StudentService {
   }
 
   /**
-   * Lists all students for an organization.
+   * Lists students for an organization, optionally filtered by name and paginated.
    */
-  static async getStudents(organizationId: string) {
+  static async getStudents(params: {
+    organizationId: string;
+    search?: string;
+    skip?: number;
+    take?: number;
+  }) {
+    const { organizationId, search, skip, take } = params;
     return await prisma.student.findMany({
-      where: { organizationId },
+      where: {
+        organizationId,
+        ...(search
+          ? {
+              name: {
+                contains: search,
+                mode: "insensitive",
+              },
+            }
+          : {}),
+      },
       orderBy: { name: "asc" },
+      skip,
+      take,
+    });
+  }
+
+  /**
+   * Returns the count of students for an organization, optionally filtered.
+   */
+  static async countStudents(organizationId: string, search?: string) {
+    return await prisma.student.count({
+      where: {
+        organizationId,
+        ...(search
+          ? {
+              name: {
+                contains: search,
+                mode: "insensitive",
+              },
+            }
+          : {}),
+      },
     });
   }
 

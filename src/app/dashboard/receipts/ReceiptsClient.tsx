@@ -39,7 +39,6 @@ interface Receipt {
 }
 
 interface ReceiptsClientProps {
-  students: Student[];
   receipts: Receipt[];
 }
 
@@ -51,7 +50,6 @@ const fmt = (val: number) =>
   }).format(val);
 
 export function ReceiptsClient({
-  students,
   receipts: initialReceipts,
 }: ReceiptsClientProps) {
   const [receipts, setReceipts] = useState(initialReceipts);
@@ -262,7 +260,6 @@ export function ReceiptsClient({
 
       {showEntry && (
         <ReceiptEntryModal
-          students={students}
           onClose={() => setShowEntry(false)}
           onSuccess={handleCreated}
         />
