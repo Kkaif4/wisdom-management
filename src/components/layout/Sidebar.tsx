@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
@@ -14,6 +15,13 @@ import {
   ChevronRight,
   TrendingUp,
   X,
+  BarChart3,
+  ChevronDown,
+  FileText,
+  CreditCard,
+  Building2,
+  CalendarDays,
+  Landmark,
 } from "lucide-react";
 
 const NAV_ITEMS = [
@@ -25,6 +33,22 @@ const NAV_ITEMS = [
   { label: "Ledger", href: "/dashboard/ledger", icon: Library },
 ];
 
+const REPORT_ITEMS = [
+  { label: "Overview", href: "/dashboard/reports", icon: BarChart3 },
+  { label: "Fee Collections", href: "/dashboard/reports/fees", icon: Receipt },
+  {
+    label: "Account Ledgers",
+    href: "/dashboard/reports/accounts",
+    icon: Landmark,
+  },
+  { label: "Expenses", href: "/dashboard/reports/expenses", icon: TrendingUp },
+  {
+    label: "Adjustments",
+    href: "/dashboard/reports/adjustments",
+    icon: FileText,
+  },
+];
+
 interface SidebarProps {
   isOpen?: boolean;
   onClose?: () => void;
@@ -32,6 +56,9 @@ interface SidebarProps {
 
 export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const pathname = usePathname();
+  const [isReportsOpen, setIsReportsOpen] = React.useState(
+    pathname.startsWith("/dashboard/reports"),
+  );
 
   return (
     <>
@@ -103,6 +130,50 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                 </Link>
               );
             })}
+
+            {/* Reports Dropdown */}
+            <div className="space-y-1">
+              <button
+                onClick={() => setIsReportsOpen(!isReportsOpen)}
+                className={`group flex w-full items-center justify-between rounded-xl px-4 py-3 text-sm transition-all duration-200 ${
+                  pathname.startsWith("/dashboard/reports")
+                    ? "text-primary bg-primary/5 font-bold"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <BarChart3 className="h-5 w-5" />
+                  <span className="tracking-tight">Reports</span>
+                </div>
+                <ChevronDown
+                  className={`h-4 w-4 transition-transform duration-200 ${
+                    isReportsOpen ? "rotate-180" : ""
+                  }`}
+                />
+              </button>
+
+              {isReportsOpen && (
+                <div className="pl-4 space-y-1 mt-1 border-l-2 border-primary/10 ml-6">
+                  {REPORT_ITEMS.map((item) => {
+                    const isActive = pathname === item.href;
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        onClick={() => onClose?.()}
+                        className={`block rounded-lg px-4 py-2 text-xs transition-all duration-200 ${
+                          isActive
+                            ? "text-primary bg-primary/10 font-bold"
+                            : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                        }`}
+                      >
+                        {item.label}
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="mt-8 px-2">

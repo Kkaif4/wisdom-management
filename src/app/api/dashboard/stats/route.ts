@@ -1,5 +1,6 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@/prisma/generated";
 import { NextResponse } from "next/server";
 
 export const GET = auth(async (req) => {
@@ -36,17 +37,18 @@ export const GET = auth(async (req) => {
       },
     });
 
-    const totalAssigned = Number(studentStats._sum.totalFeesAssigned ?? 0);
-    const totalPaid = Number(studentStats._sum.totalPaid ?? 0);
-    const totalExpenses = Number(expenseStats._sum.amount ?? 0);
+    const totalAssigned =
+      studentStats._sum.totalFeesAssigned ?? new Prisma.Decimal(0);
+    const totalPaid = studentStats._sum.totalPaid ?? new Prisma.Decimal(0);
+    const totalExpenses = expenseStats._sum.amount ?? new Prisma.Decimal(0);
 
     return NextResponse.json({
       cashBalance: Number(org?.currentCashBalance ?? 0),
       bankBalance: Number(org?.currentBankBalance ?? 0),
-      totalFeesAssigned: totalAssigned,
-      totalFeesCollected: totalPaid,
-      totalExpenses,
-      outstandingFees: totalAssigned - totalPaid,
+      totalFeesAssigned: totalAssigned.toNumber(),
+      totalFeesCollected: totalPaid.toNumber(),
+      totalExpenses: totalExpenses.toNumber(),
+      outstandingFees: totalAssigned.minus(totalPaid).toNumber(),
     });
   } catch (error) {
     return NextResponse.json(

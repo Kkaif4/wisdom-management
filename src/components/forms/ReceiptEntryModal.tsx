@@ -146,7 +146,11 @@ export function ReceiptEntryModal({
                   </label>
                   {pendingAmount !== null && (
                     <span className="text-[10px] font-bold text-amber-600 uppercase tracking-wide">
-                      Pending: ₹{pendingAmount.toLocaleString("en-IN")}
+                      Pending: ₹
+                      {pendingAmount.toLocaleString("en-IN", {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}
                     </span>
                   )}
                 </div>
@@ -157,9 +161,10 @@ export function ReceiptEntryModal({
                   <input
                     required
                     type="number"
+                    step="0.01"
                     min="1"
                     max={pendingAmount !== null ? pendingAmount : undefined}
-                    placeholder="0"
+                    placeholder="0.00"
                     className="w-full bg-muted/20 border border-border/50 rounded-2xl pl-8 pr-5 py-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all font-bold"
                     value={formData.amount}
                     onChange={(e) =>

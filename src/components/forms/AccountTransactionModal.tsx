@@ -258,6 +258,7 @@ export const AccountTransactionModal: React.FC<
                   </span>
                   <input
                     type="number"
+                    step="0.01"
                     required
                     placeholder="0.00"
                     className="w-full bg-muted/30 border border-border/50 rounded-2xl pl-10 pr-4 py-4 text-lg font-black tracking-tight focus:outline-none focus:ring-2 focus:ring-primary/20"

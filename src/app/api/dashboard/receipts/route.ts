@@ -1,6 +1,12 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { AccountType, PaymentMode, TransactionType } from "@/prisma/generated";
+import {
+  AccountType,
+  PaymentMode,
+  TransactionType,
+  Prisma,
+} from "@/prisma/generated";
+import { parseDecimal } from "@/lib/decimal";
 import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
@@ -26,6 +32,7 @@ export async function POST(req: Request) {
     const result = await prisma.$transaction(
       async (tx) => {
         // 1. Atomically increment Organization counter and update balances
+        const decimalAmount = parseDecimal(amount);
         const balanceField =
           paymentMode === "CASH" ? "currentCashBalance" : "currentBankBalance";
 
@@ -33,7 +40,7 @@ export async function POST(req: Request) {
           where: { id: orgId },
           data: {
             receiptCounter: { increment: 1 },
-            [balanceField]: { increment: Number(amount) },
+            [balanceField]: { increment: decimalAmount },
             isFirstTransactionDone: true,
           },
         });
@@ -81,7 +88,7 @@ export async function POST(req: Request) {
         const receipt = await tx.receipt.create({
           data: {
             receiptNumber,
-            amount: Number(amount),
+            amount: decimalAmount,
             paymentMode: paymentMode as PaymentMode,
             date: new Date(date),
             remarks,
@@ -95,7 +102,7 @@ export async function POST(req: Request) {
         await tx.student.update({
           where: { id: studentId },
           data: {
-            totalPaid: { increment: Number(amount) },
+            totalPaid: { increment: decimalAmount },
           },
         });
 
@@ -112,7 +119,7 @@ export async function POST(req: Request) {
             receiptId: receipt.id,
             description: `Fee collection for student (${receiptNumber})`,
             impactedAccount: paymentMode as AccountType,
-            debitAmount: Number(amount),
+            debitAmount: decimalAmount,
             balanceAfter: balanceAfter,
             createdBy: userId,
             organizationId: orgId,

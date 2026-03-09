@@ -2,6 +2,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { ExpenseService } from "@/modules/expenses/expense.service";
 import { Prisma } from "@/prisma/generated";
+import { parseDecimal } from "@/lib/decimal";
 import { errorResponse, successResponse } from "@/lib/api-response";
 import { AuthError } from "@/lib/api-errors";
 
@@ -34,7 +35,7 @@ export const POST = auth(async (req) => {
     const expense = await ExpenseService.createExpense({
       organizationId: req.auth.user.organizationId,
       userId: req.auth.user.id,
-      amount: new Prisma.Decimal(amount),
+      amount: parseDecimal(amount),
       paidFrom,
       category,
       description,

@@ -68,7 +68,13 @@ export function ReportsClient() {
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
 
-  const fmt = (num: number) => `₹${num.toLocaleString("en-IN")}`;
+  const fmt = (num: number) =>
+    new Intl.NumberFormat("en-IN", {
+      style: "currency",
+      currency: "INR",
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(num);
 
   // Helper to fetch data
   const fetchReport = async (start: string, end: string) => {

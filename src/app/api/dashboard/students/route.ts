@@ -1,5 +1,6 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { parseDecimal } from "@/lib/decimal";
 import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
@@ -22,7 +23,7 @@ export async function POST(req: Request) {
       data: {
         name,
         class: className,
-        totalFeesAssigned: Number(totalFeesAssigned),
+        totalFeesAssigned: parseDecimal(totalFeesAssigned),
         organizationId: session.user.organizationId,
       },
     });

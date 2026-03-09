@@ -1,6 +1,7 @@
 import { NextResponse, NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
+import { Prisma } from "@/prisma/generated";
 
 export async function GET(req: NextRequest) {
   try {
@@ -69,19 +70,18 @@ export async function GET(req: NextRequest) {
 
     // --- Calculations ---
     const totalFeesCollected = receipts.reduce(
-      (sum, r) => sum + r.amount.toNumber(),
-      0,
+      (sum, r) => sum.plus(r.amount),
+      new Prisma.Decimal(0),
     );
     const totalExpenses = expenses.reduce(
-      (sum, e) => sum + e.amount.toNumber(),
-      0,
+      (sum, e) => sum.plus(e.amount),
+      new Prisma.Decimal(0),
     );
-    const netCashFlow = totalFeesCollected - totalExpenses;
+    const netCashFlow = totalFeesCollected.minus(totalExpenses);
 
     const outstandingDues = studentsWithDues.reduce(
-      (sum, s) =>
-        sum + (s.totalFeesAssigned.toNumber() - s.totalPaid.toNumber()),
-      0,
+      (sum, s) => sum.plus(s.totalFeesAssigned.minus(s.totalPaid)),
+      new Prisma.Decimal(0),
     );
 
     // Transactions Mapping
@@ -100,35 +100,35 @@ export async function GET(req: NextRequest) {
         id: `expense-${e.id}`,
         date: e.date,
         type: "EXPENSE",
-        reference: e.id.slice(0, 8), // Defaulting to partial ID since voucherNumber doesn't exist
+        reference: e.id.slice(0, 8),
         studentName: null,
         description: e.description || "General Expense",
         debit: e.amount.toNumber(),
         credit: null,
       })),
-    ].sort((a, b) => b.date.getTime() - a.date.getTime()); // Sort unified list by date descending
+    ].sort((a, b) => b.date.getTime() - a.date.getTime());
 
     // Expense Breakdown
     const expenseBreakdownMap = expenses.reduce(
       (acc, e) => {
         const cat = e.category || "Uncategorized";
         if (!acc[cat]) {
-          acc[cat] = { amount: 0, count: 0 };
+          acc[cat] = { amount: new Prisma.Decimal(0), count: 0 };
         }
-        acc[cat].amount += e.amount.toNumber();
+        acc[cat].amount = acc[cat].amount.plus(e.amount);
         acc[cat].count += 1;
         return acc;
       },
-      {} as Record<string, { amount: number; count: number }>,
+      {} as Record<string, { amount: Prisma.Decimal; count: number }>,
     );
 
     const expenseBreakdown = Object.entries(expenseBreakdownMap)
       .map(([category, data]) => ({
         category,
-        totalAmount: data.amount,
+        totalAmount: data.amount.toNumber(),
         count: data.count,
       }))
-      .sort((a, b) => b.totalAmount - a.totalAmount); // Sort by highest expense
+      .sort((a, b) => b.totalAmount - a.totalAmount);
 
     // Student Summary
     const studentSummary = studentsWithDues
@@ -137,20 +137,20 @@ export async function GET(req: NextRequest) {
         class: s.class,
         totalFeesAssigned: s.totalFeesAssigned.toNumber(),
         totalPaid: s.totalPaid.toNumber(),
-        remaining: s.totalFeesAssigned.toNumber() - s.totalPaid.toNumber(),
+        remaining: s.totalFeesAssigned.minus(s.totalPaid).toNumber(),
       }))
-      .sort((a, b) => b.remaining - a.remaining); // Sort by highest due
+      .sort((a, b) => b.remaining - a.remaining);
 
     return NextResponse.json({
       summary: {
-        totalFeesCollected,
-        totalExpenses,
-        netCashFlow,
-        outstandingDues,
+        totalFeesCollected: totalFeesCollected.toNumber(),
+        totalExpenses: totalExpenses.toNumber(),
+        netCashFlow: netCashFlow.toNumber(),
+        outstandingDues: outstandingDues.toNumber(),
       },
       transactions,
       expenseBreakdown,
-      studentSummary, // Showing unpaid students as the payment report requirement
+      studentSummary,
     });
   } catch (error: any) {
     return NextResponse.json(

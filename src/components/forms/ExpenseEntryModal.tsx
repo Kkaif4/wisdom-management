@@ -90,6 +90,7 @@ export const ExpenseEntryModal: React.FC<ExpenseEntryModalProps> = ({
                   </label>
                   <input
                     type="number"
+                    step="0.01"
                     required
                     placeholder="0.00"
                     className="w-full p-2 border rounded-lg"

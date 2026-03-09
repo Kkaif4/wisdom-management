@@ -60,7 +60,11 @@ export const ReceiptPDF: React.FC<ReceiptPDFProps> = ({ receipt }) => {
         <div className="flex justify-between items-center">
           <span className="text-xl font-bold uppercase">Total Received</span>
           <span className="text-3xl font-black italic tracking-tighter">
-            ₹{Number(receipt.amount).toLocaleString()}
+            ₹
+            {Number(receipt.amount).toLocaleString("en-IN", {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })}
           </span>
         </div>
       </div>
