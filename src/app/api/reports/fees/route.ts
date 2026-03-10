@@ -14,6 +14,7 @@ export const GET = auth(async (req) => {
     const startDate = searchParams.get("startDate");
     const endDate = searchParams.get("endDate");
     const paymentMode = searchParams.get("paymentMode");
+    const category = searchParams.get("category");
 
     const where: any = {
       organizationId: orgId,
@@ -22,6 +23,10 @@ export const GET = auth(async (req) => {
 
     if (paymentMode && paymentMode !== "ALL") {
       where.paymentMode = paymentMode;
+    }
+
+    if (category && category !== "ALL") {
+      where.category = category;
     }
 
     if (startDate || endDate) {
@@ -53,9 +58,10 @@ export const GET = auth(async (req) => {
       id: r.id,
       date: r.date.toISOString(),
       receiptNumber: r.receiptNumber,
-      studentName: r.student.name,
-      class: r.student.class,
+      studentName: r.student ? r.student.name : "N/A",
+      class: r.student ? r.student.class : "N/A",
       paymentMode: r.paymentMode,
+      category: r.category || "Tuition Fee",
       amount: Number(r.amount),
       remarks: r.remarks,
     }));

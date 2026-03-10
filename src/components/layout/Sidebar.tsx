@@ -35,7 +35,11 @@ const NAV_ITEMS = [
 
 const REPORT_ITEMS = [
   { label: "Overview", href: "/dashboard/reports", icon: BarChart3 },
-  { label: "Fee Collections", href: "/dashboard/reports/fees", icon: Receipt },
+  {
+    label: "Income / Receipts",
+    href: "/dashboard/reports/fees",
+    icon: Receipt,
+  },
   {
     label: "Account Ledgers",
     href: "/dashboard/reports/accounts",

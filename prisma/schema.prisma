@@ -29,6 +29,7 @@ enum TransactionType {
   CASH_DEPOSIT
   CASH_WITHDRAWAL
   ACCOUNT_ADJUSTMENT
+  OTHER_INCOME
 }
 
 enum AccountType {
@@ -89,6 +90,7 @@ model Student {
   updatedAt         DateTime     @updatedAt
 
   receipts          Receipt[]
+  transactions      TransactionHistory[]
 
   @@index([organizationId])
 }
@@ -101,9 +103,9 @@ model Receipt {
   date           DateTime
   remarks        String?
   status         ReceiptStatus @default(ACTIVE)
-
-  studentId      String
-  student        Student       @relation(fields: [studentId], references: [id])
+  category       String        @default("Tuition Fee")
+  studentId      String?
+  student        Student?      @relation(fields: [studentId], references: [id])
   organizationId String
   organization   Organization  @relation(fields: [organizationId], references: [id])
 
@@ -123,6 +125,7 @@ model Receipt {
   @@index([organizationId])
   @@index([studentId])
   @@index([date])
+  @@index([category])
 }
 
 model Expense {
@@ -160,6 +163,9 @@ model TransactionHistory {
   creditAmount            Decimal         @db.Decimal(14, 2) @default(0)
   balanceAfter            Decimal         @db.Decimal(14, 2)
 
+  studentId               String?
+  student                 Student?        @relation(fields: [studentId], references: [id])
+
   createdBy               String
   user                    User            @relation("TransactionCreatedBy", fields: [createdBy], references: [id])
 
@@ -171,6 +177,7 @@ model TransactionHistory {
   @@index([organizationId])
   @@index([date])
   @@index([type])
+  @@index([studentId])
 }
 
 model AuditLog {

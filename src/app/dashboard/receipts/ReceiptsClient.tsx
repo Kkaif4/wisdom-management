@@ -24,6 +24,7 @@ interface Receipt {
   receiptNumber: string;
   amount: number;
   paymentMode: string;
+  category: string;
   date: string;
   status: string;
   remarks: string | null;
@@ -106,7 +107,7 @@ export function ReceiptsClient({
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
           <h1 className="text-3xl font-black tracking-tight text-foreground">
-            Fee Collection
+            Income / Receipts
           </h1>
           <p className="text-muted-foreground font-medium flex items-center gap-2 mt-1">
             <Receipt className="h-4 w-4 text-primary" />
@@ -203,6 +204,7 @@ export function ReceiptsClient({
                 <th className="px-8 py-5">Date</th>
                 <th className="px-8 py-5">Student / Class</th>
                 <th className="px-8 py-5">Receipt Ref</th>
+                <th className="px-8 py-5">Purpose</th>
                 <th className="px-8 py-5">Mode</th>
                 <th className="px-8 py-5 text-right">Amount</th>
                 <th className="px-8 py-5 text-right">Verification</th>
@@ -248,6 +250,11 @@ export function ReceiptsClient({
                     <td className="px-8 py-5">
                       <span className="text-xs font-mono font-bold text-foreground/60 bg-muted/50 px-2 py-1 rounded-lg">
                         #{r.receiptNumber}
+                      </span>
+                    </td>
+                    <td className="px-8 py-5">
+                      <span className="text-xs font-bold text-primary bg-primary/10 px-2.5 py-1 rounded-lg">
+                        {r.category}
                       </span>
                     </td>
                     <td className="px-8 py-5">

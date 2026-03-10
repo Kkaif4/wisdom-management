@@ -118,7 +118,7 @@ export function DashboardClient({ stats, transactions }: DashboardClientProps) {
             <GraduationCap className="h-12 w-12 text-primary" />
           </div>
           <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary/70 mb-2">
-            Fee Collections
+            Income / Receipts
           </p>
           <div className="flex items-baseline gap-2">
             <p className="text-3xl font-black text-foreground tracking-tight">

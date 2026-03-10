@@ -55,8 +55,9 @@ export default async function ReceiptsPage({
       date: r.date.toISOString(),
       status: r.status,
       remarks: r.remarks,
-      studentName: r.student.name,
-      studentClass: r.student.class,
+      category: r.category,
+      studentName: r.student?.name || "N/A",
+      studentClass: r.student?.class || "N/A",
       recordedBy: r.createdByUser.name,
     }));
 

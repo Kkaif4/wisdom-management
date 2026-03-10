@@ -91,7 +91,7 @@ export async function GET(req: NextRequest) {
         date: r.date,
         type: "FEE_COLLECTION",
         reference: r.receiptNumber,
-        studentName: r.student.name,
+        studentName: r.student?.name || "N/A",
         description: r.remarks || "Fee Collection",
         debit: null,
         credit: r.amount.toNumber(),

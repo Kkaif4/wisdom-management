@@ -16,11 +16,21 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { studentId, amount, paymentMode, date, remarks } = await req.json();
+    const { studentId, amount, paymentMode, date, remarks, category } =
+      await req.json();
 
-    if (!studentId || !amount || !paymentMode || !date) {
+    const actualCategory = category || "Tuition Fee";
+    const needsStudent = ["Tuition Fee", "Student Dues"].includes(
+      actualCategory,
+    );
+
+    if (!amount || !paymentMode || !date || (needsStudent && !studentId)) {
       return NextResponse.json(
-        { error: "Missing required fields" },
+        {
+          error: needsStudent
+            ? "Missing required fields (including Student)"
+            : "Missing required fields",
+        },
         { status: 400 },
       );
     }
@@ -90,6 +100,7 @@ export async function POST(req: Request) {
             receiptNumber,
             amount: decimalAmount,
             paymentMode: paymentMode as PaymentMode,
+            category: actualCategory,
             date: new Date(date),
             remarks,
             studentId,
@@ -99,12 +110,14 @@ export async function POST(req: Request) {
         });
 
         // 4. Update Student totalPaid
-        await tx.student.update({
-          where: { id: studentId },
-          data: {
-            totalPaid: { increment: decimalAmount },
-          },
-        });
+        if (studentId) {
+          await tx.student.update({
+            where: { id: studentId },
+            data: {
+              totalPaid: { increment: decimalAmount },
+            },
+          });
+        }
 
         // 5. Create Transaction History
         const balanceAfter =
@@ -115,12 +128,16 @@ export async function POST(req: Request) {
         await tx.transactionHistory.create({
           data: {
             date: new Date(date),
-            type: TransactionType.FEE_COLLECTION,
+            type:
+              actualCategory === "Tuition Fee"
+                ? TransactionType.FEE_COLLECTION
+                : TransactionType.OTHER_INCOME,
             receiptId: receipt.id,
-            description: `Fee collection for student (${receiptNumber})`,
+            description: `${actualCategory} receipt: ${receiptNumber}`,
             impactedAccount: paymentMode as AccountType,
             debitAmount: decimalAmount,
             balanceAfter: balanceAfter,
+            studentId: studentId,
             createdBy: userId,
             organizationId: orgId,
           },

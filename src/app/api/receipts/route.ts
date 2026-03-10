@@ -10,11 +10,19 @@ export const POST = auth(async (req) => {
 
   try {
     const body = await req.json();
-    const { studentId, amount, paymentMode, receiptNumber, date, remarks } =
-      body;
+    const {
+      studentId,
+      amount,
+      paymentMode,
+      category,
+      receiptNumber,
+      date,
+      remarks,
+    } = body;
 
     const receipt = await ReceiptService.collectFee({
-      studentId,
+      studentId: studentId || undefined,
+      category: category || "Tuition Fee",
       organizationId: req.auth.user.organizationId,
       userId: req.auth.user.id,
       amount: new Prisma.Decimal(amount),

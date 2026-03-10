@@ -36,6 +36,7 @@ export function ReceiptEntryModal({
     studentId: "",
     amount: "",
     paymentMode: "CASH",
+    category: "Tuition Fee",
     date: new Date().toISOString().split("T")[0],
     remarks: "",
   });
@@ -65,9 +66,13 @@ export function ReceiptEntryModal({
       return;
     }
 
-    if (pendingAmount !== null && Number(formData.amount) > pendingAmount) {
+    if (
+      pendingAmount !== null &&
+      ["Tuition Fee", "Student Dues"].includes(formData.category) &&
+      Number(formData.amount) > pendingAmount
+    ) {
       showToast(
-        `Amount cannot exceed pending fees (₹${pendingAmount})`,
+        `Amount cannot exceed pending fees (₹${pendingAmount.toLocaleString()})`,
         "error",
       );
       return;
@@ -106,10 +111,10 @@ export function ReceiptEntryModal({
               </div>
               <div>
                 <h2 className="text-xl font-bold tracking-tight">
-                  New Fee Collection
+                  New Receipt / Income
                 </h2>
                 <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
-                  Record student payment
+                  Record payment or fees
                 </p>
               </div>
             </div>
@@ -123,7 +128,28 @@ export function ReceiptEntryModal({
           </div>
 
           <div className="p-8 space-y-6">
-            {/* Student Search */}
+            {/* Income Purpose */}
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
+                Income Purpose
+              </label>
+              <select
+                value={formData.category}
+                onChange={(e) =>
+                  setFormData({ ...formData, category: e.target.value })
+                }
+                className="w-full bg-muted/20 border border-border/50 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all font-bold appearance-none"
+              >
+                <option value="Tuition Fee">Tuition Fee</option>
+                <option value="Form Fee">Form Fee</option>
+                <option value="Book Sale">Book Sale</option>
+                <option value="Bonafide Fee">Bonafide Fee</option>
+                <option value="Student Dues">Student Dues</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+
+            {/* Student Search (Mandatory) */}
             <div className="space-y-1.5">
               <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
                 Select Student
@@ -144,15 +170,16 @@ export function ReceiptEntryModal({
                   <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
                     Payment Amount
                   </label>
-                  {pendingAmount !== null && (
-                    <span className="text-[10px] font-bold text-amber-600 uppercase tracking-wide">
-                      Pending: ₹
-                      {pendingAmount.toLocaleString("en-IN", {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })}
-                    </span>
-                  )}
+                  {pendingAmount !== null &&
+                    formData.category === "Tuition Fee" && (
+                      <span className="text-[10px] font-bold text-amber-600 uppercase tracking-wide">
+                        Pending: ₹
+                        {pendingAmount.toLocaleString("en-IN", {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}
+                      </span>
+                    )}
                 </div>
                 <div className="relative">
                   <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground font-bold text-sm">
@@ -163,7 +190,14 @@ export function ReceiptEntryModal({
                     type="number"
                     step="0.01"
                     min="1"
-                    max={pendingAmount !== null ? pendingAmount : undefined}
+                    max={
+                      pendingAmount !== null &&
+                      ["Tuition Fee", "Student Dues"].includes(
+                        formData.category,
+                      )
+                        ? pendingAmount
+                        : undefined
+                    }
                     placeholder="0.00"
                     className="w-full bg-muted/20 border border-border/50 rounded-2xl pl-8 pr-5 py-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all font-bold"
                     value={formData.amount}
@@ -272,7 +306,7 @@ export function ReceiptEntryModal({
                   Processing...
                 </>
               ) : (
-                "Complete Collection"
+                "Complete Receipt"
               )}
             </button>
           </div>

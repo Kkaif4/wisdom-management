@@ -9,7 +9,8 @@ import {
 
 export class ReceiptService {
   static async collectFee(params: {
-    studentId: string;
+    studentId?: string;
+    category: string;
     organizationId: string;
     userId: string;
     amount: Prisma.Decimal;
@@ -20,6 +21,7 @@ export class ReceiptService {
   }) {
     const {
       studentId,
+      category,
       organizationId,
       userId,
       amount,
@@ -37,6 +39,7 @@ export class ReceiptService {
             receiptNumber,
             amount,
             paymentMode,
+            category,
             date,
             remarks,
             studentId,
@@ -46,14 +49,16 @@ export class ReceiptService {
         });
 
         // 2. Update Student Paid Amount
-        await tx.student.update({
-          where: { id: studentId },
-          data: {
-            totalPaid: {
-              increment: amount,
+        if (studentId) {
+          await tx.student.update({
+            where: { id: studentId },
+            data: {
+              totalPaid: {
+                increment: amount,
+              },
             },
-          },
-        });
+          });
+        }
 
         // 3. Update Organization Balance
         const accountType = paymentMode === "CASH" ? "CASH" : "BANK";
@@ -66,15 +71,17 @@ export class ReceiptService {
         });
 
         // 4. Log Transaction History
+        const transactionType =
+          category === "Tuition Fee" ? "FEE_COLLECTION" : "OTHER_INCOME";
         await AccountService.logTransaction({
           tx,
           organizationId,
           userId,
-          type: "FEE_COLLECTION",
+          type: transactionType as TransactionType,
           impactedAccount: accountType,
           debitAmount: amount,
           balanceAfter,
-          description: `Fee collection from student. Receipt: ${receiptNumber}`,
+          description: `${category} receipt: ${receiptNumber}`,
           receiptId: receipt.id,
         });
 
@@ -122,14 +129,16 @@ export class ReceiptService {
         });
 
         // 2. Reverse Student Paid Amount
-        await tx.student.update({
-          where: { id: receipt.studentId },
-          data: {
-            totalPaid: {
-              decrement: receipt.amount,
+        if (receipt.studentId) {
+          await tx.student.update({
+            where: { id: receipt.studentId },
+            data: {
+              totalPaid: {
+                decrement: receipt.amount,
+              },
             },
-          },
-        });
+          });
+        }
 
         // 3. Reverse Organization Balance
         const accountType = receipt.paymentMode === "CASH" ? "CASH" : "BANK";
@@ -142,15 +151,19 @@ export class ReceiptService {
         });
 
         // 4. Log Reversal in Transaction History
+        const transactionType =
+          receipt.category === "Tuition Fee"
+            ? "FEE_COLLECTION"
+            : "OTHER_INCOME";
         await AccountService.logTransaction({
           tx,
           organizationId: receipt.organizationId,
           userId,
-          type: "FEE_COLLECTION",
+          type: transactionType as TransactionType,
           impactedAccount: accountType,
           creditAmount: receipt.amount,
           balanceAfter,
-          description: `REVERSAL: Receipt ${receipt.receiptNumber} cancelled. Reason: ${reason}`,
+          description: `REVERSAL: Receipt ${receipt.receiptNumber} (${receipt.category}) cancelled. Reason: ${reason}`,
           receiptId: receipt.id,
         });
 

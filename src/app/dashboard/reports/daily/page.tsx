@@ -37,8 +37,8 @@ export default async function DailyReportPage({
   const serialized = receipts.map((r) => ({
     id: r.id,
     receiptNumber: r.receiptNumber,
-    studentName: r.student.name,
-    studentClass: r.student.class,
+    studentName: r.student?.name || "N/A",
+    studentClass: r.student?.class || "N/A",
     amount: Number(r.amount),
     paymentMode: r.paymentMode,
     status: r.status,

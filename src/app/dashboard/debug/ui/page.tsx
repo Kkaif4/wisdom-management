@@ -108,7 +108,7 @@ export default function UIUnitTest() {
                 <TableCell>TX-90210</TableCell>
                 <TableCell>
                   <span className="text-[10px] font-black px-2 py-1 rounded bg-muted/50 border border-border/50 uppercase tracking-widest">
-                    Fee Collection
+                    Income / Receipts
                   </span>
                 </TableCell>
                 <TableCell className="font-mono text-emerald-600">

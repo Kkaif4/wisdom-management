@@ -18,6 +18,7 @@ interface FeeReceipt {
   studentName: string;
   class: string;
   paymentMode: string;
+  category: string;
   amount: number;
   remarks: string | null;
 }
@@ -38,13 +39,28 @@ export function FeesClient() {
     start: "",
     end: "",
     paymentMode: "ALL",
+    category: "ALL",
   });
 
-  const fetchReport = async (start: string, end: string, mode: string) => {
+  const INCOME_CATEGORIES = [
+    "Tuition Fee",
+    "Form Fee",
+    "Book Sale",
+    "Bonafide Fee",
+    "Student Dues",
+    "Other",
+  ];
+
+  const fetchReport = async (
+    start: string,
+    end: string,
+    mode: string,
+    cat: string,
+  ) => {
     setLoading(true);
     try {
       const res = await fetch(
-        `/api/reports/fees?startDate=${start}&endDate=${end}&paymentMode=${mode}`,
+        `/api/reports/fees?startDate=${start}&endDate=${end}&paymentMode=${mode}&category=${cat}`,
       );
       const json = await res.json();
       if (json.success) {
@@ -63,12 +79,17 @@ export function FeesClient() {
     range: PredefinedRange,
   ) => {
     setFilters((prev) => ({ ...prev, start, end }));
-    fetchReport(start, end, filters.paymentMode);
+    fetchReport(start, end, filters.paymentMode, filters.category);
   };
 
   const handlePaymentModeChange = (mode: string) => {
     setFilters((prev) => ({ ...prev, paymentMode: mode }));
-    fetchReport(filters.start, filters.end, mode);
+    fetchReport(filters.start, filters.end, mode, filters.category);
+  };
+
+  const handleCategoryChange = (cat: string) => {
+    setFilters((prev) => ({ ...prev, category: cat }));
+    fetchReport(filters.start, filters.end, filters.paymentMode, cat);
   };
 
   const handleExport = () => {
@@ -78,6 +99,7 @@ export function FeesClient() {
       "Receipt Number": r.receiptNumber,
       Student: r.studentName,
       Class: r.class,
+      Purpose: r.category,
       Mode: r.paymentMode,
       Amount: r.amount,
       Remarks: r.remarks || "",
@@ -119,6 +141,15 @@ export function FeesClient() {
     { accessorKey: "studentName", header: "Student Name" },
     { accessorKey: "class", header: "Class" },
     {
+      accessorKey: "category",
+      header: "Purpose",
+      cell: ({ row }) => (
+        <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+          {row.getValue("category")}
+        </span>
+      ),
+    },
+    {
       accessorKey: "paymentMode",
       header: "Mode",
       cell: ({ row }) => (
@@ -147,7 +178,7 @@ export function FeesClient() {
 
   return (
     <ReportLayout
-      title="Fee Collection Report"
+      title="Income / Receipts Report"
       description="View student payments collected during a selected period."
       onExportExcel={handleExport}
       onPrint={() => window.print()}
@@ -158,6 +189,9 @@ export function FeesClient() {
         <ReportFilters
           onRangeChange={handleRangeChange}
           onPaymentModeChange={handlePaymentModeChange}
+          onCategoryChange={handleCategoryChange}
+          showCategory={true}
+          categories={INCOME_CATEGORIES}
           isLoading={loading}
         />
 

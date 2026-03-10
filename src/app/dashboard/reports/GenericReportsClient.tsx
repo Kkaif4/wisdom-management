@@ -195,7 +195,7 @@ export function GenericReportsClient() {
                 <div className="flex flex-col gap-3">
                   {[
                     {
-                      label: "Fee Collections",
+                      label: "Income / Receipts",
                       href: "/dashboard/reports/fees",
                       desc: "Detailed payment history per student.",
                     },

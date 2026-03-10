@@ -97,7 +97,7 @@ export default async function CancellationsReportPage() {
                   </td>
                   <td className="px-6 py-4">
                     <p className="text-sm font-medium text-zinc-900">
-                      {r.student.name}
+                      {r.student?.name || "N/A"}
                     </p>
                   </td>
                   <td className="px-6 py-4 text-sm font-mono text-zinc-500 line-through">
