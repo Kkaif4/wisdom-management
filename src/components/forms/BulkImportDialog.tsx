@@ -249,16 +249,16 @@ export function BulkImportDialog({
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[50] animate-in fade-in duration-200">
       <div className="bg-card border shadow-2xl rounded-3xl w-full max-w-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
         {/* Header */}
-        <div className="p-6 border-b bg-muted/30 flex items-center justify-between shrink-0">
+        <div className="p-4 sm:p-6 border-b bg-muted/30 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
-              <FileSpreadsheet className="h-5 w-5" />
+            <div className="h-9 w-9 sm:h-10 sm:w-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+              <FileSpreadsheet className="h-4 w-4 sm:h-5 sm:w-5" />
             </div>
             <div>
-              <h2 className="text-xl font-bold tracking-tight">
+              <h2 className="text-lg sm:text-xl font-bold tracking-tight">
                 Bulk Student Import
               </h2>
-              <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
+              <p className="text-[10px] sm:text-xs text-muted-foreground font-medium uppercase tracking-wider">
                 {stage === "upload" && "Upload CSV or Excel file"}
                 {stage === "loading" && `Processing · ${fileName}`}
                 {stage === "result" && "Import Complete"}
@@ -277,7 +277,7 @@ export function BulkImportDialog({
 
         {/* Stage: Upload */}
         {stage === "upload" && (
-          <div className="p-8 space-y-6 grow flex flex-col">
+          <div className="p-4 sm:p-6 md:p-8 space-y-6 grow flex flex-col">
             <div
               onDrop={handleDrop}
               onDragOver={(e) => {
@@ -286,19 +286,19 @@ export function BulkImportDialog({
               }}
               onDragLeave={() => setDragOver(false)}
               onClick={() => inputRef.current?.click()}
-              className={`flex-1 relative flex flex-col items-center justify-center gap-4 border-2 border-dashed rounded-3xl p-16 cursor-pointer transition-all ${
+              className={`flex-1 relative flex flex-col items-center justify-center gap-4 border-2 border-dashed rounded-3xl p-8 sm:p-12 md:p-16 cursor-pointer transition-all min-h-[200px] sm:min-h-[250px] ${
                 dragOver
                   ? "border-primary bg-primary/5 scale-[1.01]"
                   : "border-border/50 bg-muted/10 hover:border-primary/50 hover:bg-muted/30"
               }`}
             >
               <div
-                className={`h-16 w-16 rounded-2xl flex items-center justify-center transition-all ${dragOver ? "bg-primary/20 text-primary" : "bg-muted/50 text-muted-foreground"}`}
+                className={`h-12 w-12 sm:h-14 sm:w-14 md:h-16 md:w-16 rounded-2xl flex items-center justify-center transition-all ${dragOver ? "bg-primary/20 text-primary" : "bg-muted/50 text-muted-foreground"}`}
               >
-                <Upload className="h-8 w-8" />
+                <Upload className="h-6 w-6 sm:h-7 sm:w-7 md:h-8 md:w-8" />
               </div>
-              <div className="text-center">
-                <p className="text-lg font-bold text-foreground">
+              <div className="text-center px-4">
+                <p className="text-base sm:text-lg font-bold text-foreground">
                   Drag and drop your file here
                 </p>
                 <p className="text-sm text-muted-foreground mt-1">
@@ -307,7 +307,7 @@ export function BulkImportDialog({
                     click to select
                   </span>
                 </p>
-                <p className="text-xs text-muted-foreground/60 mt-4 font-medium uppercase tracking-widest">
+                <p className="text-[10px] sm:text-xs text-muted-foreground/60 mt-4 font-medium uppercase tracking-widest">
                   Supported: .CSV, .XLSX · up to 5 MB
                 </p>
               </div>
@@ -320,12 +320,12 @@ export function BulkImportDialog({
               />
             </div>
 
-            <div className="flex items-center justify-between px-2 pt-2">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 px-2 pt-2">
               <div className="flex flex-col gap-1">
-                <p className="text-xs font-black uppercase tracking-widest text-muted-foreground">
+                <p className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-muted-foreground">
                   Required Headers
                 </p>
-                <p className="text-xs font-medium text-muted-foreground">
+                <p className="text-[10px] sm:text-xs font-medium text-muted-foreground">
                   Student name, Class Name, Total Fees Amount, Paid Fees Amount
                 </p>
               </div>
@@ -334,7 +334,7 @@ export function BulkImportDialog({
                   e.stopPropagation();
                   downloadTemplate();
                 }}
-                className="flex items-center gap-2 text-sm font-bold text-primary hover:underline hover:text-primary/80 transition-colors"
+                className="flex items-center gap-2 text-sm font-bold text-primary hover:underline hover:text-primary/80 transition-colors shrink-0"
               >
                 <Download className="h-4 w-4" />
                 Template
@@ -345,13 +345,13 @@ export function BulkImportDialog({
 
         {/* Stage: Loading */}
         {stage === "loading" && (
-          <div className="p-16 grow flex flex-col items-center justify-center gap-6 text-center animate-fade-in">
+          <div className="p-8 sm:p-12 md:p-16 grow flex flex-col items-center justify-center gap-6 text-center animate-fade-in">
             <div className="relative">
               <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full" />
-              <Loader2 className="h-16 w-16 text-primary animate-spin relative" />
+              <Loader2 className="h-12 w-12 sm:h-14 sm:w-14 md:h-16 md:w-16 text-primary animate-spin relative" />
             </div>
             <div>
-              <p className="text-xl font-bold text-foreground mb-2">
+              <p className="text-lg sm:text-xl font-bold text-foreground mb-2">
                 Analyzing File...
               </p>
               <p className="text-sm text-muted-foreground max-w-[250px] mx-auto">
@@ -365,22 +365,22 @@ export function BulkImportDialog({
         {/* Stage: Result */}
         {stage === "result" && result && (
           <div className="flex flex-col h-full max-h-[70vh]">
-            <div className="p-8 pb-6 flex flex-col items-center justify-center text-center shrink-0">
+            <div className="p-6 sm:p-8 pb-4 sm:pb-6 flex flex-col items-center justify-center text-center shrink-0">
               {result.created > 0 ? (
-                <div className="h-20 w-20 rounded-3xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center mb-6">
-                  <CheckCircle2 className="h-10 w-10" />
+                <div className="h-16 w-16 sm:h-20 sm:w-20 rounded-2xl sm:rounded-3xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center mb-4 sm:mb-6">
+                  <CheckCircle2 className="h-8 w-8 sm:h-10 sm:w-10" />
                 </div>
               ) : (
-                <div className="h-20 w-20 rounded-3xl bg-amber-500/10 text-amber-500 flex items-center justify-center mb-6">
-                  <AlertCircle className="h-10 w-10" />
+                <div className="h-16 w-16 sm:h-20 sm:w-20 rounded-2xl sm:rounded-3xl bg-amber-500/10 text-amber-500 flex items-center justify-center mb-4 sm:mb-6">
+                  <AlertCircle className="h-8 w-8 sm:h-10 sm:w-10" />
                 </div>
               )}
-              <h3 className="text-2xl font-black text-foreground">
+              <h3 className="text-xl sm:text-2xl font-black text-foreground">
                 {result.created} Student{result.created !== 1 ? "s" : ""}{" "}
                 Imported
               </h3>
               {result.skipped.length > 0 && (
-                <p className="text-sm font-medium text-rose-500 mt-2 bg-rose-500/10 px-3 py-1 rounded-full">
+                <p className="text-xs sm:text-sm font-medium text-rose-500 mt-2 bg-rose-500/10 px-3 py-1 rounded-full">
                   {result.skipped.length} record
                   {result.skipped.length !== 1 ? "s" : ""} skipped due to errors
                 </p>
@@ -389,15 +389,15 @@ export function BulkImportDialog({
 
             {/* Skipped Table (Scrollable inside flex) */}
             {result.skipped.length > 0 && (
-              <div className="flex-1 overflow-y-auto px-8 pb-6 min-h-[150px]">
+              <div className="flex-1 overflow-y-auto px-4 sm:px-6 md:px-8 pb-4 sm:pb-6 min-h-[150px]">
                 <div className="bg-muted/30 rounded-2xl border border-border/50 overflow-hidden">
                   <table className="w-full text-left text-sm">
                     <thead className="bg-muted/50 border-b border-border/50">
                       <tr>
-                        <th className="px-4 py-3 text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                        <th className="px-3 sm:px-4 py-3 text-xs font-bold text-muted-foreground uppercase tracking-wider">
                           Record / Name
                         </th>
-                        <th className="px-4 py-3 text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                        <th className="px-3 sm:px-4 py-3 text-xs font-bold text-muted-foreground uppercase tracking-wider">
                           Reason Skipped
                         </th>
                       </tr>
@@ -408,10 +408,10 @@ export function BulkImportDialog({
                           key={i}
                           className="hover:bg-muted/20 transition-colors"
                         >
-                          <td className="px-4 py-3 font-medium text-foreground">
+                          <td className="px-3 sm:px-4 py-3 font-medium text-foreground">
                             {s.name}
                           </td>
-                          <td className="px-4 py-3 text-rose-500">
+                          <td className="px-3 sm:px-4 py-3 text-rose-500">
                             {s.reason}
                           </td>
                         </tr>
@@ -423,11 +423,11 @@ export function BulkImportDialog({
             )}
 
             {/* Actions */}
-            <div className="p-6 border-t bg-muted/30 flex gap-3 shrink-0">
+            <div className="p-4 sm:p-6 border-t bg-muted/30 flex flex-col sm:flex-row gap-3 shrink-0">
               {result.skipped.length > 0 && (
                 <button
                   onClick={() => setStage("upload")}
-                  className="flex-1 py-3.5 bg-card text-foreground font-bold rounded-2xl border border-border/50 shadow-sm transition-all hover:bg-muted active:scale-95"
+                  className="w-full sm:flex-1 py-3.5 bg-card text-foreground font-bold rounded-2xl border border-border/50 shadow-sm transition-all hover:bg-muted active:scale-95"
                 >
                   Upload Another
                 </button>
@@ -437,7 +437,7 @@ export function BulkImportDialog({
                   onSuccess();
                   onClose();
                 }}
-                className="flex-1 py-3.5 bg-primary text-primary-foreground font-bold rounded-2xl shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] active:scale-95"
+                className="w-full sm:flex-1 py-3.5 bg-primary text-primary-foreground font-bold rounded-2xl shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] active:scale-95"
               >
                 {result.created > 0 ? "Finish & View Students" : "Close"}
               </button>
