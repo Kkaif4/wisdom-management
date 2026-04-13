@@ -1,8 +1,14 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { X, UserPlus, Loader2 } from "lucide-react";
 import { showToast } from "@/components/shared/Toast";
+
+interface ClassItem {
+  id: string;
+  name: string;
+  divisions: { id: string; name: string }[];
+}
 
 interface AddStudentDialogProps {
   onSuccess?: (student: any) => void;
@@ -14,11 +20,26 @@ export function AddStudentDialog({
   onClose,
 }: AddStudentDialogProps) {
   const [loading, setLoading] = useState(false);
+  const [classes, setClasses] = useState<ClassItem[]>([]);
   const [formData, setFormData] = useState({
+    admissionNumber: "",
     name: "",
-    class: "",
+    classId: "",
+    divisionId: "",
     totalFeesAssigned: "",
+    fatherName: "",
+    contactNumber: "",
   });
+
+  useEffect(() => {
+    fetch("/api/classes")
+      .then((res) => res.json())
+      .then((data) => setClasses(data))
+      .catch(console.error);
+  }, []);
+
+  const selectedClass = classes.find((c) => c.id === formData.classId);
+  const divisions = selectedClass?.divisions || [];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,13 +49,23 @@ export function AddStudentDialog({
       const res = await fetch("/api/dashboard/students", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          admissionNumber: formData.admissionNumber,
+          name: formData.name,
+          classId: formData.classId,
+          divisionId: formData.divisionId,
+          totalFeesAssigned: formData.totalFeesAssigned
+            ? Number(formData.totalFeesAssigned)
+            : 0,
+          fatherName: formData.fatherName || undefined,
+          contactNumber: formData.contactNumber || undefined,
+        }),
       });
 
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to create student");
 
-      showToast("Student added successfully", "success");
+      showToast("Student registered & enrolled successfully", "success");
       onSuccess?.(data);
       onClose();
     } catch (error: any) {
@@ -58,7 +89,7 @@ export function AddStudentDialog({
                   Add New Student
                 </h2>
                 <p className="text-[10px] sm:text-xs text-muted-foreground font-medium uppercase tracking-wider">
-                  Onboarding Registration
+                  Register & Enroll
                 </p>
               </div>
             </div>
@@ -71,16 +102,33 @@ export function AddStudentDialog({
             </button>
           </div>
 
-          <div className="p-4 sm:p-6 md:p-8 space-y-5 overflow-y-auto flex-1 custom-scrollbar">
+          <div className="p-4 sm:p-6 md:p-8 space-y-4 overflow-y-auto flex-1 custom-scrollbar">
+            {/* Admission Number */}
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
+                Admission No.
+              </label>
+              <input
+                required
+                autoFocus
+                placeholder="e.g. WS001"
+                className="w-full bg-muted/20 border border-border/50 rounded-2xl px-5 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all font-medium"
+                value={formData.admissionNumber}
+                onChange={(e) =>
+                  setFormData({ ...formData, admissionNumber: e.target.value })
+                }
+              />
+            </div>
+
+            {/* Name */}
             <div className="space-y-1.5">
               <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
                 Full Name
               </label>
               <input
                 required
-                autoFocus
-                placeholder="Ex. John Doe"
-                className="w-full bg-muted/20 border border-border/50 rounded-2xl px-5 py-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all font-medium"
+                placeholder="e.g. Rahul Sharma"
+                className="w-full bg-muted/20 border border-border/50 rounded-2xl px-5 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all font-medium"
                 value={formData.name}
                 onChange={(e) =>
                   setFormData({ ...formData, name: e.target.value })
@@ -88,43 +136,106 @@ export function AddStudentDialog({
               />
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* Class & Division */}
+            <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
-                  Class / Grade
+                  Class
+                </label>
+                <select
+                  required
+                  className="w-full bg-muted/20 border border-border/50 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all font-medium"
+                  value={formData.classId}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      classId: e.target.value,
+                      divisionId: "",
+                    })
+                  }
+                >
+                  <option value="">Select…</option>
+                  {classes.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
+                  Division
+                </label>
+                <select
+                  required
+                  className="w-full bg-muted/20 border border-border/50 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all font-medium"
+                  value={formData.divisionId}
+                  onChange={(e) =>
+                    setFormData({ ...formData, divisionId: e.target.value })
+                  }
+                  disabled={!formData.classId}
+                >
+                  <option value="">Select…</option>
+                  {divisions.map((d) => (
+                    <option key={d.id} value={d.id}>
+                      {d.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Fees */}
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
+                Annual Fees
+              </label>
+              <div className="relative">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground font-bold text-sm">
+                  ₹
+                </span>
+                <input
+                  type="number"
+                  placeholder="0"
+                  className="w-full bg-muted/20 border border-border/50 rounded-2xl pl-8 pr-5 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all font-medium"
+                  value={formData.totalFeesAssigned}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      totalFeesAssigned: e.target.value,
+                    })
+                  }
+                />
+              </div>
+            </div>
+
+            {/* Guardian */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
+                  Father&apos;s Name
                 </label>
                 <input
-                  required
-                  placeholder="Ex. 10th A"
-                  className="w-full bg-muted/20 border border-border/50 rounded-2xl px-5 py-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all font-medium"
-                  value={formData.class}
+                  placeholder="Optional"
+                  className="w-full bg-muted/20 border border-border/50 rounded-2xl px-5 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all font-medium"
+                  value={formData.fatherName}
                   onChange={(e) =>
-                    setFormData({ ...formData, class: e.target.value })
+                    setFormData({ ...formData, fatherName: e.target.value })
                   }
                 />
               </div>
               <div className="space-y-1.5">
                 <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
-                  Annual Fees
+                  Contact
                 </label>
-                <div className="relative">
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground font-bold text-sm">
-                    ₹
-                  </span>
-                  <input
-                    required
-                    type="number"
-                    placeholder="0"
-                    className="w-full bg-muted/20 border border-border/50 rounded-2xl pl-8 pr-5 py-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all font-medium"
-                    value={formData.totalFeesAssigned}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        totalFeesAssigned: e.target.value,
-                      })
-                    }
-                  />
-                </div>
+                <input
+                  placeholder="Optional"
+                  className="w-full bg-muted/20 border border-border/50 rounded-2xl px-5 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all font-medium"
+                  value={formData.contactNumber}
+                  onChange={(e) =>
+                    setFormData({ ...formData, contactNumber: e.target.value })
+                  }
+                />
               </div>
             </div>
           </div>
@@ -144,11 +255,10 @@ export function AddStudentDialog({
             >
               {loading ? (
                 <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Creating...
+                  <Loader2 className="h-4 w-4 animate-spin" /> Registering…
                 </>
               ) : (
-                "Register Student"
+                "Register & Enroll"
               )}
             </button>
           </div>

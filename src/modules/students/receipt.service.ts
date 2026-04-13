@@ -1,5 +1,6 @@
 import { prisma } from "../../lib/prisma";
 import { AccountService } from "../accounts/account.service";
+import { EnrollmentRepository } from "../enrollment/enrollment.repository";
 import {
   PaymentMode,
   ReceiptStatus,
@@ -7,8 +8,19 @@ import {
   Prisma,
 } from "@/prisma/generated";
 
+// ──────────────────────────────────────────────────────────────────────
+// Receipt Service — Enrollment-Aware
+//
+// All receipts are now linked to a StudentEnrollment.
+// Fee payments update enrollment.totalPaid, not student.totalPaid.
+// ──────────────────────────────────────────────────────────────────────
+
 export class ReceiptService {
+  /**
+   * Collects a fee payment. Updates the enrollment's totalPaid.
+   */
   static async collectFee(params: {
+    studentEnrollmentId: string;
     studentId?: string;
     category: string;
     organizationId: string;
@@ -20,6 +32,7 @@ export class ReceiptService {
     remarks?: string;
   }) {
     const {
+      studentEnrollmentId,
       studentId,
       category,
       organizationId,
@@ -33,7 +46,7 @@ export class ReceiptService {
 
     return await prisma.$transaction(
       async (tx) => {
-        // 1. Create Receipt
+        // 1. Create Receipt linked to enrollment
         const receipt = await tx.receipt.create({
           data: {
             receiptNumber,
@@ -42,23 +55,20 @@ export class ReceiptService {
             category,
             date,
             remarks,
+            studentEnrollmentId,
             studentId,
             organizationId,
             createdBy: userId,
           },
         });
 
-        // 2. Update Student Paid Amount
-        if (studentId) {
-          await tx.student.update({
-            where: { id: studentId },
-            data: {
-              totalPaid: {
-                increment: amount,
-              },
-            },
-          });
-        }
+        // 2. Update Enrollment totalPaid (NOT Student)
+        await tx.studentEnrollment.update({
+          where: { id: studentEnrollmentId },
+          data: {
+            totalPaid: { increment: amount },
+          },
+        });
 
         // 3. Update Organization Balance
         const accountType = paymentMode === "CASH" ? "CASH" : "BANK";
@@ -70,7 +80,7 @@ export class ReceiptService {
           mutationType: "INCREASE",
         });
 
-        // 4. Log Transaction History
+        // 4. Log Transaction History with enrollment context
         const transactionType =
           category === "Tuition Fee" ? "FEE_COLLECTION" : "OTHER_INCOME";
         await AccountService.logTransaction({
@@ -83,6 +93,7 @@ export class ReceiptService {
           balanceAfter,
           description: `${category} receipt: ${receiptNumber}`,
           receiptId: receipt.id,
+          studentEnrollmentId,
         });
 
         return receipt;
@@ -95,7 +106,7 @@ export class ReceiptService {
   }
 
   /**
-   * Cancels a receipt and reverses all impacts.
+   * Cancels a receipt and reverses all impacts on enrollment and balance.
    */
   static async cancelReceipt(params: {
     receiptId: string;
@@ -108,7 +119,7 @@ export class ReceiptService {
       async (tx) => {
         const receipt = await tx.receipt.findUniqueOrThrow({
           where: { id: receiptId },
-          include: { student: true },
+          include: { student: true, studentEnrollment: true },
         });
 
         if (receipt.status === ReceiptStatus.CANCELLED) {
@@ -128,17 +139,13 @@ export class ReceiptService {
           },
         });
 
-        // 2. Reverse Student Paid Amount
-        if (receipt.studentId) {
-          await tx.student.update({
-            where: { id: receipt.studentId },
-            data: {
-              totalPaid: {
-                decrement: receipt.amount,
-              },
-            },
-          });
-        }
+        // 2. Reverse Enrollment totalPaid (NOT Student)
+        await tx.studentEnrollment.update({
+          where: { id: receipt.studentEnrollmentId },
+          data: {
+            totalPaid: { decrement: receipt.amount },
+          },
+        });
 
         // 3. Reverse Organization Balance
         const accountType = receipt.paymentMode === "CASH" ? "CASH" : "BANK";
@@ -165,6 +172,7 @@ export class ReceiptService {
           balanceAfter,
           description: `REVERSAL: Receipt ${receipt.receiptNumber} (${receipt.category}) cancelled. Reason: ${reason}`,
           receiptId: receipt.id,
+          studentEnrollmentId: receipt.studentEnrollmentId,
         });
 
         return updatedReceipt;
@@ -176,11 +184,21 @@ export class ReceiptService {
     );
   }
 
+  /**
+   * Lists receipts with enrollment and student context.
+   */
   static async listReceipts(organizationId: string) {
     return await prisma.receipt.findMany({
       where: { organizationId },
       include: {
-        student: { select: { name: true, class: true } },
+        student: { select: { name: true, admissionNumber: true } },
+        studentEnrollment: {
+          include: {
+            class: { select: { name: true } },
+            division: { select: { name: true } },
+            academicSession: { select: { name: true } },
+          },
+        },
         createdByUser: { select: { name: true } },
       },
       orderBy: { date: "desc" },

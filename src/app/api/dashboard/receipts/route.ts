@@ -41,7 +41,26 @@ export async function POST(req: Request) {
     // Execute in transaction to ensure atomicity
     const result = await prisma.$transaction(
       async (tx) => {
-        // 1. Atomically increment Organization counter and update balances
+        // 1. Fetch active enrollment if studentId is provided
+        let enrollmentId = null;
+        if (studentId && needsStudent) {
+          const activeEnrollment = await tx.studentEnrollment.findFirst({
+            where: {
+              studentId,
+              organizationId: orgId,
+              status: "ACTIVE",
+            },
+          });
+
+          if (!activeEnrollment) {
+            throw new Error(
+              "No active enrollment found for this student in the current session",
+            );
+          }
+          enrollmentId = activeEnrollment.id;
+        }
+
+        // 2. Atomically increment Organization counter and update balances
         const decimalAmount = parseDecimal(amount);
         const balanceField =
           paymentMode === "CASH" ? "currentCashBalance" : "currentBankBalance";
@@ -55,11 +74,10 @@ export async function POST(req: Request) {
           },
         });
 
-        // 2. Generate Receipt Number and check for collisions (Self-healing logic for migrations)
+        // 3. Generate Receipt Number and check for collisions
         let receiptCounter = org.receiptCounter;
         let receiptNumber = `REC-${new Date().getFullYear()}-${receiptCounter.toString().padStart(4, "0")}`;
 
-        // Verify if this receipt number already exists
         const existing = await tx.receipt.findUnique({
           where: {
             receiptNumber_organizationId: {
@@ -70,7 +88,6 @@ export async function POST(req: Request) {
         });
 
         if (existing) {
-          // Counter is out of sync. Find the max and jump.
           const lastReceipt = await tx.receipt.findFirst({
             where: {
               organizationId: orgId,
@@ -84,7 +101,6 @@ export async function POST(req: Request) {
             const maxIdx = parseInt(parts[parts.length - 1]);
             const nextIdx = maxIdx + 1;
 
-            // Sync the organization counter to the next valid index
             org = await tx.organization.update({
               where: { id: orgId },
               data: { receiptCounter: nextIdx },
@@ -94,7 +110,7 @@ export async function POST(req: Request) {
           }
         }
 
-        // 3. Create Receipt
+        // 4. Create Receipt
         const receipt = await tx.receipt.create({
           data: {
             receiptNumber,
@@ -104,22 +120,23 @@ export async function POST(req: Request) {
             date: new Date(date),
             remarks,
             studentId,
+            studentEnrollmentId: enrollmentId as string, // Required by schema
             organizationId: orgId,
             createdBy: userId,
           },
         });
 
-        // 4. Update Student totalPaid
-        if (studentId) {
-          await tx.student.update({
-            where: { id: studentId },
+        // 5. Update Enrollment totalPaid
+        if (enrollmentId) {
+          await tx.studentEnrollment.update({
+            where: { id: enrollmentId },
             data: {
               totalPaid: { increment: decimalAmount },
             },
           });
         }
 
-        // 5. Create Transaction History
+        // 6. Create Transaction History
         const balanceAfter =
           paymentMode === "CASH"
             ? org.currentCashBalance
@@ -133,6 +150,7 @@ export async function POST(req: Request) {
                 ? TransactionType.FEE_COLLECTION
                 : TransactionType.OTHER_INCOME,
             receiptId: receipt.id,
+            studentEnrollmentId: enrollmentId,
             description: `${actualCategory} receipt: ${receiptNumber}`,
             impactedAccount: paymentMode as AccountType,
             debitAmount: decimalAmount,

@@ -18,34 +18,92 @@ export default async function StudentsPage({
     Array.isArray(val) ? val[0] : val;
   const pageParam = getSingle(searchParams.p);
   const searchParam = getSingle(searchParams.q);
+  const sessionId = getSingle(searchParams.sessionId);
+  const classId = getSingle(searchParams.classId);
+  const divisionId = getSingle(searchParams.divisionId);
+  const status = (getSingle(searchParams.status) as any) || "ACTIVE";
 
   const page = parseInt(pageParam || "1");
   const limit = 15;
   const skip = (page - 1) * limit;
 
-  const where: any = { organizationId: orgId };
+  // Basic search and organization filter
+  const where: any = {
+    organizationId: orgId,
+    status: status, // Defaults to ACTIVE
+  };
+
   if (searchParam) {
-    where.name = { contains: searchParam, mode: "insensitive" };
+    where.OR = [
+      { name: { contains: searchParam, mode: "insensitive" } },
+      { admissionNumber: { contains: searchParam, mode: "insensitive" } },
+    ];
+  }
+
+  // Enrollment-level filters
+  if (sessionId || classId || divisionId) {
+    where.enrollments = {
+      some: {
+        ...(sessionId ? { academicSessionId: sessionId } : {}),
+        ...(classId ? { classId } : {}),
+        ...(divisionId ? { divisionId } : {}),
+        status: status,
+      },
+    };
   }
 
   try {
-    const [students, total] = await Promise.all([
+    const [students, total, classes, sessions] = await Promise.all([
       prisma.student.findMany({
         where,
+        include: {
+          enrollments: {
+            where: {
+              status: status,
+              ...(sessionId ? { academicSessionId: sessionId } : {}),
+            },
+            include: {
+              class: true,
+              division: true,
+              academicSession: true,
+            },
+            take: 1,
+            orderBy: { updatedAt: "desc" },
+          },
+        },
         orderBy: { name: "asc" },
         skip,
         take: limit,
       }),
       prisma.student.count({ where }),
+      prisma.class.findMany({
+        where: { organizationId: orgId },
+        include: { divisions: true },
+        orderBy: { name: "asc" },
+      }),
+      prisma.academicSession.findMany({
+        where: { organizationId: orgId },
+        orderBy: { startDate: "desc" },
+      }),
     ]);
 
-    const serialized = students.map((s) => ({
-      id: s.id,
-      name: s.name,
-      class: s.class,
-      totalFeesAssigned: Number(s.totalFeesAssigned),
-      totalPaid: Number(s.totalPaid),
-    }));
+    const serialized = students.map((s) => {
+      const activeEnrollment = s.enrollments[0];
+      return {
+        id: s.id,
+        name: s.name,
+        admissionNumber: s.admissionNumber,
+        status: s.status,
+        className: activeEnrollment?.class?.name || "—",
+        divisionName: activeEnrollment?.division?.name || "",
+        sessionName: activeEnrollment?.academicSession?.name || "",
+        totalFeesAssigned: activeEnrollment
+          ? Number(activeEnrollment.totalFeesAssigned)
+          : 0,
+        totalPaid: activeEnrollment ? Number(activeEnrollment.totalPaid) : 0,
+        enrollmentId: activeEnrollment?.id || null,
+      };
+    });
 
     return (
       <StudentsClient
@@ -54,6 +112,8 @@ export default async function StudentsPage({
         currentPage={page}
         totalPages={Math.ceil(total / limit)}
         initialSearch={searchParam || ""}
+        classes={classes}
+        sessions={sessions}
       />
     );
   } catch (err: any) {
@@ -66,6 +126,8 @@ export default async function StudentsPage({
         totalPages={0}
         error="Failed to load student records. Please retry."
         initialSearch={searchParam || ""}
+        classes={[]}
+        sessions={[]}
       />
     );
   }

@@ -1,124 +1,258 @@
 import { prisma } from "@/lib/prisma";
-import { Prisma } from "@/prisma/generated";
+import { StudentStatus } from "@/prisma/generated";
+
+// ──────────────────────────────────────────────────────────────────────
+// Student Service — Identity Layer Only
+//
+// Financial fields (totalFeesAssigned, totalPaid) are now on
+// StudentEnrollment. This service manages student identity and status.
+// ──────────────────────────────────────────────────────────────────────
 
 export class StudentService {
   /**
-   * Creates a new student record.
+   * Creates a new student record (identity only — no fee fields).
    */
   static async createStudent(params: {
+    admissionNumber: string;
     name: string;
-    studentClass: string;
-    totalFeesAssigned: Prisma.Decimal;
     organizationId: string;
+    dateOfBirth?: Date;
+    gender?: string;
+    contactNumber?: string;
+    email?: string;
+    address?: string;
+    fatherName?: string;
+    motherName?: string;
+    guardianContact?: string;
   }) {
-    const { name, studentClass, totalFeesAssigned, organizationId } = params;
-
-    return await prisma.student.create({
+    return prisma.student.create({
       data: {
-        name,
-        class: studentClass,
-        totalFeesAssigned,
-        totalPaid: new Prisma.Decimal(0),
-        organizationId,
+        admissionNumber: params.admissionNumber,
+        name: params.name,
+        organizationId: params.organizationId,
+        dateOfBirth: params.dateOfBirth,
+        gender: params.gender,
+        contactNumber: params.contactNumber,
+        email: params.email,
+        address: params.address,
+        fatherName: params.fatherName,
+        motherName: params.motherName,
+        guardianContact: params.guardianContact,
       },
     });
   }
 
   /**
-   * Lists students for an organization, optionally filtered by name and paginated.
+   * Lists students with their current active enrollment details.
    */
   static async getStudents(params: {
     organizationId: string;
     search?: string;
+    status?: StudentStatus;
+    sessionId?: string;
+    classId?: string;
+    divisionId?: string;
     skip?: number;
     take?: number;
   }) {
-    const { organizationId, search, skip, take } = params;
-    return await prisma.student.findMany({
-      where: {
-        organizationId,
-        ...(search
-          ? {
-              name: {
-                contains: search,
-                mode: "insensitive",
-              },
-            }
-          : {}),
+    const {
+      organizationId,
+      search,
+      status,
+      sessionId,
+      classId,
+      divisionId,
+      skip,
+      take,
+    } = params;
+
+    const where: any = {
+      organizationId,
+      ...(status ? { status } : {}),
+      ...(search
+        ? {
+            OR: [
+              { name: { contains: search, mode: "insensitive" } },
+              { admissionNumber: { contains: search, mode: "insensitive" } },
+            ],
+          }
+        : {}),
+    };
+
+    // If session/class/division filters are provided, we filter by enrollments
+    if (sessionId || classId || divisionId) {
+      where.enrollments = {
+        some: {
+          ...(sessionId ? { academicSessionId: sessionId } : {}),
+          ...(classId ? { classId } : {}),
+          ...(divisionId ? { divisionId } : {}),
+          status: "ACTIVE", // Only filter through active enrollments for the main list
+        },
+      };
+    }
+
+    const students = await prisma.student.findMany({
+      where,
+      include: {
+        enrollments: {
+          where: {
+            status: "ACTIVE",
+            ...(sessionId ? { academicSessionId: sessionId } : {}),
+          },
+          include: {
+            class: true,
+            division: true,
+            academicSession: true,
+          },
+          take: 1,
+        },
       },
       orderBy: { name: "asc" },
       skip,
       take,
     });
-  }
 
-  /**
-   * Returns the count of students for an organization, optionally filtered.
-   */
-  static async countStudents(organizationId: string, search?: string) {
-    return await prisma.student.count({
-      where: {
-        organizationId,
-        ...(search
-          ? {
-              name: {
-                contains: search,
-                mode: "insensitive",
-              },
-            }
-          : {}),
-      },
+    // Flatten enrollment data for easier consumption by the client
+    return students.map((s) => {
+      const activeEnrollment = s.enrollments[0] || null;
+      return {
+        ...s,
+        enrollment: activeEnrollment,
+        className: activeEnrollment?.class?.name || null,
+        divisionName: activeEnrollment?.division?.name || null,
+        totalFeesAssigned: activeEnrollment
+          ? Number(activeEnrollment.totalFeesAssigned)
+          : 0,
+        totalPaid: activeEnrollment ? Number(activeEnrollment.totalPaid) : 0,
+      };
     });
   }
 
   /**
-   * Gets a specific student with their current financial summary.
+   * Returns the count of students for pagination.
+   */
+  static async countStudents(params: {
+    organizationId: string;
+    search?: string;
+    status?: StudentStatus;
+    sessionId?: string;
+    classId?: string;
+    divisionId?: string;
+  }) {
+    const { organizationId, search, status, sessionId, classId, divisionId } =
+      params;
+
+    const where: any = {
+      organizationId,
+      ...(status ? { status } : {}),
+      ...(search
+        ? {
+            OR: [
+              { name: { contains: search, mode: "insensitive" } },
+              { admissionNumber: { contains: search, mode: "insensitive" } },
+            ],
+          }
+        : {}),
+    };
+
+    if (sessionId || classId || divisionId) {
+      where.enrollments = {
+        some: {
+          ...(sessionId ? { academicSessionId: sessionId } : {}),
+          ...(classId ? { classId } : {}),
+          ...(divisionId ? { divisionId } : {}),
+          status: "ACTIVE",
+        },
+      };
+    }
+
+    return prisma.student.count({ where });
+  }
+
+  /**
+   * Gets a specific student with all their enrollment history.
    */
   static async getStudentById(id: string, organizationId: string) {
-    return await prisma.student.findUnique({
+    return prisma.student.findUnique({
       where: { id, organizationId },
-    });
-  }
-
-  /**
-   * Updates the total fees assigned to a student.
-   */
-  static async updateTotalFees(
-    id: string,
-    organizationId: string,
-    newTotal: Prisma.Decimal,
-  ) {
-    return await prisma.student.update({
-      where: { id, organizationId },
-      data: {
-        totalFeesAssigned: newTotal,
-      },
-    });
-  }
-
-  /**
-   * Generates a detailed account statement for a student.
-   * Returns a list of receipts (including cancelled ones).
-   */
-  static async getStudentStatement(studentId: string, organizationId: string) {
-    const student = await prisma.student.findUniqueOrThrow({
-      where: { id: studentId, organizationId },
       include: {
-        receipts: {
-          orderBy: { date: "desc" },
+        enrollments: {
+          include: {
+            class: true,
+            division: true,
+            academicSession: true,
+          },
+          orderBy: { academicSession: { startDate: "desc" } },
         },
       },
     });
+  }
 
-    return {
-      student: {
-        name: student.name,
-        class: student.class,
-        totalFeesAssigned: student.totalFeesAssigned,
-        totalPaid: student.totalPaid,
-        remainingFees: student.totalFeesAssigned.minus(student.totalPaid),
+  /**
+   * Updates student identity fields.
+   */
+  static async updateStudent(
+    id: string,
+    organizationId: string,
+    data: {
+      name?: string;
+      admissionNumber?: string;
+      dateOfBirth?: Date;
+      gender?: string;
+      contactNumber?: string;
+      email?: string;
+      address?: string;
+      fatherName?: string;
+      motherName?: string;
+      guardianContact?: string;
+    },
+  ) {
+    return prisma.student.update({
+      where: { id, organizationId },
+      data,
+    });
+  }
+
+  /**
+   * Updates student lifecycle status.
+   */
+  static async updateStatus(
+    id: string,
+    organizationId: string,
+    status: StudentStatus,
+  ) {
+    return prisma.student.update({
+      where: { id, organizationId },
+      data: { status },
+    });
+  }
+
+  /**
+   * Returns students who have withdrawn or left (for "Previous Students" view).
+   */
+  static async getPreviousStudents(organizationId: string) {
+    return prisma.student.findMany({
+      where: {
+        organizationId,
+        status: {
+          in: [
+            StudentStatus.WITHDRAWN,
+            StudentStatus.ALUMNI,
+            StudentStatus.INACTIVE,
+          ],
+        },
       },
-      transactions: student.receipts,
-    };
+      include: {
+        enrollments: {
+          include: {
+            class: true,
+            division: true,
+            academicSession: true,
+          },
+          orderBy: { academicSession: { startDate: "desc" } },
+        },
+      },
+      orderBy: { name: "asc" },
+    });
   }
 }

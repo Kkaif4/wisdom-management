@@ -29,7 +29,8 @@ export default async function DailyReportPage({
       },
     },
     include: {
-      student: { select: { name: true, class: true } },
+      student: { select: { name: true } },
+      studentEnrollment: { include: { class: { select: { name: true } } } },
     },
     orderBy: { date: "asc" },
   });
@@ -38,7 +39,7 @@ export default async function DailyReportPage({
     id: r.id,
     receiptNumber: r.receiptNumber,
     studentName: r.student?.name || "N/A",
-    studentClass: r.student?.class || "N/A",
+    studentClass: r.studentEnrollment?.class?.name || "N/A",
     amount: Number(r.amount),
     paymentMode: r.paymentMode,
     status: r.status,

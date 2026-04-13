@@ -47,7 +47,10 @@ export const GET = auth(async (req) => {
       where,
       include: {
         student: {
-          select: { name: true, class: true },
+          select: { name: true },
+        },
+        studentEnrollment: {
+          select: { class: { select: { name: true } } },
         },
       },
       orderBy: { date: "desc" },
@@ -59,7 +62,7 @@ export const GET = auth(async (req) => {
       date: r.date.toISOString(),
       receiptNumber: r.receiptNumber,
       studentName: r.student ? r.student.name : "N/A",
-      class: r.student ? r.student.class : "N/A",
+      class: r.studentEnrollment?.class?.name || "N/A",
       paymentMode: r.paymentMode,
       category: r.category || "Tuition Fee",
       amount: Number(r.amount),

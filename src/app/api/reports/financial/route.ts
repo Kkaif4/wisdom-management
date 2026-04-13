@@ -52,19 +52,15 @@ export async function GET(req: NextRequest) {
       orderBy: { date: "desc" },
     });
 
-    // 3. Fetch Global Outstanding Dues (Current Snapshot)
-    const studentsWithDues = await prisma.student.findMany({
+    // 3. Fetch Outstanding Dues from Enrollments (Current Snapshot)
+    const enrollmentsWithDues = await prisma.studentEnrollment.findMany({
       where: {
         organizationId: orgId,
-        totalPaid: {
-          lt: prisma.student.fields.totalFeesAssigned,
-        },
+        status: "ACTIVE",
       },
-      select: {
-        name: true,
-        class: true,
-        totalFeesAssigned: true,
-        totalPaid: true,
+      include: {
+        student: { select: { name: true } },
+        class: { select: { name: true } },
       },
     });
 
@@ -79,10 +75,10 @@ export async function GET(req: NextRequest) {
     );
     const netCashFlow = totalFeesCollected.minus(totalExpenses);
 
-    const outstandingDues = studentsWithDues.reduce(
-      (sum, s) => sum.plus(s.totalFeesAssigned.minus(s.totalPaid)),
-      new Prisma.Decimal(0),
-    );
+    const outstandingDues = enrollmentsWithDues.reduce((sum, e) => {
+      const remaining = e.totalFeesAssigned.minus(e.totalPaid);
+      return remaining.gt(0) ? sum.plus(remaining) : sum;
+    }, new Prisma.Decimal(0));
 
     // Transactions Mapping
     const transactions = [
@@ -130,14 +126,15 @@ export async function GET(req: NextRequest) {
       }))
       .sort((a, b) => b.totalAmount - a.totalAmount);
 
-    // Student Summary
-    const studentSummary = studentsWithDues
-      .map((s) => ({
-        name: s.name,
-        class: s.class,
-        totalFeesAssigned: s.totalFeesAssigned.toNumber(),
-        totalPaid: s.totalPaid.toNumber(),
-        remaining: s.totalFeesAssigned.minus(s.totalPaid).toNumber(),
+    // Student Summary (from enrollments)
+    const studentSummary = enrollmentsWithDues
+      .filter((e) => e.totalFeesAssigned.gt(e.totalPaid))
+      .map((e) => ({
+        name: e.student.name,
+        class: e.class.name,
+        totalFeesAssigned: e.totalFeesAssigned.toNumber(),
+        totalPaid: e.totalPaid.toNumber(),
+        remaining: e.totalFeesAssigned.minus(e.totalPaid).toNumber(),
       }))
       .sort((a, b) => b.remaining - a.remaining);
 

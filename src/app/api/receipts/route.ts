@@ -11,6 +11,7 @@ export const POST = auth(async (req) => {
   try {
     const body = await req.json();
     const {
+      studentEnrollmentId,
       studentId,
       amount,
       paymentMode,
@@ -20,7 +21,15 @@ export const POST = auth(async (req) => {
       remarks,
     } = body;
 
+    if (!studentEnrollmentId) {
+      return NextResponse.json(
+        { error: "studentEnrollmentId is required" },
+        { status: 400 },
+      );
+    }
+
     const receipt = await ReceiptService.collectFee({
+      studentEnrollmentId,
       studentId: studentId || undefined,
       category: category || "Tuition Fee",
       organizationId: req.auth.user.organizationId,
@@ -40,6 +49,7 @@ export const POST = auth(async (req) => {
     );
   }
 });
+
 export const GET = auth(async (req) => {
   if (!req.auth?.user?.organizationId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

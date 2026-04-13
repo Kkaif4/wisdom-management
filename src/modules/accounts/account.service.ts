@@ -43,6 +43,7 @@ export class AccountService {
     description?: string;
     receiptId?: string;
     expenseId?: string;
+    studentEnrollmentId?: string;
   }) {
     const {
       tx,
@@ -56,6 +57,7 @@ export class AccountService {
       description,
       receiptId,
       expenseId,
+      studentEnrollmentId,
     } = params;
 
     return await tx.transactionHistory.create({
@@ -71,6 +73,7 @@ export class AccountService {
         description,
         receiptId,
         expenseId,
+        studentEnrollmentId,
       },
     });
   }

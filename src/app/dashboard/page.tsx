@@ -20,7 +20,7 @@ export default async function DashboardPage() {
           currentBankBalance: true,
         },
       }),
-      prisma.student.aggregate({
+      prisma.studentEnrollment.aggregate({
         where: { organizationId: orgId },
         _sum: { totalFeesAssigned: true, totalPaid: true },
       }),

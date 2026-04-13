@@ -9,7 +9,7 @@ interface ReceiptPDFProps {
     remarks?: string;
     student: {
       name: string;
-      class: string;
+      className?: string;
     };
     organization: {
       name: string;
@@ -45,7 +45,11 @@ export const ReceiptPDF: React.FC<ReceiptPDFProps> = ({ receipt }) => {
               Student Details
             </p>
             <p className="text-lg font-bold">{receipt.student.name}</p>
-            <p className="text-gray-600">Class: {receipt.student.class}</p>
+            {receipt.student.className && (
+              <p className="text-gray-600">
+                Class: {receipt.student.className}
+              </p>
+            )}
           </div>
           <div className="text-right">
             <p className="text-sm font-semibold text-gray-600 uppercase">

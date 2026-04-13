@@ -16,7 +16,7 @@ import { StudentSearchSelect } from "./StudentSearchSelect";
 interface Student {
   id: string;
   name: string;
-  class: string;
+  className?: string;
   totalFeesAssigned?: number | string;
   totalPaid?: number | string;
 }
@@ -193,13 +193,15 @@ export function ReceiptEntryModal({
                     required
                     type="number"
                     step="0.01"
-                    min="1"
+                    min="0.01"
                     max={
                       pendingAmount !== null &&
                       ["Tuition Fee", "Student Dues"].includes(
                         formData.category,
                       )
-                        ? pendingAmount
+                        ? pendingAmount > 0
+                          ? pendingAmount
+                          : undefined
                         : undefined
                     }
                     placeholder="0.00"

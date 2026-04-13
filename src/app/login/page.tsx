@@ -46,9 +46,12 @@ export default function LoginPage() {
       <div className="flex min-h-screen items-center justify-center bg-zinc-50 p-4">
         <div className="w-full max-w-md overflow-hidden rounded-3xl bg-white shadow-2xl shadow-zinc-200">
           <div className="p-8 pt-12 text-center">
-            <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-black text-2xl font-black text-white italic tracking-tighter shadow-xl shadow-black/10">
+            <a
+              href="/"
+              className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-black text-2xl font-black text-white italic tracking-tighter shadow-xl shadow-black/10"
+            >
               W
-            </div>
+            </a>
             <h1 className="text-2xl font-bold tracking-tight text-zinc-900">
               Welcome Back
             </h1>

@@ -45,7 +45,7 @@ export default function Home() {
               className="flex min-h-[44px] md:min-h-[48px] items-center px-2 md:px-4 font-mono text-[10px] md:text-xs font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors"
             >
               <span className="hidden sm:inline">[ Auth_Sign_In ]</span>
-              <span className="sm:hidden">[ Login ]</span>
+              <span className="sm:hidden">[ Auth_Login ]</span>
             </Link>
             <Link
               href="/register"
@@ -91,7 +91,7 @@ export default function Home() {
                   href="/register"
                   className="group flex min-h-[56px] w-full sm:w-auto items-center justify-between sm:justify-center gap-4 border-2 border-primary bg-primary px-8 text-sm font-bold uppercase tracking-widest text-primary-foreground transition-all hover:bg-background hover:text-primary active:scale-[0.98]"
                 >
-                  Deploy Engine
+                  Begine the Expereince
                   <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-2" />
                 </Link>
                 <Link

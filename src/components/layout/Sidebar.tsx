@@ -18,17 +18,20 @@ import {
   BarChart3,
   ChevronDown,
   FileText,
-  CreditCard,
-  Building2,
-  CalendarDays,
   Landmark,
+  School,
+  BookOpen,
+  ArrowUpCircle,
 } from "lucide-react";
 
 const NAV_ITEMS = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { label: "Academic", href: "/dashboard/academic", icon: School },
+  { label: "Students", href: "/dashboard/students", icon: Users },
+  { label: "Withdrawn", href: "/dashboard/students/withdrawn", icon: Users },
+  { label: "Enrollments", href: "/dashboard/enrollments", icon: BookOpen },
   { label: "Receipts", href: "/dashboard/receipts", icon: Receipt },
   { label: "Expenses", href: "/dashboard/expenses", icon: TrendingUp },
-  { label: "Students", href: "/dashboard/students", icon: Users },
   { label: "Accounts", href: "/dashboard/accounts", icon: Wallet },
   { label: "Ledger", href: "/dashboard/ledger", icon: Library },
 ];
@@ -110,8 +113,13 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
           <div className="space-y-1.5">
             {NAV_ITEMS.map((item) => {
               const isActive =
-                pathname === item.href ||
-                (item.href !== "/dashboard" && pathname.startsWith(item.href));
+                item.href === "/dashboard/students"
+                  ? pathname === "/dashboard/students" ||
+                    (pathname.startsWith("/dashboard/students/") &&
+                      !pathname.includes("/withdrawn"))
+                  : pathname === item.href ||
+                    (item.href !== "/dashboard" &&
+                      pathname.startsWith(item.href));
 
               return (
                 <Link

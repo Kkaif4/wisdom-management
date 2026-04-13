@@ -20,8 +20,8 @@ export const GET = auth(async (req) => {
       },
     });
 
-    // 2. Aggregate Student Fees
-    const studentStats = await prisma.student.aggregate({
+    // 2. Aggregate Enrollment Fees
+    const enrollmentStats = await prisma.studentEnrollment.aggregate({
       where: { organizationId: orgId },
       _sum: {
         totalFeesAssigned: true,
@@ -38,8 +38,8 @@ export const GET = auth(async (req) => {
     });
 
     const totalAssigned =
-      studentStats._sum.totalFeesAssigned ?? new Prisma.Decimal(0);
-    const totalPaid = studentStats._sum.totalPaid ?? new Prisma.Decimal(0);
+      enrollmentStats._sum.totalFeesAssigned ?? new Prisma.Decimal(0);
+    const totalPaid = enrollmentStats._sum.totalPaid ?? new Prisma.Decimal(0);
     const totalExpenses = expenseStats._sum.amount ?? new Prisma.Decimal(0);
 
     return NextResponse.json({

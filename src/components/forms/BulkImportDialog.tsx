@@ -16,7 +16,9 @@ import { showToast } from "@/components/shared/Toast";
 // --------------- Types ---------------
 interface ParsedRow {
   name: string;
-  class: string;
+  admissionNumber: string;
+  className: string;
+  divisionName: string;
   totalFeesAssigned: number;
   totalPaid: number;
 }
@@ -35,10 +37,12 @@ interface ImportResult {
 
 // --------------- Constants ---------------
 const REQUIRED_COLUMNS = [
-  "Student name",
+  "Admission No",
+  "Student Name",
   "Class Name",
-  "Total Fees Amount",
-  "Paid Fees Amount",
+  "Division",
+  "Total Fees",
+  "Paid Fees",
 ] as const;
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
@@ -47,9 +51,9 @@ const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
 function generateTemplateCsv() {
   const header = REQUIRED_COLUMNS.join(",");
   const rows = [
-    "Rahul Sharma,Class 5,30000,10000",
-    "Aman Patel,Class 6,35000,5000",
-    "Priya Singh,Class 7,40000,0",
+    "WS001,Rahul Sharma,Class 5,A,30000,10000",
+    "WS002,Aman Patel,Class 6,B,35000,5000",
+    "WS003,Priya Singh,Class 7,A,40000,0",
   ].join("\n");
   return `${header}\n${rows}`;
 }
@@ -137,19 +141,25 @@ export function BulkImportDialog({
       const seenNames = new Set<string>();
 
       raw.forEach((row, i) => {
-        const name = row["Student name"]?.trim();
+        const admNo = row["Admission No"]?.trim();
+        const name = row["Student Name"]?.trim();
         const cls = row["Class Name"]?.trim();
-        const rawFees = row["Total Fees Amount"]?.trim();
-        const rawPaid = row["Paid Fees Amount"]?.trim() || "0";
+        const div = row["Division"]?.trim() || "A";
+        const rawFees = row["Total Fees"]?.trim();
+        const rawPaid = row["Paid Fees"]?.trim() || "0";
 
         if (!name) {
           skipped.push({ name: `Row ${i + 1}`, reason: "Name is missing" });
           return;
         }
+        if (!admNo) {
+          skipped.push({ name, reason: "Admission number is missing" });
+          return;
+        }
 
-        const nameLower = name.toLowerCase();
-        if (seenNames.has(nameLower)) {
-          skipped.push({ name, reason: "Duplicate in file" });
+        const admLower = admNo.toLowerCase();
+        if (seenNames.has(admLower)) {
+          skipped.push({ name, reason: "Duplicate admission number in file" });
           return;
         }
 
@@ -175,10 +185,12 @@ export function BulkImportDialog({
           return;
         }
 
-        seenNames.add(nameLower);
+        seenNames.add(admLower);
         validRows.push({
           name,
-          class: cls,
+          admissionNumber: admNo,
+          className: cls,
+          divisionName: div,
           totalFeesAssigned,
           totalPaid,
         });
@@ -326,7 +338,8 @@ export function BulkImportDialog({
                   Required Headers
                 </p>
                 <p className="text-[10px] sm:text-xs font-medium text-muted-foreground">
-                  Student name, Class Name, Total Fees Amount, Paid Fees Amount
+                  Admission No, Student Name, Class Name, Division, Total Fees,
+                  Paid Fees
                 </p>
               </div>
               <button

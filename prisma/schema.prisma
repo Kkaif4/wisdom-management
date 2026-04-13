@@ -7,6 +7,10 @@ datasource db {
   provider = "postgresql"
 }
 
+// ──────────────────────────────────────────────────────────────────────
+// Enums
+// ──────────────────────────────────────────────────────────────────────
+
 enum SystemRole {
   SUPER_ADMIN
   ORG_ADMIN
@@ -37,25 +41,63 @@ enum AccountType {
   BANK
 }
 
-model Organization {
-  id                   String   @id @default(uuid())
-  name                 String
-  openingCashBalance   Decimal  @db.Decimal(14, 2)
-  openingBankBalance   Decimal  @db.Decimal(14, 2)
-  currentCashBalance   Decimal  @db.Decimal(14, 2)
-  currentBankBalance   Decimal  @db.Decimal(14, 2)
-  receiptCounter       Int      @default(0)
-  isFirstTransactionDone Boolean @default(false)
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
-
-  users                User[]
-  students             Student[]
-  transactions         TransactionHistory[]
-  receipts             Receipt[]
-  expenses             Expense[]
-  auditLogs            AuditLog[]
+enum SessionStatus {
+  UPCOMING
+  ACTIVE
+  CLOSED
+  ARCHIVED
 }
+
+enum EnrollmentStatus {
+  ACTIVE
+  PROMOTED
+  WITHDRAWN
+  TRANSFERRED
+  COMPLETED
+}
+
+enum StudentStatus {
+  ACTIVE
+  INACTIVE
+  ALUMNI
+  WITHDRAWN
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// Organization
+// ──────────────────────────────────────────────────────────────────────
+
+model Organization {
+  id                     String   @id @default(uuid())
+  name                   String
+
+  // Financial state
+  openingCashBalance     Decimal  @db.Decimal(14, 2)
+  openingBankBalance     Decimal  @db.Decimal(14, 2)
+  currentCashBalance     Decimal  @db.Decimal(14, 2)
+  currentBankBalance     Decimal  @db.Decimal(14, 2)
+  receiptCounter         Int      @default(0)
+  isFirstTransactionDone Boolean  @default(false)
+
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  // Relations
+  users                  User[]
+  students               Student[]
+  classes                Class[]
+  divisions              Division[]
+  academicSessions       AcademicSession[]
+  enrollments            StudentEnrollment[]
+  transactions           TransactionHistory[]
+  receipts               Receipt[]
+  expenses               Expense[]
+  auditLogs              AuditLog[]
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// User & Auth
+// ──────────────────────────────────────────────────────────────────────
 
 model User {
   id                String       @id @default(uuid())
@@ -76,57 +118,216 @@ model User {
   transactions      TransactionHistory[] @relation("TransactionCreatedBy")
 }
 
-model Student {
-  id                String       @id @default(uuid())
-  name              String
-  class             String
-  totalFeesAssigned Decimal      @db.Decimal(14, 2)
-  totalPaid         Decimal      @db.Decimal(14, 2) @default(0)
+// ──────────────────────────────────────────────────────────────────────
+// Academic Structure (Master Data)
+// ──────────────────────────────────────────────────────────────────────
 
-  organizationId    String
-  organization      Organization @relation(fields: [organizationId], references: [id])
+/// Master data for academic classes (Class 1–10).
+/// Reusable across sessions. Global per organization.
+model Class {
+  id             String   @id @default(uuid())
+  name           String   // "Class 1", "Class 2", …
+  displayOrder   Int      // For sorting: 1, 2, 3…
+  isActive       Boolean  @default(true)
 
-  createdAt         DateTime     @default(now())
-  updatedAt         DateTime     @updatedAt
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
 
-  receipts          Receipt[]
-  transactions      TransactionHistory[]
+  divisions      Division[]
+  enrollments    StudentEnrollment[]
 
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([name, organizationId])
   @@index([organizationId])
 }
 
-model Receipt {
+/// Sections within a class (A, B, C, etc.).
+model Division {
+  id             String   @id @default(uuid())
+  name           String   // "A", "B", "C"
+  capacity       Int?     // Optional max students
+
+  classId        String
+  class          Class    @relation(fields: [classId], references: [id], onDelete: Cascade)
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  enrollments    StudentEnrollment[]
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([name, classId])
+  @@index([classId])
+  @@index([organizationId])
+}
+
+/// Represents an academic year cycle (e.g., "2025-26").
+/// Only ONE session can be ACTIVE at a time per organization.
+model AcademicSession {
   id             String        @id @default(uuid())
-  receiptNumber  String
-  amount         Decimal       @db.Decimal(14, 2)
-  paymentMode    PaymentMode
-  date           DateTime
-  remarks        String?
-  status         ReceiptStatus @default(ACTIVE)
-  category       String        @default("Tuition Fee")
-  studentId      String?
-  student        Student?      @relation(fields: [studentId], references: [id])
+  name           String        // "2024-25", "2025-26"
+  startDate      DateTime
+  endDate        DateTime
+  status         SessionStatus @default(UPCOMING)
+
   organizationId String
   organization   Organization  @relation(fields: [organizationId], references: [id])
 
-  createdBy      String
-  createdByUser  User          @relation("ReceiptCreatedBy", fields: [createdBy], references: [id])
+  enrollments    StudentEnrollment[]
 
-  cancelledAt    DateTime?
-  cancelledBy    String?
-  cancelledByUser User?        @relation("ReceiptCancelledBy", fields: [cancelledBy], references: [id])
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  @@unique([name, organizationId])
+  @@index([organizationId])
+  @@index([status])
+}
 
-  transactions   TransactionHistory[]
+// ──────────────────────────────────────────────────────────────────────
+// Student (Identity Layer — NO financial fields)
+// ──────────────────────────────────────────────────────────────────────
+
+model Student {
+  id                String        @id @default(uuid())
+
+  // Identity
+  admissionNumber   String        // Unique school-level ID
+  name              String
+
+  // Demographics (optional)
+  dateOfBirth       DateTime?
+  gender            String?
+
+  // Contact
+  contactNumber     String?
+  email             String?
+  address           String?
+
+  // Guardian info
+  fatherName        String?
+  motherName        String?
+  guardianContact   String?
+
+  status            StudentStatus @default(ACTIVE)
+
+  organizationId    String
+  organization      Organization  @relation(fields: [organizationId], references: [id])
+
+  // Relations
+  enrollments       StudentEnrollment[]
+  receipts          Receipt[]
+  transactions      TransactionHistory[]
+
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  @@unique([admissionNumber, organizationId])
+  @@index([organizationId])
+  @@index([status])
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// Student Enrollment (Source of Truth for Fees)
+// ──────────────────────────────────────────────────────────────────────
+
+/// Links a student to a class + division + academic session.
+/// Holds ALL financial data for that specific enrollment period.
+/// Immutable after session closes (historical record).
+model StudentEnrollment {
+  id                  String           @id @default(uuid())
+
+  studentId           String
+  student             Student          @relation(fields: [studentId], references: [id])
+
+  classId             String
+  class               Class            @relation(fields: [classId], references: [id])
+
+  divisionId          String
+  division            Division         @relation(fields: [divisionId], references: [id])
+
+  academicSessionId   String
+  academicSession     AcademicSession  @relation(fields: [academicSessionId], references: [id])
+
+  // Financial fields (belong HERE, not on Student)
+  totalFeesAssigned   Decimal          @default(0) @db.Decimal(14, 2)
+  totalPaid           Decimal          @default(0) @db.Decimal(14, 2)
+
+  status              EnrollmentStatus @default(ACTIVE)
+  enrollmentDate      DateTime         @default(now())
+  completionDate      DateTime?        // Set when promoted/withdrawn
+
+  remarks             String?
+
+  organizationId      String
+  organization        Organization     @relation(fields: [organizationId], references: [id])
+
+  receipts            Receipt[]
+  transactions        TransactionHistory[]
+
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+
+  // One enrollment per student per session
+  @@unique([studentId, academicSessionId])
+  @@index([organizationId])
+  @@index([studentId])
+  @@index([academicSessionId])
+  @@index([classId])
+  @@index([status])
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// Finance: Receipt
+// ──────────────────────────────────────────────────────────────────────
+
+model Receipt {
+  id                    String        @id @default(uuid())
+  receiptNumber         String
+  amount                Decimal       @db.Decimal(14, 2)
+  paymentMode           PaymentMode
+  date                  DateTime
+  remarks               String?
+  status                ReceiptStatus @default(ACTIVE)
+  category              String        @default("Tuition Fee")
+
+  // Enrollment context (mandatory)
+  studentEnrollmentId   String
+  studentEnrollment     StudentEnrollment @relation(fields: [studentEnrollmentId], references: [id])
+
+  // Denormalized student ref for quick lookups
+  studentId             String?
+  student               Student?      @relation(fields: [studentId], references: [id])
+
+  organizationId        String
+  organization          Organization  @relation(fields: [organizationId], references: [id])
+
+  createdBy             String
+  createdByUser         User          @relation("ReceiptCreatedBy", fields: [createdBy], references: [id])
+
+  cancelledAt           DateTime?
+  cancelledBy           String?
+  cancelledByUser       User?         @relation("ReceiptCancelledBy", fields: [cancelledBy], references: [id])
+
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+
+  transactions          TransactionHistory[]
 
   @@unique([receiptNumber, organizationId])
   @@index([organizationId])
+  @@index([studentEnrollmentId])
   @@index([studentId])
   @@index([date])
   @@index([category])
 }
+
+// ──────────────────────────────────────────────────────────────────────
+// Expense (unchanged)
+// ──────────────────────────────────────────────────────────────────────
 
 model Expense {
   id             String          @id @default(uuid())
@@ -147,6 +348,10 @@ model Expense {
   @@index([date])
 }
 
+// ──────────────────────────────────────────────────────────────────────
+// Transaction History
+// ──────────────────────────────────────────────────────────────────────
+
 model TransactionHistory {
   id                      String          @id @default(uuid())
   date                    DateTime
@@ -157,8 +362,12 @@ model TransactionHistory {
   expenseId               String?
   expense                 Expense?        @relation(fields: [expenseId], references: [id])
 
+  // Enrollment context for fee transactions
+  studentEnrollmentId     String?
+  studentEnrollment       StudentEnrollment? @relation(fields: [studentEnrollmentId], references: [id])
+
   description             String?
-  impactedAccount         AccountType     // CASH or BANK
+  impactedAccount         AccountType
   debitAmount             Decimal         @db.Decimal(14, 2) @default(0)
   creditAmount            Decimal         @db.Decimal(14, 2) @default(0)
   balanceAfter            Decimal         @db.Decimal(14, 2)
@@ -178,7 +387,12 @@ model TransactionHistory {
   @@index([date])
   @@index([type])
   @@index([studentId])
+  @@index([studentEnrollmentId])
 }
+
+// ──────────────────────────────────────────────────────────────────────
+// Audit Log
+// ──────────────────────────────────────────────────────────────────────
 
 model AuditLog {
   id             String       @id @default(uuid())

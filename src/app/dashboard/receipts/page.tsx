@@ -37,7 +37,10 @@ export default async function ReceiptsPage({
       prisma.receipt.findMany({
         where,
         include: {
-          student: { select: { name: true, class: true } },
+          student: { select: { name: true } },
+          studentEnrollment: {
+            include: { class: { select: { name: true } } },
+          },
           createdByUser: { select: { name: true } },
         },
         orderBy: { date: "desc" },
@@ -57,7 +60,7 @@ export default async function ReceiptsPage({
       remarks: r.remarks,
       category: r.category,
       studentName: r.student?.name || "N/A",
-      studentClass: r.student?.class || "N/A",
+      studentClass: r.studentEnrollment?.class?.name || "N/A",
       recordedBy: r.createdByUser.name,
     }));
 

@@ -2,7 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
-import { Download, Printer } from "lucide-react";
+import { Download, Printer, ChevronDown, ChevronRight } from "lucide-react";
 import * as XLSX from "xlsx";
 import { showToast } from "@/components/shared/Toast";
 
@@ -16,275 +16,292 @@ interface Receipt {
   remarks: string | null;
 }
 
-interface StudentData {
-  name: string;
-  class: string;
+interface EnrollmentEntry {
+  id: string;
+  className: string;
+  divisionName: string;
+  sessionName: string;
+  status: string;
   totalFeesAssigned: number;
   totalPaid: number;
+  remaining: number;
   receipts: Receipt[];
+}
+
+interface StatementData {
+  student: {
+    id: string;
+    admissionNumber: string;
+    name: string;
+    status: string;
+  };
+  enrollments: EnrollmentEntry[];
+  totalOutstanding: number;
 }
 
 const fmt = (val: number) =>
   new Intl.NumberFormat("en-IN", {
     style: "currency",
     currency: "INR",
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
   }).format(val);
 
-export function StatementClient({ student }: { student: StudentData }) {
-  const remaining = student.totalFeesAssigned - student.totalPaid;
+export function StatementClient({ data }: { data: StatementData }) {
+  const { student, enrollments, totalOutstanding } = data;
+  const [expanded, setExpanded] = React.useState<string | null>(
+    enrollments.find((e) => e.status === "ACTIVE")?.id ||
+      enrollments[0]?.id ||
+      null,
+  );
+
+  const statusColor = (status: string) => {
+    switch (status) {
+      case "ACTIVE":
+        return "bg-emerald-500/10 text-emerald-600 border-emerald-500/20";
+      case "PROMOTED":
+        return "bg-blue-500/10 text-blue-600 border-blue-500/20";
+      case "WITHDRAWN":
+        return "bg-rose-500/10 text-rose-600 border-rose-500/20";
+      case "COMPLETED":
+        return "bg-gray-500/10 text-gray-500 border-gray-500/20";
+      default:
+        return "bg-gray-500/10 text-gray-500 border-gray-500/20";
+    }
+  };
 
   const handleExportExcel = () => {
     try {
-      const summaryData = [
-        ["Student Account Statement"],
-        ["Student Name", student.name],
-        ["Class", student.class],
-        ["Generated At", new Date().toLocaleString()],
+      const rows: any[][] = [
+        ["Multi-Year Student Ledger"],
+        ["Student", student.name],
+        ["Admission No", student.admissionNumber],
+        ["Generated", new Date().toLocaleString()],
         [],
-        ["Financial Summary"],
-        ["Total Fees Assigned", student.totalFeesAssigned],
-        ["Total Paid", student.totalPaid],
-        ["Remaining Balance", remaining],
-        [],
-        ["Payment History"],
-        ["Date", "Receipt #", "Mode", "Amount", "Status"],
       ];
 
-      const rows = student.receipts.map((r) => [
-        new Date(r.date).toLocaleDateString(),
-        r.receiptNumber,
-        r.paymentMode,
-        r.amount,
-        r.status,
-      ]);
+      for (const e of enrollments) {
+        rows.push([
+          `${e.sessionName} — ${e.className} ${e.divisionName} (${e.status})`,
+        ]);
+        rows.push([
+          "Assigned",
+          e.totalFeesAssigned,
+          "Paid",
+          e.totalPaid,
+          "Remaining",
+          e.remaining,
+        ]);
+        rows.push(["Date", "Receipt #", "Mode", "Amount", "Status"]);
+        for (const r of e.receipts) {
+          rows.push([
+            new Date(r.date).toLocaleDateString(),
+            r.receiptNumber,
+            r.paymentMode,
+            r.amount,
+            r.status,
+          ]);
+        }
+        rows.push([]);
+      }
 
-      const ws = XLSX.utils.aoa_to_sheet([...summaryData, ...rows]);
+      rows.push(["Total Outstanding", totalOutstanding]);
+
+      const ws = XLSX.utils.aoa_to_sheet(rows);
       const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, "Statement");
-
-      XLSX.writeFile(wb, `statement_${student.name.replace(/\s+/g, "_")}.xlsx`);
-      showToast("Statement exported to Excel", "success");
-    } catch (err) {
+      XLSX.utils.book_append_sheet(wb, ws, "Ledger");
+      XLSX.writeFile(wb, `ledger_${student.name.replace(/\s+/g, "_")}.xlsx`);
+      showToast("Ledger exported to Excel", "success");
+    } catch {
       showToast("Failed to export Excel", "error");
     }
   };
 
   return (
-    <div className="space-y-8 max-w-4xl">
-      {/* Back nav */}
+    <div className="space-y-8 max-w-4xl animate-fade-in mb-10">
       <Link
         href="/dashboard/students"
-        className="text-xs font-bold uppercase tracking-widest transition-colors hover:opacity-70"
-        style={{ color: "var(--text-tertiary)" }}
+        className="text-xs font-bold uppercase tracking-widest text-muted-foreground transition-colors hover:text-foreground"
       >
         ← Back to Students
       </Link>
 
-      {/* Student Header */}
+      {/* Header */}
       <div className="flex items-start justify-between">
         <div>
-          <h1
-            className="text-2xl font-bold tracking-tight"
-            style={{ color: "var(--text-primary)" }}
-          >
+          <h1 className="text-2xl font-black tracking-tight text-foreground">
             {student.name}
           </h1>
-          <p className="text-sm mt-1" style={{ color: "var(--text-tertiary)" }}>
-            Class: {student.class} · Account Statement
+          <p className="text-sm text-muted-foreground mt-1">
+            {student.admissionNumber} ·{" "}
+            <span
+              className={statusColor(student.status)
+                .split(" ")
+                .slice(1)
+                .join(" ")}
+            >
+              {student.status}
+            </span>
           </p>
         </div>
         <div className="flex items-center gap-2">
           <button
             onClick={handleExportExcel}
-            className="p-2.5 rounded-xl bg-zinc-100 text-zinc-900 border border-zinc-200 hover:bg-zinc-200 transition-all active:scale-95 flex items-center gap-2 text-xs font-bold uppercase tracking-widest px-4"
-            title="Download Excel"
+            className="p-2.5 rounded-xl bg-muted border border-border/50 hover:bg-muted/80 transition-all active:scale-95 flex items-center gap-2 text-xs font-bold uppercase tracking-widest px-4"
           >
-            <Download className="h-4 w-4" />
-            Excel
+            <Download className="h-4 w-4" /> Excel
           </button>
           <button
             onClick={() => window.print()}
-            className="px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest transition-all hover:opacity-80 active:scale-95 flex items-center gap-2"
-            style={{
-              backgroundColor: "var(--surface-2)",
-              color: "var(--text-secondary)",
-            }}
+            className="px-4 py-2.5 rounded-xl bg-muted text-muted-foreground text-xs font-bold uppercase tracking-widest transition-all hover:bg-muted/80 active:scale-95 flex items-center gap-2"
           >
-            <Printer className="h-4 w-4" />
-            Print
+            <Printer className="h-4 w-4" /> Print
           </button>
         </div>
       </div>
 
-      {/* Financial Summary */}
-      <div className="grid grid-cols-3 gap-4">
-        <div
-          className="rounded-2xl p-5 border"
-          style={{ borderColor: "var(--border)" }}
+      {/* Outstanding Summary */}
+      <div
+        className={`rounded-2xl p-5 border ${totalOutstanding > 0 ? "border-rose-500/20 bg-rose-500/5" : "border-emerald-500/20 bg-emerald-500/5"}`}
+      >
+        <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground mb-1">
+          Total Outstanding (All Years)
+        </p>
+        <p
+          className={`text-2xl font-black tracking-tight ${totalOutstanding > 0 ? "text-rose-600" : "text-emerald-600"}`}
         >
-          <p
-            className="text-[10px] font-bold uppercase tracking-[0.15em] mb-1"
-            style={{ color: "var(--text-tertiary)" }}
-          >
-            Assigned
-          </p>
-          <p
-            className="text-xl font-black tracking-tight"
-            style={{ color: "var(--text-primary)" }}
-          >
-            {fmt(student.totalFeesAssigned)}
-          </p>
-        </div>
-        <div
-          className="rounded-2xl p-5 border"
-          style={{
-            borderColor: "var(--border)",
-            backgroundColor: "var(--accent-subtle)",
-          }}
-        >
-          <p
-            className="text-[10px] font-bold uppercase tracking-[0.15em] mb-1"
-            style={{ color: "var(--accent-text)" }}
-          >
-            Paid
-          </p>
-          <p
-            className="text-xl font-black tracking-tight"
-            style={{ color: "var(--accent-text)" }}
-          >
-            {fmt(student.totalPaid)}
-          </p>
-        </div>
-        <div
-          className="rounded-2xl p-5 border"
-          style={{
-            borderColor: remaining > 0 ? "var(--danger)" : "var(--accent)",
-            backgroundColor:
-              remaining > 0 ? "var(--danger-subtle)" : "var(--accent-subtle)",
-          }}
-        >
-          <p
-            className="text-[10px] font-bold uppercase tracking-[0.15em] mb-1"
-            style={{
-              color: remaining > 0 ? "var(--danger)" : "var(--accent-text)",
-            }}
-          >
-            Remaining
-          </p>
-          <p
-            className="text-xl font-black tracking-tight"
-            style={{
-              color: remaining > 0 ? "var(--danger)" : "var(--accent-text)",
-            }}
-          >
-            {fmt(remaining)}
-          </p>
-        </div>
+          {fmt(totalOutstanding)}
+        </p>
       </div>
 
-      {/* Receipt History */}
-      <div
-        className="rounded-2xl border overflow-hidden"
-        style={{
-          borderColor: "var(--border)",
-          backgroundColor: "var(--surface-1)",
-        }}
-      >
-        <div
-          className="px-6 py-5 border-b"
-          style={{ borderColor: "var(--border)" }}
-        >
-          <h2
-            className="text-sm font-bold tracking-tight"
-            style={{ color: "var(--text-primary)" }}
-          >
-            Payment History
-          </h2>
-        </div>
+      {/* Enrollment History */}
+      <div className="space-y-4">
+        <h2 className="text-sm font-black uppercase tracking-widest text-muted-foreground">
+          Enrollment History ({enrollments.length} sessions)
+        </h2>
 
-        {student.receipts.length === 0 ? (
-          <div
-            className="px-6 py-12 text-center text-sm"
-            style={{ color: "var(--text-tertiary)" }}
-          >
-            No payments recorded yet.
+        {enrollments.length === 0 ? (
+          <div className="glass rounded-2xl p-12 text-center text-muted-foreground/50 text-sm font-bold border border-border/50">
+            No enrollments found
           </div>
         ) : (
-          <table className="w-full text-left">
-            <thead>
-              <tr
-                className="text-[10px] font-bold uppercase tracking-[0.12em] border-b"
-                style={{
-                  color: "var(--text-tertiary)",
-                  borderColor: "var(--border)",
-                }}
-              >
-                <th className="px-6 py-3">Date</th>
-                <th className="px-6 py-3">Receipt #</th>
-                <th className="px-6 py-3">Mode</th>
-                <th className="px-6 py-3 text-right">Amount</th>
-                <th className="px-6 py-3 text-right">Status</th>
-              </tr>
-            </thead>
-            <tbody
-              className="divide-y"
-              style={{ borderColor: "var(--surface-2)" }}
+          enrollments.map((e) => (
+            <div
+              key={e.id}
+              className="glass rounded-2xl border border-border/50 overflow-hidden"
             >
-              {student.receipts.map((r) => (
-                <tr
-                  key={r.id}
-                  className="hover:bg-stone-50/60 transition-colors"
-                >
-                  <td
-                    className="px-6 py-3 text-xs"
-                    style={{ color: "var(--text-secondary)" }}
+              {/* Enrollment Header */}
+              <button
+                onClick={() => setExpanded(expanded === e.id ? null : e.id)}
+                className="w-full flex items-center justify-between px-6 py-4 hover:bg-muted/30 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  {expanded === e.id ? (
+                    <ChevronDown className="h-4 w-4 text-primary" />
+                  ) : (
+                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                  )}
+                  <div className="text-left">
+                    <p className="text-sm font-black">
+                      {e.sessionName} — {e.className} {e.divisionName}
+                    </p>
+                  </div>
+                  <span
+                    className={`inline-flex items-center px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider border ${statusColor(e.status)}`}
                   >
-                    {new Date(r.date).toLocaleDateString("en-IN", {
-                      day: "2-digit",
-                      month: "short",
-                      year: "numeric",
-                    })}
-                  </td>
-                  <td
-                    className="px-6 py-3 text-sm font-mono font-medium"
-                    style={{ color: "var(--text-primary)" }}
-                  >
-                    {r.receiptNumber}
-                  </td>
-                  <td className="px-6 py-3">
-                    <span
-                      className={`text-[10px] font-black px-2 py-1 rounded ${
-                        r.paymentMode === "CASH"
-                          ? "bg-emerald-100 text-emerald-700"
-                          : "bg-blue-100 text-blue-700"
-                      }`}
+                    {e.status}
+                  </span>
+                </div>
+                <div className="flex items-center gap-6 text-right">
+                  <div>
+                    <p className="text-[10px] text-muted-foreground font-bold uppercase">
+                      Assigned
+                    </p>
+                    <p className="text-sm font-mono font-bold text-muted-foreground/60">
+                      {fmt(e.totalFeesAssigned)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-muted-foreground font-bold uppercase">
+                      Paid
+                    </p>
+                    <p className="text-sm font-mono font-bold text-emerald-600/80">
+                      {fmt(e.totalPaid)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-muted-foreground font-bold uppercase">
+                      Due
+                    </p>
+                    <p
+                      className={`text-sm font-mono font-black ${e.remaining > 0 ? "text-rose-600" : "text-emerald-600"}`}
                     >
-                      {r.paymentMode}
-                    </span>
-                  </td>
-                  <td
-                    className="px-6 py-3 text-right text-sm font-mono font-bold"
-                    style={{ color: "var(--accent)" }}
-                  >
-                    {fmt(r.amount)}
-                  </td>
-                  <td className="px-6 py-3 text-right">
-                    <span
-                      className={`text-[10px] font-bold px-2 py-1 rounded ${
-                        r.status === "ACTIVE"
-                          ? "bg-emerald-100 text-emerald-700"
-                          : "bg-red-100 text-red-600"
-                      }`}
-                    >
-                      {r.status}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                      {fmt(e.remaining)}
+                    </p>
+                  </div>
+                </div>
+              </button>
+
+              {/* Receipts Table */}
+              {expanded === e.id && (
+                <div className="border-t border-border/30">
+                  {e.receipts.length === 0 ? (
+                    <div className="px-6 py-8 text-center text-muted-foreground/50 text-sm font-medium">
+                      No payments in this enrollment period
+                    </div>
+                  ) : (
+                    <table className="w-full text-left">
+                      <thead>
+                        <tr className="text-[10px] font-bold uppercase tracking-[0.12em] text-muted-foreground/70 border-b border-border/30">
+                          <th className="px-6 py-3">Date</th>
+                          <th className="px-6 py-3">Receipt #</th>
+                          <th className="px-6 py-3">Mode</th>
+                          <th className="px-6 py-3 text-right">Amount</th>
+                          <th className="px-6 py-3 text-right">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border/20">
+                        {e.receipts.map((r) => (
+                          <tr
+                            key={r.id}
+                            className="hover:bg-muted/20 transition-colors"
+                          >
+                            <td className="px-6 py-3 text-xs text-muted-foreground">
+                              {new Date(r.date).toLocaleDateString("en-IN", {
+                                day: "2-digit",
+                                month: "short",
+                                year: "numeric",
+                              })}
+                            </td>
+                            <td className="px-6 py-3 text-sm font-mono font-medium">
+                              {r.receiptNumber}
+                            </td>
+                            <td className="px-6 py-3">
+                              <span
+                                className={`text-[10px] font-black px-2 py-1 rounded ${r.paymentMode === "CASH" ? "bg-emerald-500/10 text-emerald-600" : "bg-blue-500/10 text-blue-600"}`}
+                              >
+                                {r.paymentMode}
+                              </span>
+                            </td>
+                            <td className="px-6 py-3 text-right text-sm font-mono font-bold text-primary">
+                              {fmt(r.amount)}
+                            </td>
+                            <td className="px-6 py-3 text-right">
+                              <span
+                                className={`text-[10px] font-bold px-2 py-1 rounded ${r.status === "ACTIVE" ? "bg-emerald-500/10 text-emerald-600" : "bg-rose-500/10 text-rose-600"}`}
+                              >
+                                {r.status}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
+              )}
+            </div>
+          ))
         )}
       </div>
 
@@ -304,29 +321,10 @@ export function StatementClient({ student }: { student: StudentData }) {
           .tracking-widest {
             display: none !important;
           }
-          .rounded-2xl {
+          .rounded-2xl,
+          .glass {
             border-radius: 4px !important;
-            border-color: #eee !important;
             box-shadow: none !important;
-          }
-          .bg-emerald-100,
-          .bg-blue-100,
-          .bg-red-100 {
-            background: transparent !important;
-            color: black !important;
-            border: 1px solid #ccc !important;
-          }
-          table {
-            width: 100% !important;
-            border-collapse: collapse !important;
-          }
-          th,
-          td {
-            border-bottom: 1px solid #eee !important;
-            padding: 10px 4px !important;
-          }
-          h1 {
-            font-size: 24pt !important;
           }
         }
       `}</style>
