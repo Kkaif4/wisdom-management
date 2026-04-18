@@ -13,7 +13,7 @@ import {
   FileText,
   ArrowRight,
 } from "lucide-react";
-import * as XLSX from "xlsx";
+import { ExcelService } from "@/modules/document/services/excel.service";
 import { showToast } from "@/components/shared/Toast";
 
 // --- Types ---
@@ -171,70 +171,52 @@ export function ReportsClient() {
     }
   };
 
-  const handlePrint = () => window.print();
-
-  const handleExportExcel = () => {
+  const handleExportExcel = async () => {
     if (!data) return;
-
     try {
-      // 1. Prepare Summary Sheet
-      const summaryData = [
-        ["Financial Report Summary"],
-        ["Period", `${startDate} to ${endDate}`],
-        ["Generated At", new Date().toLocaleString()],
-        [],
-        ["Metric", "Amount"],
-        ["Total Fees Collected", data.summary.totalFeesCollected],
-        ["Total Expenses", data.summary.totalExpenses],
-        ["Net Cash Flow", data.summary.netCashFlow],
-        ["Outstanding Dues", data.summary.outstandingDues],
-      ];
-      const summarySheet = XLSX.utils.aoa_to_sheet(summaryData);
+      // Transactions Sheet (primary export)
+      type TxRow = {
+        date: string;
+        type: string;
+        reference: string;
+        studentName: string;
+        description: string;
+        debit: number;
+        credit: number;
+      };
+      const txRows: TxRow[] = data.transactions.map((t) => ({
+        date: t.date,
+        type: t.type.replace("_", " "),
+        reference: t.reference,
+        studentName: t.studentName ?? "",
+        description: t.description,
+        debit: t.debit ?? 0,
+        credit: t.credit ?? 0,
+      }));
 
-      // 2. Prepare Transactions Sheet
-      const transactionHeaders = [
-        "Date",
-        "Type",
-        "Reference",
-        "Student Name",
-        "Description",
-        "Debit (Out)",
-        "Credit (In)",
-      ];
-      const transactionRows = data.transactions.map((t) => [
-        new Date(t.date).toLocaleDateString(),
-        t.type,
-        t.reference,
-        t.studentName || "",
-        t.description,
-        t.debit || 0,
-        t.credit || 0,
-      ]);
-      const transactionSheet = XLSX.utils.aoa_to_sheet([
-        transactionHeaders,
-        ...transactionRows,
-      ]);
+      await ExcelService.export({
+        data: txRows,
+        columns: [
+          { key: "date", label: "Date", format: "date" },
+          { key: "type", label: "Type", format: "text" },
+          { key: "reference", label: "Reference", format: "text" },
+          { key: "studentName", label: "Student Name", format: "text" },
+          {
+            key: "description",
+            label: "Description",
+            format: "text",
+            width: 40,
+          },
+          { key: "debit", label: "Debit (Out)", format: "currency" },
+          { key: "credit", label: "Credit (In)", format: "currency" },
+        ],
+        fileName: `financial_report_${startDate}_to_${endDate}`,
+        options: {
+          sheetName: "Transactions",
+          headerStyle: { fillColor: "4F46E5", fontColor: "FFFFFF", bold: true },
+        },
+      });
 
-      // 3. Prepare Expense Breakdown Sheet
-      const expenseHeaders = ["Category", "Total Amount", "Transaction Count"];
-      const expenseRows = data.expenseBreakdown.map((cat) => [
-        cat.category,
-        cat.totalAmount,
-        cat.count,
-      ]);
-      const expenseSheet = XLSX.utils.aoa_to_sheet([
-        expenseHeaders,
-        ...expenseRows,
-      ]);
-
-      // 4. Create Workbook and Append Sheets
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, summarySheet, "Summary");
-      XLSX.utils.book_append_sheet(wb, transactionSheet, "Transactions");
-      XLSX.utils.book_append_sheet(wb, expenseSheet, "Expense Breakdown");
-
-      // 5. Save File
-      XLSX.writeFile(wb, `financial_report_${startDate}_to_${endDate}.xlsx`);
       showToast("Excel report generated successfully", "success");
     } catch (err) {
       showToast("Failed to export Excel report", "error");
@@ -262,14 +244,6 @@ export function ReportsClient() {
           >
             <Download className="h-4 w-4" />
             Export Excel
-          </button>
-          <button
-            onClick={handlePrint}
-            disabled={!data || loading}
-            className="flex items-center justify-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground hover:opacity-90 rounded-xl font-bold text-xs md:text-sm transition-all focus:ring-2 focus:ring-primary/20 shadow-lg shadow-primary/20 flex-1 lg:flex-none shrink-0 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
-          >
-            <Printer className="h-4 w-4" />
-            Print Report
           </button>
         </div>
       </div>
@@ -370,67 +344,6 @@ export function ReportsClient() {
         </div>
       </div>
 
-      {/* Professional Print Styles */}
-      <style jsx global>{`
-        @media print {
-          @page {
-            size: A4;
-            margin: 15mm;
-          }
-          body {
-            background: white !important;
-            color: black !important;
-            font-size: 10pt;
-          }
-          .hide-print,
-          .no-scrollbar {
-            display: none !important;
-          }
-          .bg-card,
-          .bg-muted,
-          .bg-muted/10,
-          .bg-primary/10 {
-            background: transparent !important;
-            border-color: #eee !important;
-            box-shadow: none !important;
-          }
-          .rounded-3xl,
-          .rounded-xl,
-          .rounded-2xl {
-            border-radius: 4px !important;
-            border-width: 1px !important;
-          }
-          table {
-            width: 100% !important;
-            border-collapse: collapse !important;
-          }
-          th,
-          td {
-            border-bottom: 1px solid #eee !important;
-            padding: 8px 4px !important;
-          }
-          th {
-            background: #f9f9f9 !important;
-            font-weight: bold !important;
-            -webkit-print-color-adjust: exact;
-          }
-          .text-emerald-600 {
-            color: #059669 !important;
-          }
-          .text-rose-600 {
-            color: #e11d48 !important;
-          }
-          .text-amber-600 {
-            color: #d97706 !important;
-          }
-          .fixed,
-          .animate-bounce,
-          .animate-spin {
-            display: none !important;
-          }
-        }
-      `}</style>
-
       {/* Loading & Error States */}
       {loading && !data ? (
         <div className="h-64 flex flex-col items-center justify-center gap-4 border border-dashed border-border/50 rounded-3xl bg-muted/10">
@@ -454,29 +367,6 @@ export function ReportsClient() {
               <span className="text-xs font-bold">Refreshing...</span>
             </div>
           )}
-          {/* Printable Report Title Overlay (Only visible in Print mode) */}
-          <div className="hidden print:block mb-8 border-b-2 border-black pb-4">
-            <h1 className="text-3xl font-black uppercase tracking-tighter">
-              Wisdom Management
-            </h1>
-            <div className="flex justify-between items-end mt-4">
-              <div>
-                <h2 className="text-xl font-bold">Financial Report</h2>
-                <p className="text-sm text-muted-foreground">
-                  Range: {new Date(startDate).toLocaleDateString("en-IN")} to{" "}
-                  {new Date(endDate).toLocaleDateString("en-IN")}
-                </p>
-              </div>
-              <div className="text-right">
-                <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
-                  Generated On
-                </p>
-                <p className="text-sm font-mono">
-                  {new Date().toLocaleString("en-IN")}
-                </p>
-              </div>
-            </div>
-          </div>
 
           {/* 3. Summary Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

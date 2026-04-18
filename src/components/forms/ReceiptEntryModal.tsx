@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   X,
   Receipt as ReceiptIcon,
@@ -12,6 +12,24 @@ import {
 } from "lucide-react";
 import { showToast } from "@/components/shared/Toast";
 import { StudentSearchSelect } from "./StudentSearchSelect";
+
+interface IncomeCategory {
+  id: string;
+  name: string;
+  code: string;
+  affectsTuition: boolean;
+}
+
+interface Enrollment {
+  id: string;
+  sessionName: string;
+  className: string;
+  divisionName: string;
+  status: string;
+  totalFeesAssigned: number;
+  totalPaid: number;
+  remaining: number;
+}
 
 interface Student {
   id: string;
@@ -32,16 +50,36 @@ export function ReceiptEntryModal({
 }: ReceiptEntryModalProps) {
   const [loading, setLoading] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+  const [categories, setCategories] = useState<IncomeCategory[]>([]);
+  const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
+  const [selectedEnrollmentId, setSelectedEnrollmentId] = useState("");
+  const [loadingEnrollments, setLoadingEnrollments] = useState(false);
   const [formData, setFormData] = useState({
     studentId: "",
     amount: "",
     paymentMode: "CASH",
-    category: "Tuition Fee",
+    incomeCategoryId: "",
     date: new Date().toISOString().split("T")[0],
     remarks: "",
   });
 
   const formRef = React.useRef<HTMLFormElement>(null);
+
+  // Fetch income categories from DB
+  useEffect(() => {
+    fetch("/api/income-categories")
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data)) {
+          setCategories(data);
+          // Default to first category
+          if (data.length > 0 && !formData.incomeCategoryId) {
+            setFormData((prev) => ({ ...prev, incomeCategoryId: data[0].id }));
+          }
+        }
+      })
+      .catch(() => showToast("Failed to load income categories", "error"));
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   React.useEffect(() => {
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
@@ -54,9 +92,45 @@ export function ReceiptEntryModal({
     return () => window.removeEventListener("keydown", handleGlobalKeyDown);
   }, []);
 
-  const pendingAmount = selectedStudent
-    ? Number(selectedStudent.totalFeesAssigned || 0) -
-      Number(selectedStudent.totalPaid || 0)
+  // Fetch enrollments when student changes
+  useEffect(() => {
+    if (!formData.studentId) {
+      setEnrollments([]);
+      setSelectedEnrollmentId("");
+      return;
+    }
+    setLoadingEnrollments(true);
+    fetch(`/api/students/${formData.studentId}/statement`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data?.enrollments && Array.isArray(data.enrollments)) {
+          const enrs: Enrollment[] = data.enrollments.map((e: any) => ({
+            id: e.id,
+            sessionName: e.sessionName,
+            className: e.className,
+            divisionName: e.divisionName || "",
+            status: e.status,
+            totalFeesAssigned: Number(e.totalFeesAssigned),
+            totalPaid: Number(e.totalPaid),
+            remaining: Number(e.remaining),
+          }));
+          setEnrollments(enrs);
+          const active = enrs.find((e) => e.status === "ACTIVE");
+          setSelectedEnrollmentId(active?.id || enrs[0]?.id || "");
+        }
+      })
+      .catch(() => showToast("Failed to load enrollments", "error"))
+      .finally(() => setLoadingEnrollments(false));
+  }, [formData.studentId]);
+
+  const selectedCategory = categories.find(
+    (c) => c.id === formData.incomeCategoryId,
+  );
+  const selectedEnrollment = enrollments.find(
+    (e) => e.id === selectedEnrollmentId,
+  );
+  const pendingAmount = selectedEnrollment
+    ? selectedEnrollment.remaining
     : null;
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -68,7 +142,7 @@ export function ReceiptEntryModal({
 
     if (
       pendingAmount !== null &&
-      ["Tuition Fee", "Student Dues"].includes(formData.category) &&
+      selectedCategory?.affectsTuition &&
       Number(formData.amount) > pendingAmount
     ) {
       showToast(
@@ -83,7 +157,16 @@ export function ReceiptEntryModal({
       const res = await fetch("/api/dashboard/receipts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          studentId: formData.studentId,
+          enrollmentId: selectedEnrollmentId || undefined,
+          amount: formData.amount,
+          paymentMode: formData.paymentMode,
+          date: formData.date,
+          remarks: formData.remarks,
+          incomeCategoryId: formData.incomeCategoryId,
+          category: selectedCategory?.name || "Other",
+        }),
       });
 
       const data = await res.json();
@@ -138,18 +221,21 @@ export function ReceiptEntryModal({
                 Income Purpose
               </label>
               <select
-                value={formData.category}
+                value={formData.incomeCategoryId}
                 onChange={(e) =>
-                  setFormData({ ...formData, category: e.target.value })
+                  setFormData({ ...formData, incomeCategoryId: e.target.value })
                 }
                 className="w-full bg-muted/20 border border-border/50 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all font-bold appearance-none"
               >
-                <option value="Tuition Fee">Tuition Fee</option>
-                <option value="Form Fee">Form Fee</option>
-                <option value="Book Sale">Book Sale</option>
-                <option value="Bonafide Fee">Bonafide Fee</option>
-                <option value="Student Dues">Student Dues</option>
-                <option value="Other">Other</option>
+                {categories.length === 0 ? (
+                  <option value="">Loading categories...</option>
+                ) : (
+                  categories.map((cat) => (
+                    <option key={cat.id} value={cat.id}>
+                      {cat.name}
+                    </option>
+                  ))
+                )}
               </select>
             </div>
 
@@ -167,6 +253,30 @@ export function ReceiptEntryModal({
               />
             </div>
 
+            {/* Enrollment Selection (Conditional) */}
+            {enrollments.length > 0 && (
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
+                  Academic Session
+                </label>
+                <select
+                  value={selectedEnrollmentId}
+                  onChange={(e) => setSelectedEnrollmentId(e.target.value)}
+                  className="w-full bg-muted/20 border border-border/50 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all font-bold appearance-none"
+                >
+                  {enrollments.map((enr) => (
+                    <option key={enr.id} value={enr.id}>
+                      {enr.sessionName} - {enr.className}
+                      {enr.divisionName ? ` ${enr.divisionName}` : ""}
+                      {enr.remaining > 0
+                        ? ` · Due: ₹${enr.remaining.toLocaleString("en-IN")}`
+                        : " · Cleared"}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Amount */}
               <div className="space-y-1.5">
@@ -174,16 +284,6 @@ export function ReceiptEntryModal({
                   <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
                     Payment Amount
                   </label>
-                  {pendingAmount !== null &&
-                    formData.category === "Tuition Fee" && (
-                      <span className="text-[10px] font-bold text-amber-600 uppercase tracking-wide">
-                        Pending: ₹
-                        {pendingAmount.toLocaleString("en-IN", {
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 2,
-                        })}
-                      </span>
-                    )}
                 </div>
                 <div className="relative">
                   <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground font-bold text-sm">
@@ -195,10 +295,7 @@ export function ReceiptEntryModal({
                     step="0.01"
                     min="0.01"
                     max={
-                      pendingAmount !== null &&
-                      ["Tuition Fee", "Student Dues"].includes(
-                        formData.category,
-                      )
+                      pendingAmount !== null && selectedCategory?.affectsTuition
                         ? pendingAmount > 0
                           ? pendingAmount
                           : undefined

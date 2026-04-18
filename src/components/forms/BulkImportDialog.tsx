@@ -115,13 +115,38 @@ export function BulkImportDialog({
         }
         raw = data;
       } else {
-        const XLSX = await import("xlsx");
+        const ExcelJS = await import("exceljs");
         const buffer = await file.arrayBuffer();
-        const workbook = XLSX.read(buffer, { type: "array" });
-        const sheet = workbook.Sheets[workbook.SheetNames[0]];
-        raw = XLSX.utils.sheet_to_json<Record<string, string>>(sheet, {
-          defval: "",
+        const workbook = new ExcelJS.Workbook();
+        await workbook.xlsx.load(buffer);
+        const worksheet = workbook.getWorksheet(1);
+
+        if (!worksheet) {
+          throw new Error("The Excel file appears to be empty or corrupted.");
+        }
+
+        const rows: Record<string, string>[] = [];
+        const headerRow = worksheet.getRow(1);
+        const headers: string[] = [];
+
+        headerRow.eachCell((cell) => {
+          headers.push(cell.text.trim());
         });
+
+        worksheet.eachRow((row, rowNumber) => {
+          if (rowNumber === 1) return; // Skip headers
+          const rowData: Record<string, string> = {};
+          row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+            const header = headers[colNumber - 1];
+            if (header) {
+              rowData[header] = cell.text.trim();
+            }
+          });
+          if (Object.keys(rowData).length > 0) {
+            rows.push(rowData);
+          }
+        });
+        raw = rows;
       }
 
       if (raw.length === 0) {

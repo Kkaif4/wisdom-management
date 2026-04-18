@@ -3,7 +3,8 @@
 import React, { useState } from "react";
 import { ReportLayout } from "@/components/dashboard/reports/ReportLayout";
 import { ReportFilters } from "@/components/dashboard/reports/ReportFilters";
-import { exportToExcel, formatCurrency } from "@/lib/reportExport";
+import { ExcelService } from "@/modules/document/services/excel.service";
+import { formatCurrency } from "@/lib/reportExport";
 import {
   TrendingUp,
   TrendingDown,
@@ -45,21 +46,30 @@ export function GenericReportsClient() {
     }
   };
 
-  const handleExport = () => {
+  const handleExport = async () => {
     if (!data) return;
-    exportToExcel("Financial_Summary_Report", [
+    type SumRow = { metric: string; value: number };
+    const rows: SumRow[] = [
       {
-        name: "Summary",
-        data: [
-          ["Metric", "Value"],
-          ["Total Fees Collected", data.summary.totalFeesCollected],
-          ["Total Expenses", data.summary.totalExpenses],
-          ["Net Cash Flow", data.summary.netCashFlow],
-          ["Outstanding Dues", data.summary.outstandingDues],
-        ],
+        metric: "Total Fees Collected",
+        value: data.summary.totalFeesCollected,
       },
-      { name: "Expenses By Category", data: data.expenseBreakdown },
-    ]);
+      { metric: "Total Expenses", value: data.summary.totalExpenses },
+      { metric: "Net Cash Flow", value: data.summary.netCashFlow },
+      { metric: "Outstanding Dues", value: data.summary.outstandingDues },
+    ];
+    await ExcelService.export({
+      data: rows,
+      columns: [
+        { key: "metric", label: "Metric", format: "text", width: 30 },
+        { key: "value", label: "Value", format: "currency", width: 20 },
+      ],
+      fileName: "Financial_Summary_Report",
+      options: {
+        sheetName: "Summary",
+        headerStyle: { fillColor: "4F46E5", fontColor: "FFFFFF", bold: true },
+      },
+    });
   };
 
   return (
@@ -67,7 +77,6 @@ export function GenericReportsClient() {
       title="Financial Overview"
       description="Consolidated summary of institution collections, spending, and outstanding dues."
       onExportExcel={handleExport}
-      onPrint={() => window.print()}
       isLoading={loading}
       hasData={!!data}
     >

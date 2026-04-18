@@ -12,11 +12,15 @@ import {
   Loader2,
   AlertCircle,
   ArrowUpCircle,
+  Pencil,
+  UserMinus,
 } from "lucide-react";
 import { AddStudentDialog } from "@/components/forms/AddStudentDialog";
 import { BulkImportDialog } from "@/components/forms/BulkImportDialog";
 import { PromoteStudentDialog } from "@/components/forms/PromoteStudentDialog";
 import { Pagination } from "@/components/shared/Pagination";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
+import { showToast } from "@/components/shared/Toast";
 
 interface Student {
   id: string;
@@ -79,6 +83,7 @@ export function StudentsClient({
   const [showAdd, setShowAdd] = useState(false);
   const [showImport, setShowImport] = useState(false);
   const [showPromote, setShowPromote] = useState(false);
+  const [withdrawTarget, setWithdrawTarget] = useState<Student | null>(null);
 
   // Selection state
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -152,6 +157,26 @@ export function StudentsClient({
         return "text-blue-600";
       default:
         return "text-gray-500";
+    }
+  };
+
+  const handleWithdraw = async () => {
+    if (!withdrawTarget?.enrollmentId) return;
+    try {
+      const res = await fetch(
+        `/api/enrollments/${withdrawTarget.enrollmentId}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status: "WITHDRAWN" }),
+        },
+      );
+      if (!res.ok) throw new Error("Failed to withdraw student");
+      showToast(`${withdrawTarget.name} has been withdrawn`, "success");
+      setWithdrawTarget(null);
+      router.refresh();
+    } catch (err: any) {
+      showToast(err.message, "error");
     }
   };
 
@@ -350,12 +375,22 @@ export function StudentsClient({
                         {fmt(remaining)}
                       </td>
                       <td className="px-6 py-4 text-right">
-                        <Link
-                          href={`/dashboard/students/${s.id}`}
-                          className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-primary hover:bg-primary/5 px-3 py-1.5 rounded-lg transition-all"
-                        >
-                          View Ledger <ChevronRight className="h-3 w-3" />
-                        </Link>
+                        <div className="flex items-center justify-end gap-1">
+                          <Link
+                            href={`/dashboard/students/${s.id}`}
+                            className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-primary hover:bg-primary/5 px-3 py-1.5 rounded-lg transition-all"
+                          >
+                            <Pencil className="h-3 w-3" /> Ledger
+                          </Link>
+                          {s.status === "ACTIVE" && s.enrollmentId && (
+                            <button
+                              onClick={() => setWithdrawTarget(s)}
+                              className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-rose-600 hover:bg-rose-500/10 px-3 py-1.5 rounded-lg transition-all"
+                            >
+                              <UserMinus className="h-3 w-3" /> Withdraw
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   );
@@ -395,6 +430,18 @@ export function StudentsClient({
           selectedStudentIds={selectedIds}
           currentClassId={currentClassId}
           currentSessionId={currentSessionId}
+        />
+      )}
+
+      {withdrawTarget && (
+        <ConfirmDialog
+          open={true}
+          title="Withdraw Student"
+          message={`Are you sure you want to withdraw ${withdrawTarget.name}? This will mark them as withdrawn from their current enrollment. This action cannot be easily undone.`}
+          variant="danger"
+          confirmText="Withdraw Student"
+          onConfirm={handleWithdraw}
+          onCancel={() => setWithdrawTarget(null)}
         />
       )}
     </div>

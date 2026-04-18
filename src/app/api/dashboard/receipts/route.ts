@@ -16,34 +16,78 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { studentId, amount, paymentMode, date, remarks, category } =
-      await req.json();
+    const {
+      studentId,
+      enrollmentId: requestedEnrollmentId,
+      amount,
+      paymentMode,
+      date,
+      remarks,
+      category,
+      incomeCategoryId,
+    } = await req.json();
 
-    const actualCategory = category || "Tuition Fee";
-    const needsStudent = ["Tuition Fee", "Student Dues"].includes(
-      actualCategory,
-    );
+    const orgId = session.user.organizationId;
+    const userId = session.user.id;
 
-    if (!amount || !paymentMode || !date || (needsStudent && !studentId)) {
+    // ── Resolve income category ──────────────────────────────────────
+    let resolvedCategory = category || "Tuition Fee";
+    let affectsTuition = false;
+
+    if (incomeCategoryId) {
+      const incomeCategory = await prisma.incomeCategory.findUnique({
+        where: { id: incomeCategoryId },
+      });
+      if (!incomeCategory || incomeCategory.organizationId !== orgId) {
+        return NextResponse.json(
+          { error: "Invalid income category" },
+          { status: 400 },
+        );
+      }
+      resolvedCategory = incomeCategory.name;
+      affectsTuition = incomeCategory.affectsTuition;
+    } else {
+      // Legacy fallback — string-based check
+      affectsTuition = ["Tuition Fee", "Student Dues"].includes(
+        resolvedCategory,
+      );
+    }
+
+    // ── Validation ────────────────────────────────────────────────────
+    // All categories require a student since receipts link to enrollment
+    if (!amount || !paymentMode || !date || !studentId) {
       return NextResponse.json(
         {
-          error: needsStudent
-            ? "Missing required fields (including Student)"
-            : "Missing required fields",
+          error:
+            "Missing required fields (amount, paymentMode, date, studentId)",
         },
         { status: 400 },
       );
     }
 
-    const orgId = session.user.organizationId;
-    const userId = session.user.id;
-
     // Execute in transaction to ensure atomicity
     const result = await prisma.$transaction(
       async (tx) => {
-        // 1. Fetch active enrollment if studentId is provided
-        let enrollmentId = null;
-        if (studentId && needsStudent) {
+        // 1. Resolve enrollment — use provided enrollmentId or find active
+        let enrollmentId: string;
+
+        if (requestedEnrollmentId) {
+          // Validate the provided enrollment belongs to this student and org
+          const enrollment = await tx.studentEnrollment.findFirst({
+            where: {
+              id: requestedEnrollmentId,
+              studentId,
+              organizationId: orgId,
+            },
+          });
+          if (!enrollment) {
+            throw new Error(
+              "Invalid enrollment. The selected enrollment does not belong to this student.",
+            );
+          }
+          enrollmentId = enrollment.id;
+        } else {
+          // Fallback: auto-find active enrollment
           const activeEnrollment = await tx.studentEnrollment.findFirst({
             where: {
               studentId,
@@ -51,16 +95,22 @@ export async function POST(req: Request) {
               status: "ACTIVE",
             },
           });
-
           if (!activeEnrollment) {
             throw new Error(
-              "No active enrollment found for this student in the current session",
+              "No active enrollment found for this student. Please select an academic year.",
             );
           }
           enrollmentId = activeEnrollment.id;
         }
 
-        // 2. Atomically increment Organization counter and update balances
+        // 2. Fetch active academic session for receipt number prefix
+        const activeSession = await tx.academicSession.findFirst({
+          where: { organizationId: orgId, status: "ACTIVE" },
+        });
+        const sessionPrefix =
+          activeSession?.name || new Date().getFullYear().toString();
+
+        // 3. Atomically increment Organization counter and update balances
         const decimalAmount = parseDecimal(amount);
         const balanceField =
           paymentMode === "CASH" ? "currentCashBalance" : "currentBankBalance";
@@ -74,9 +124,9 @@ export async function POST(req: Request) {
           },
         });
 
-        // 3. Generate Receipt Number and check for collisions
+        // 4. Generate session-scoped Receipt Number and check collisions
         let receiptCounter = org.receiptCounter;
-        let receiptNumber = `REC-${new Date().getFullYear()}-${receiptCounter.toString().padStart(4, "0")}`;
+        let receiptNumber = `REC-${sessionPrefix}-${receiptCounter.toString().padStart(4, "0")}`;
 
         const existing = await tx.receipt.findUnique({
           where: {
@@ -91,7 +141,7 @@ export async function POST(req: Request) {
           const lastReceipt = await tx.receipt.findFirst({
             where: {
               organizationId: orgId,
-              receiptNumber: { startsWith: `REC-${new Date().getFullYear()}-` },
+              receiptNumber: { startsWith: `REC-${sessionPrefix}-` },
             },
             orderBy: { receiptNumber: "desc" },
           });
@@ -106,28 +156,29 @@ export async function POST(req: Request) {
               data: { receiptCounter: nextIdx },
             });
             receiptCounter = nextIdx;
-            receiptNumber = `REC-${new Date().getFullYear()}-${receiptCounter.toString().padStart(4, "0")}`;
+            receiptNumber = `REC-${sessionPrefix}-${receiptCounter.toString().padStart(4, "0")}`;
           }
         }
 
-        // 4. Create Receipt
+        // 5. Create Receipt
         const receipt = await tx.receipt.create({
           data: {
             receiptNumber,
             amount: decimalAmount,
             paymentMode: paymentMode as PaymentMode,
-            category: actualCategory,
+            category: resolvedCategory,
+            incomeCategoryId: incomeCategoryId || undefined,
             date: new Date(date),
             remarks,
             studentId,
-            studentEnrollmentId: enrollmentId as string, // Required by schema
+            studentEnrollmentId: enrollmentId,
             organizationId: orgId,
             createdBy: userId,
           },
         });
 
-        // 5. Update Enrollment totalPaid
-        if (enrollmentId) {
+        // 6. Update Enrollment totalPaid (Only if affectsTuition)
+        if (affectsTuition) {
           await tx.studentEnrollment.update({
             where: { id: enrollmentId },
             data: {
@@ -136,7 +187,7 @@ export async function POST(req: Request) {
           });
         }
 
-        // 6. Create Transaction History
+        // 7. Create Transaction History
         const balanceAfter =
           paymentMode === "CASH"
             ? org.currentCashBalance
@@ -145,13 +196,12 @@ export async function POST(req: Request) {
         await tx.transactionHistory.create({
           data: {
             date: new Date(date),
-            type:
-              actualCategory === "Tuition Fee"
-                ? TransactionType.FEE_COLLECTION
-                : TransactionType.OTHER_INCOME,
+            type: affectsTuition
+              ? TransactionType.FEE_COLLECTION
+              : TransactionType.OTHER_INCOME,
             receiptId: receipt.id,
             studentEnrollmentId: enrollmentId,
-            description: `${actualCategory} receipt: ${receiptNumber}`,
+            description: `${resolvedCategory} receipt: ${receiptNumber}`,
             impactedAccount: paymentMode as AccountType,
             debitAmount: decimalAmount,
             balanceAfter: balanceAfter,

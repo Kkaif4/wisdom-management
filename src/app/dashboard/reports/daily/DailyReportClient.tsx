@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Download, Printer } from "lucide-react";
-import * as XLSX from "xlsx";
+import { ExcelService } from "@/modules/document/services/excel.service";
 import { showToast } from "@/components/shared/Toast";
 
 interface ReceiptEntry {
@@ -42,30 +42,24 @@ export function DailyReportClient({
     router.push(`/dashboard/reports/daily?date=${newDate}`);
   };
 
-  const handleExportExcel = () => {
+  const handleExportExcel = async () => {
     try {
-      const headers = [
-        "Receipt #",
-        "Student Name",
-        "Class",
-        "Mode",
-        "Amount",
-        "Status",
-      ];
-      const rows = receipts.map((r) => [
-        r.receiptNumber,
-        r.studentName,
-        r.studentClass,
-        r.paymentMode,
-        r.amount,
-        r.status,
-      ]);
-
-      const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, "Daily Collection");
-
-      XLSX.writeFile(wb, `daily_report_${date}.xlsx`);
+      await ExcelService.export({
+        data: receipts,
+        columns: [
+          { key: "receiptNumber", label: "Receipt #", format: "text" },
+          { key: "studentName", label: "Student Name", format: "text" },
+          { key: "studentClass", label: "Class", format: "text" },
+          { key: "paymentMode", label: "Mode", format: "text" },
+          { key: "amount", label: "Amount", format: "currency" },
+          { key: "status", label: "Status", format: "text" },
+        ],
+        fileName: `daily_report_${date}`,
+        options: {
+          sheetName: "Daily Collection",
+          headerStyle: { fillColor: "111827", fontColor: "FFFFFF", bold: true },
+        },
+      });
       showToast("Excel report generated", "success");
     } catch (err) {
       showToast("Failed to export Excel", "error");
@@ -108,17 +102,10 @@ export function DailyReportClient({
           >
             <Download className="h-4 w-4" />
           </button>
-          <button
-            onClick={() => window.print()}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-black text-white text-xs font-bold uppercase tracking-widest hover:opacity-90 active:scale-95 transition-all"
-          >
-            <Printer className="h-4 w-4" />
-            Print Report
-          </button>
         </div>
       </div>
 
-      {/* Report Header */}
+      {/* Report Header (Legacy visible header kept for now as it's part of screen UI too, but print styles removed) */}
       <div className="text-center space-y-2 border-b pb-8 border-zinc-200">
         <h1 className="text-xl font-black uppercase tracking-[0.2em]">
           Wisdom Management System
@@ -224,53 +211,6 @@ export function DailyReportClient({
           </tbody>
         </table>
       </div>
-
-      {/* Footer / Signature Area — Printing only */}
-      <div className="hidden print:flex flex-col items-end mt-24 gap-12">
-        <div className="w-48 border-t border-black text-center pt-2">
-          <p className="text-[10px] font-black uppercase tracking-widest">
-            Authorized Signature
-          </p>
-        </div>
-        <p className="text-[8px] text-zinc-400">
-          Computer generated report • {new Date().toLocaleString()}
-        </p>
-      </div>
-
-      <style jsx global>{`
-        @media print {
-          @page {
-            size: A4;
-            margin: 20mm;
-          }
-          body {
-            background: white !important;
-          }
-          .print\:hidden {
-            display: none !important;
-          }
-          .bg-zinc-50 {
-            background: #f9fafb !important;
-            -webkit-print-color-adjust: exact;
-          }
-          .border-zinc-200 {
-            border-color: #e5e7eb !important;
-          }
-          .text-emerald-600 {
-            color: #059669 !important;
-          }
-          table {
-            width: 100% !important;
-            border-collapse: collapse !important;
-          }
-          th {
-            border-bottom: 2px solid black !important;
-          }
-          td {
-            border-bottom: 1px solid #f3f4f6 !important;
-          }
-        }
-      `}</style>
     </div>
   );
 }

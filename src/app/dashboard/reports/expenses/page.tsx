@@ -1,5 +1,5 @@
-import { ExpensesReportClient } from "./ExpensesReportClient";
+import { ExpensesReportClientWrapper } from "./ExpensesReportClient";
 
 export default function ExpensesReportPage() {
-  return <ExpensesReportClient />;
+  return <ExpensesReportClientWrapper />;
 }

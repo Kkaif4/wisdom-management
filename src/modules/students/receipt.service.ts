@@ -12,7 +12,8 @@ import {
 // Receipt Service — Enrollment-Aware
 //
 // All receipts are now linked to a StudentEnrollment.
-// Fee payments update enrollment.totalPaid, not student.totalPaid.
+// Fee payments update enrollment.totalPaid ONLY when the income
+// category has affectsTuition === true.
 // ──────────────────────────────────────────────────────────────────────
 
 export class ReceiptService {
@@ -23,6 +24,7 @@ export class ReceiptService {
     studentEnrollmentId: string;
     studentId?: string;
     category: string;
+    incomeCategoryId?: string;
     organizationId: string;
     userId: string;
     amount: Prisma.Decimal;
@@ -35,6 +37,7 @@ export class ReceiptService {
       studentEnrollmentId,
       studentId,
       category,
+      incomeCategoryId,
       organizationId,
       userId,
       amount,
@@ -53,6 +56,7 @@ export class ReceiptService {
             amount,
             paymentMode,
             category,
+            incomeCategoryId,
             date,
             remarks,
             studentEnrollmentId,
@@ -62,13 +66,29 @@ export class ReceiptService {
           },
         });
 
-        // 2. Update Enrollment totalPaid (NOT Student)
-        await tx.studentEnrollment.update({
-          where: { id: studentEnrollmentId },
-          data: {
-            totalPaid: { increment: amount },
-          },
-        });
+        // 2. Update Enrollment totalPaid (Only if category affects tuition)
+        let shouldAffectTuition = false;
+        if (incomeCategoryId) {
+          const incomeCategory = await tx.incomeCategory.findUnique({
+            where: { id: incomeCategoryId },
+            select: { affectsTuition: true },
+          });
+          shouldAffectTuition = incomeCategory?.affectsTuition ?? false;
+        } else {
+          // Fallback for legacy: check category string
+          shouldAffectTuition = ["Tuition Fee", "Student Dues"].includes(
+            category,
+          );
+        }
+
+        if (shouldAffectTuition) {
+          await tx.studentEnrollment.update({
+            where: { id: studentEnrollmentId },
+            data: {
+              totalPaid: { increment: amount },
+            },
+          });
+        }
 
         // 3. Update Organization Balance
         const accountType = paymentMode === "CASH" ? "CASH" : "BANK";
@@ -139,13 +159,29 @@ export class ReceiptService {
           },
         });
 
-        // 2. Reverse Enrollment totalPaid (NOT Student)
-        await tx.studentEnrollment.update({
-          where: { id: receipt.studentEnrollmentId },
-          data: {
-            totalPaid: { decrement: receipt.amount },
-          },
-        });
+        // 2. Reverse Enrollment totalPaid (Only if category affects tuition)
+        let shouldAffectTuition = false;
+        if (receipt.incomeCategoryId) {
+          const incomeCategory = await tx.incomeCategory.findUnique({
+            where: { id: receipt.incomeCategoryId },
+            select: { affectsTuition: true },
+          });
+          shouldAffectTuition = incomeCategory?.affectsTuition ?? false;
+        } else {
+          // Fallback for legacy: check category string
+          shouldAffectTuition = ["Tuition Fee", "Student Dues"].includes(
+            receipt.category,
+          );
+        }
+
+        if (shouldAffectTuition) {
+          await tx.studentEnrollment.update({
+            where: { id: receipt.studentEnrollmentId },
+            data: {
+              totalPaid: { decrement: receipt.amount },
+            },
+          });
+        }
 
         // 3. Reverse Organization Balance
         const accountType = receipt.paymentMode === "CASH" ? "CASH" : "BANK";

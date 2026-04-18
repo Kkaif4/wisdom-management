@@ -10,7 +10,7 @@ interface MobileHeaderProps {
 
 export function MobileHeader({ onMenuToggle, isOpen }: MobileHeaderProps) {
   return (
-    <header className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-card/80 backdrop-blur-xl border-b border-border z-40 px-4 flex items-center justify-between shadow-sm">
+    <header className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-card/80 backdrop-blur-xl border-b border-border z-40 px-4 flex items-center justify-between shadow-sm no-print">
       <div className="flex items-center gap-2">
         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-white font-bold italic tracking-tighter shadow-md">
           W

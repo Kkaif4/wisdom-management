@@ -93,6 +93,7 @@ model Organization {
   receipts               Receipt[]
   expenses               Expense[]
   auditLogs              AuditLog[]
+  incomeCategories       IncomeCategory[]
 }
 
 // ──────────────────────────────────────────────────────────────────────
@@ -197,6 +198,7 @@ model Student {
   // Identity
   admissionNumber   String        // Unique school-level ID
   name              String
+  rollNumber        String?       // Roll number within class
 
   // Demographics (optional)
   dateOfBirth       DateTime?
@@ -294,6 +296,9 @@ model Receipt {
   status                ReceiptStatus @default(ACTIVE)
   category              String        @default("Tuition Fee")
 
+  incomeCategoryId      String?
+  incomeCategory        IncomeCategory? @relation(fields: [incomeCategoryId], references: [id])
+
   // Enrollment context (mandatory)
   studentEnrollmentId   String
   studentEnrollment     StudentEnrollment @relation(fields: [studentEnrollmentId], references: [id])
@@ -323,6 +328,7 @@ model Receipt {
   @@index([studentId])
   @@index([date])
   @@index([category])
+  @@index([incomeCategoryId])
 }
 
 // ──────────────────────────────────────────────────────────────────────
@@ -388,6 +394,30 @@ model TransactionHistory {
   @@index([type])
   @@index([studentId])
   @@index([studentEnrollmentId])
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// Income Category (DB-backed)
+// ──────────────────────────────────────────────────────────────────────
+
+model IncomeCategory {
+  id               String       @id @default(uuid())
+  name             String       // "Tuition Fee", "Bonafide Fee", etc.
+  code             String       // "TUITION_FEE", "TC_LEAVING_CERT", etc.
+  affectsTuition   Boolean      @default(false)  // Only true for Tuition Fee / Student Dues
+  isActive         Boolean      @default(true)
+  displayOrder     Int          @default(0)
+
+  organizationId   String
+  organization     Organization @relation(fields: [organizationId], references: [id])
+
+  receipts         Receipt[]
+
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  @@unique([code, organizationId])
+  @@index([organizationId])
 }
 
 // ──────────────────────────────────────────────────────────────────────

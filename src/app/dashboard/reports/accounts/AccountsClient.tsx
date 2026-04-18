@@ -5,7 +5,8 @@ import { ReportLayout } from "@/components/dashboard/reports/ReportLayout";
 import { ReportFilters } from "@/components/dashboard/reports/ReportFilters";
 import { DataTable } from "@/components/dashboard/reports/DataTable";
 import { ColumnDef } from "@tanstack/react-table";
-import { exportToExcel, formatCurrency } from "@/lib/reportExport";
+import { ExcelService } from "@/modules/document/services/excel.service";
+import { formatCurrency } from "@/lib/reportExport";
 import {
   Wallet,
   Building2,
@@ -69,33 +70,45 @@ export function AccountsClient() {
 
   const currentAccountData = data ? data[activeAccount] : null;
 
-  const handleExport = () => {
+  const handleExport = async () => {
     if (!data) return;
-    const sheets: any[] = [];
+    // Export the currently-viewed account's transactions
+    const accData = data[activeAccount];
+    if (!accData) return;
 
-    Object.entries(data).forEach(([acc, val]) => {
-      const exportData = val.transactions.map((t: Transaction) => ({
-        Date: new Date(t.date).toLocaleDateString(),
-        Type: t.type.replace(/_/g, " "),
-        Description: t.description,
-        Inflow: t.debit,
-        Outflow: t.credit,
-        Balance: t.balanceAfter,
-      }));
-      sheets.push({ name: `${acc} Ledger`, data: exportData });
-      sheets.push({
-        name: `${acc} Summary`,
-        data: [
-          ["Metric", "Value"],
-          ["Opening Balance", val.openingBalance],
-          ["Total Inflow", val.totalInflow],
-          ["Total Outflow", val.totalOutflow],
-          ["Closing Balance", val.closingBalance],
-        ],
-      });
+    type TxRow = {
+      date: string;
+      type: string;
+      description: string;
+      inflow: number;
+      outflow: number;
+      balance: number;
+    };
+    const rows: TxRow[] = accData.transactions.map((t: Transaction) => ({
+      date: t.date,
+      type: t.type.replace(/_/g, " "),
+      description: t.description,
+      inflow: t.debit,
+      outflow: t.credit,
+      balance: t.balanceAfter,
+    }));
+
+    await ExcelService.export({
+      data: rows,
+      columns: [
+        { key: "date", label: "Date", format: "date" },
+        { key: "type", label: "Type", format: "text" },
+        { key: "description", label: "Description", format: "text", width: 40 },
+        { key: "inflow", label: "Inflow (Dr)", format: "currency" },
+        { key: "outflow", label: "Outflow (Cr)", format: "currency" },
+        { key: "balance", label: "Balance", format: "currency" },
+      ],
+      fileName: `${activeAccount}_Account_Ledger`,
+      options: {
+        sheetName: `${activeAccount} Ledger`,
+        headerStyle: { fillColor: "4F46E5", fontColor: "FFFFFF", bold: true },
+      },
     });
-
-    exportToExcel("Unified_Account_Report", sheets);
   };
 
   const columns: ColumnDef<Transaction>[] = [
@@ -154,7 +167,6 @@ export function AccountsClient() {
       title="Account Ledgers"
       description="Consolidated cash book and bank statement analysis."
       onExportExcel={handleExport}
-      onPrint={() => window.print()}
       isLoading={loading}
       hasData={!!data}
     >

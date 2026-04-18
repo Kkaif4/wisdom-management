@@ -5,7 +5,8 @@ import { ReportLayout } from "@/components/dashboard/reports/ReportLayout";
 import { DateRangePicker } from "@/components/dashboard/reports/DateRangePicker";
 import { DataTable } from "@/components/dashboard/reports/DataTable";
 import { ColumnDef } from "@tanstack/react-table";
-import { exportToExcel, formatCurrency } from "@/lib/reportExport";
+import { ExcelService } from "@/modules/document/services/excel.service";
+import { formatCurrency } from "@/lib/reportExport";
 import { Building2, TrendingUp, TrendingDown, Landmark } from "lucide-react";
 
 interface BankTransaction {
@@ -55,30 +56,40 @@ export function BankClient() {
     fetchReport(start, end);
   };
 
-  const handleExport = () => {
+  const handleExport = async () => {
     if (!data) return;
-    const exportData = data.transactions.map((t) => ({
-      Date: new Date(t.date).toLocaleDateString(),
-      Type: t.type.replace(/_/g, " "),
-      Description: t.description,
-      Inflow: t.debit,
-      Outflow: t.credit,
-      "Balance After": t.balanceAfter,
+    type TxRow = {
+      date: string;
+      type: string;
+      description: string;
+      inflow: number;
+      outflow: number;
+      balanceAfter: number;
+    };
+    const rows: TxRow[] = data.transactions.map((t) => ({
+      date: t.date,
+      type: t.type.replace(/_/g, " "),
+      description: t.description,
+      inflow: t.debit,
+      outflow: t.credit,
+      balanceAfter: t.balanceAfter,
     }));
-
-    exportToExcel("Bank_Ledger_Report", [
-      { name: "Ledger", data: exportData },
-      {
-        name: "Summary",
-        data: [
-          ["Metric", "Value"],
-          ["Opening Balance", data.summary.openingBalance],
-          ["Total Inflow", data.summary.totalInflow],
-          ["Total Outflow", data.summary.totalOutflow],
-          ["Closing Balance", data.summary.closingBalance],
-        ],
+    await ExcelService.export({
+      data: rows,
+      columns: [
+        { key: "date", label: "Date", format: "date" },
+        { key: "type", label: "Type", format: "text" },
+        { key: "description", label: "Description", format: "text", width: 40 },
+        { key: "inflow", label: "Inflow (Dr)", format: "currency" },
+        { key: "outflow", label: "Outflow (Cr)", format: "currency" },
+        { key: "balanceAfter", label: "Balance After", format: "currency" },
+      ],
+      fileName: "Bank_Ledger_Report",
+      options: {
+        sheetName: "Bank Ledger",
+        headerStyle: { fillColor: "4F46E5", fontColor: "FFFFFF", bold: true },
       },
-    ]);
+    });
   };
 
   const columns: ColumnDef<BankTransaction>[] = [
@@ -137,7 +148,6 @@ export function BankClient() {
       title="Bank Ledger Report"
       description="View all bank-related transactions and account reconciliation."
       onExportExcel={handleExport}
-      onPrint={() => window.print()}
       isLoading={loading}
       hasData={!!data}
     >

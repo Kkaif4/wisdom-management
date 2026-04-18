@@ -8,8 +8,18 @@ import {
 } from "@/components/dashboard/reports/ReportFilters";
 import { DataTable } from "@/components/dashboard/reports/DataTable";
 import { ColumnDef } from "@tanstack/react-table";
-import { exportToExcel, formatCurrency } from "@/lib/reportExport";
-import { TrendingDown, PieChart, Wallet, Building2 } from "lucide-react";
+import { ExcelService } from "@/modules/document/services/excel.service";
+import { formatCurrency } from "@/lib/reportExport";
+import {
+  TrendingDown,
+  PieChart,
+  Wallet,
+  Building2,
+  Printer,
+} from "lucide-react";
+import { PrintService } from "@/modules/document/services/print.service";
+import { PrintWrapper } from "@/modules/document/components/PrintWrapper";
+import { ExpenseVoucherTemplate } from "@/modules/document/templates/expense.template";
 
 interface Expense {
   id: string;
@@ -39,6 +49,7 @@ interface ExpensesData {
 export function ExpensesReportClient() {
   const [data, setData] = useState<ExpensesData | null>(null);
   const [loading, setLoading] = useState(false);
+  const [printingExpense, setPrintingExpense] = useState<Expense | null>(null);
   const [filters, setFilters] = useState({
     start: "",
     end: "",
@@ -87,20 +98,48 @@ export function ExpensesReportClient() {
     fetchReport(filters.start, filters.end, filters.paymentMode, cat);
   };
 
-  const handleExport = () => {
+  const handleExport = async () => {
     if (!data) return;
-    const exportData = data.expenses.map((e) => ({
-      Date: new Date(e.date).toLocaleDateString(),
-      Category: e.category,
-      Description: e.description,
-      Mode: e.paymentMode,
-      Amount: e.amount,
+    type ExpRow = {
+      date: string;
+      category: string;
+      description: string;
+      paymentMode: string;
+      amount: number;
+    };
+    const rows: ExpRow[] = data.expenses.map((e) => ({
+      date: e.date,
+      category: e.category,
+      description: e.description,
+      paymentMode: e.paymentMode,
+      amount: e.amount,
     }));
+    await ExcelService.export({
+      data: rows,
+      columns: [
+        { key: "date", label: "Date", format: "date" },
+        { key: "category", label: "Category", format: "text" },
+        { key: "description", label: "Description", format: "text", width: 40 },
+        { key: "paymentMode", label: "Mode", format: "text" },
+        { key: "amount", label: "Amount", format: "currency" },
+      ],
+      fileName: "Expenses_Report",
+      options: {
+        sheetName: "Expenses",
+        headerStyle: { fillColor: "4F46E5", fontColor: "FFFFFF", bold: true },
+      },
+    });
+  };
 
-    exportToExcel("Expenses_Report", [
-      { name: "Expenses", data: exportData },
-      { name: "Category Summary", data: data.categoryBreakdown },
-    ]);
+  const handlePrintVoucher = async (expense: Expense) => {
+    setPrintingExpense(expense);
+    // Add small delay for state update
+    setTimeout(async () => {
+      await PrintService.print({
+        elementId: "expense-voucher-print",
+        onAfterPrint: () => setPrintingExpense(null),
+      });
+    }, 100);
   };
 
   // Extract unique categories from breakdown for the filter
@@ -142,6 +181,19 @@ export function ExpensesReportClient() {
         </div>
       ),
     },
+    {
+      id: "actions",
+      cell: ({ row }) => (
+        <button
+          onClick={() => handlePrintVoucher(row.original)}
+          className="p-2 hover:bg-rose-500/10 text-rose-500 rounded-lg transition-colors flex items-center gap-2 group"
+          title="Print Voucher"
+        >
+          <Printer className="h-4 w-4 group-hover:scale-110 transition-transform" />
+          <span className="text-[10px] font-black uppercase">Voucher</span>
+        </button>
+      ),
+    },
   ];
 
   return (
@@ -149,7 +201,6 @@ export function ExpensesReportClient() {
       title="Expense Report"
       description="Detailed log of institutional spending and category-wise analysis."
       onExportExcel={handleExport}
-      onPrint={() => window.print()}
       isLoading={loading}
       hasData={!!data}
     >
@@ -257,7 +308,34 @@ export function ExpensesReportClient() {
             </div>
           </>
         )}
+
+        <PrintPreview expense={printingExpense} />
       </div>
     </ReportLayout>
+  );
+}
+
+export function ExpensesReportClientWrapper() {
+  return <ExpensesReportClient />;
+}
+
+function PrintPreview({ expense }: { expense: Expense | null }) {
+  if (!expense) return null;
+  return (
+    <div id="expense-voucher-print" className="hidden print:block">
+      <ExpenseVoucherTemplate
+        mode="print"
+        data={{
+          voucherNumber: expense.id.slice(-6).toUpperCase(),
+          date: expense.date,
+          category: expense.category,
+          description: expense.description,
+          amount: expense.amount,
+          paymentMode: expense.paymentMode,
+          recordedBy: "System Admin",
+          organizationName: "Wisdom Academy",
+        }}
+      />
+    </div>
   );
 }

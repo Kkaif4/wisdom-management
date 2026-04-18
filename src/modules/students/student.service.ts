@@ -15,6 +15,7 @@ export class StudentService {
   static async createStudent(params: {
     admissionNumber: string;
     name: string;
+    rollNumber?: string;
     organizationId: string;
     dateOfBirth?: Date;
     gender?: string;
@@ -29,6 +30,7 @@ export class StudentService {
       data: {
         admissionNumber: params.admissionNumber,
         name: params.name,
+        rollNumber: params.rollNumber,
         organizationId: params.organizationId,
         dateOfBirth: params.dateOfBirth,
         gender: params.gender,
@@ -197,6 +199,7 @@ export class StudentService {
     data: {
       name?: string;
       admissionNumber?: string;
+      rollNumber?: string;
       dateOfBirth?: Date;
       gender?: string;
       contactNumber?: string;

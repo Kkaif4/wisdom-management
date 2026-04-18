@@ -20,17 +20,15 @@ import {
   FileText,
   Landmark,
   School,
-  BookOpen,
   ArrowUpCircle,
 } from "lucide-react";
 
 const NAV_ITEMS = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { label: "Receipts", href: "/dashboard/receipts", icon: Receipt },
   { label: "Academic", href: "/dashboard/academic", icon: School },
   { label: "Students", href: "/dashboard/students", icon: Users },
   { label: "Withdrawn", href: "/dashboard/students/withdrawn", icon: Users },
-  { label: "Enrollments", href: "/dashboard/enrollments", icon: BookOpen },
-  { label: "Receipts", href: "/dashboard/receipts", icon: Receipt },
   { label: "Expenses", href: "/dashboard/expenses", icon: TrendingUp },
   { label: "Accounts", href: "/dashboard/accounts", icon: Wallet },
   { label: "Ledger", href: "/dashboard/ledger", icon: Library },
@@ -78,7 +76,8 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
       )}
 
       <aside
-        className={`fixed left-0 top-0 h-screen w-[280px] flex flex-col border-r bg-card/80 backdrop-blur-xl transition-all duration-300 z-50 shadow-sm
+        id="sidebar"
+        className={`fixed left-0 top-0 h-screen w-[280px] flex flex-col border-r bg-card/80 backdrop-blur-xl transition-all duration-300 z-50 shadow-sm no-print
           ${isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
         `}
       >

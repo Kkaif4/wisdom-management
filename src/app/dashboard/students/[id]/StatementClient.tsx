@@ -3,7 +3,10 @@
 import React from "react";
 import Link from "next/link";
 import { Download, Printer, ChevronDown, ChevronRight } from "lucide-react";
-import * as XLSX from "xlsx";
+import { ExcelService } from "@/modules/document/services/excel.service";
+import { PrintService } from "@/modules/document/services/print.service";
+import { PrintWrapper } from "@/modules/document/components/PrintWrapper";
+import { StudentStatementTemplate } from "@/modules/document/templates/student-statement.template";
 import { showToast } from "@/components/shared/Toast";
 
 interface Receipt {
@@ -12,6 +15,7 @@ interface Receipt {
   date: string;
   amount: number;
   paymentMode: string;
+  category: string;
   status: string;
   remarks: string | null;
 }
@@ -49,6 +53,7 @@ const fmt = (val: number) =>
 
 export function StatementClient({ data }: { data: StatementData }) {
   const { student, enrollments, totalOutstanding } = data;
+  const [isPrinting, setIsPrinting] = React.useState(false);
   const [expanded, setExpanded] = React.useState<string | null>(
     enrollments.find((e) => e.status === "ACTIVE")?.id ||
       enrollments[0]?.id ||
@@ -70,58 +75,68 @@ export function StatementClient({ data }: { data: StatementData }) {
     }
   };
 
-  const handleExportExcel = () => {
+  const handleExportExcel = async () => {
     try {
-      const rows: any[][] = [
-        ["Multi-Year Student Ledger"],
-        ["Student", student.name],
-        ["Admission No", student.admissionNumber],
-        ["Generated", new Date().toLocaleString()],
-        [],
-      ];
+      type LedgerRow = {
+        session: string;
+        className: string;
+        receiptDate: string;
+        receiptNumber: string;
+        paymentMode: string;
+        amount: number;
+        status: string;
+      };
 
-      for (const e of enrollments) {
-        rows.push([
-          `${e.sessionName} — ${e.className} ${e.divisionName} (${e.status})`,
-        ]);
-        rows.push([
-          "Assigned",
-          e.totalFeesAssigned,
-          "Paid",
-          e.totalPaid,
-          "Remaining",
-          e.remaining,
-        ]);
-        rows.push(["Date", "Receipt #", "Mode", "Amount", "Status"]);
-        for (const r of e.receipts) {
-          rows.push([
-            new Date(r.date).toLocaleDateString(),
-            r.receiptNumber,
-            r.paymentMode,
-            r.amount,
-            r.status,
-          ]);
-        }
-        rows.push([]);
-      }
+      const flatRows: LedgerRow[] = enrollments.flatMap((e) =>
+        e.receipts.map((r) => ({
+          session: e.sessionName,
+          className: `${e.className} ${e.divisionName}`,
+          receiptDate: r.date,
+          receiptNumber: r.receiptNumber,
+          paymentMode: r.paymentMode,
+          amount: r.amount,
+          status: r.status,
+        })),
+      );
 
-      rows.push(["Total Outstanding", totalOutstanding]);
-
-      const ws = XLSX.utils.aoa_to_sheet(rows);
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, "Ledger");
-      XLSX.writeFile(wb, `ledger_${student.name.replace(/\s+/g, "_")}.xlsx`);
-      showToast("Ledger exported to Excel", "success");
-    } catch {
-      showToast("Failed to export Excel", "error");
+      await ExcelService.export({
+        data: flatRows,
+        columns: [
+          { key: "session", label: "Session", format: "text", width: 15 },
+          { key: "className", label: "Class", format: "text", width: 15 },
+          { key: "receiptDate", label: "Date", format: "date" },
+          { key: "receiptNumber", label: "Receipt #", format: "text" },
+          { key: "paymentMode", label: "Mode", format: "text" },
+          { key: "amount", label: "Amount", format: "currency" },
+          { key: "status", label: "Status", format: "text" },
+        ],
+        fileName: `Ledger_${student.admissionNumber}`,
+        options: {
+          sheetName: "Ledger",
+          headerStyle: { fillColor: "4F46E5", fontColor: "FFFFFF", bold: true },
+        },
+      });
+      showToast("Ledger exported successfully", "success");
+    } catch (err) {
+      showToast("Failed to export ledger", "error");
     }
+  };
+
+  const handlePrint = async () => {
+    setIsPrinting(true);
+    // PrintService handles internal delay for DOM update
+    await PrintService.print({
+      elementId: "student-ledger-print",
+      onAfterPrint: () => setIsPrinting(false),
+      onError: () => setIsPrinting(false),
+    });
   };
 
   return (
     <div className="space-y-8 max-w-4xl animate-fade-in mb-10">
       <Link
         href="/dashboard/students"
-        className="text-xs font-bold uppercase tracking-widest text-muted-foreground transition-colors hover:text-foreground"
+        className="text-xs font-bold uppercase tracking-widest text-muted-foreground transition-colors hover:text-foreground inline-flex items-center gap-1"
       >
         ← Back to Students
       </Link>
@@ -129,46 +144,49 @@ export function StatementClient({ data }: { data: StatementData }) {
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-black tracking-tight text-foreground">
-            {student.name}
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            {student.admissionNumber} ·{" "}
+          <h1 className="text-3xl font-black tracking-tight text-foreground flex items-center gap-3">
+            Student Ledger
             <span
-              className={statusColor(student.status)
-                .split(" ")
-                .slice(1)
-                .join(" ")}
+              className={`text-[10px] px-2 py-0.5 rounded-full border ${statusColor(student.status)}`}
             >
               {student.status}
             </span>
+          </h1>
+          <p className="text-sm font-bold text-muted-foreground flex items-center gap-2 mt-1">
+            {student.name}
+            <span className="h-1 w-1 rounded-full bg-border" />
+            <span className="font-mono text-xs uppercase tracking-widest text-primary/60">
+              {student.admissionNumber}
+            </span>
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <button
             onClick={handleExportExcel}
-            className="p-2.5 rounded-xl bg-muted border border-border/50 hover:bg-muted/80 transition-all active:scale-95 flex items-center gap-2 text-xs font-bold uppercase tracking-widest px-4"
+            className="flex items-center gap-2 px-4 py-2 bg-card border border-border/50 rounded-xl text-sm font-bold text-foreground/70 hover:bg-muted/50 transition-all active:scale-95"
           >
-            <Download className="h-4 w-4" /> Excel
+            <Download className="h-4 w-4" />
+            Spreadsheet
           </button>
           <button
-            onClick={() => window.print()}
-            className="px-4 py-2.5 rounded-xl bg-muted text-muted-foreground text-xs font-bold uppercase tracking-widest transition-all hover:bg-muted/80 active:scale-95 flex items-center gap-2"
+            onClick={handlePrint}
+            className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-xl text-sm font-bold shadow-lg shadow-primary/20 hover:scale-[1.02] transition-all active:scale-95"
           >
-            <Printer className="h-4 w-4" /> Print
+            <Printer className="h-4 w-4" />
+            Print Ledger
           </button>
         </div>
       </div>
 
       {/* Outstanding Summary */}
       <div
-        className={`rounded-2xl p-5 border ${totalOutstanding > 0 ? "border-rose-500/20 bg-rose-500/5" : "border-emerald-500/20 bg-emerald-500/5"}`}
+        className={`rounded-2xl p-6 border ${totalOutstanding > 0 ? "border-rose-500/20 bg-rose-500/5" : "border-emerald-500/20 bg-emerald-500/5"}`}
       >
         <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground mb-1">
           Total Outstanding (All Years)
         </p>
         <p
-          className={`text-2xl font-black tracking-tight ${totalOutstanding > 0 ? "text-rose-600" : "text-emerald-600"}`}
+          className={`text-3xl font-black tracking-tight ${totalOutstanding > 0 ? "text-rose-600" : "text-emerald-600"}`}
         >
           {fmt(totalOutstanding)}
         </p>
@@ -255,6 +273,7 @@ export function StatementClient({ data }: { data: StatementData }) {
                         <tr className="text-[10px] font-bold uppercase tracking-[0.12em] text-muted-foreground/70 border-b border-border/30">
                           <th className="px-6 py-3">Date</th>
                           <th className="px-6 py-3">Receipt #</th>
+                          <th className="px-6 py-3">Purpose</th>
                           <th className="px-6 py-3">Mode</th>
                           <th className="px-6 py-3 text-right">Amount</th>
                           <th className="px-6 py-3 text-right">Status</th>
@@ -275,6 +294,9 @@ export function StatementClient({ data }: { data: StatementData }) {
                             </td>
                             <td className="px-6 py-3 text-sm font-mono font-medium">
                               {r.receiptNumber}
+                            </td>
+                            <td className="px-6 py-3 text-xs font-bold text-muted-foreground">
+                              {r.category}
                             </td>
                             <td className="px-6 py-3">
                               <span
@@ -305,29 +327,52 @@ export function StatementClient({ data }: { data: StatementData }) {
         )}
       </div>
 
-      <style jsx global>{`
-        @media print {
-          @page {
-            size: A4;
-            margin: 15mm;
-          }
-          body {
-            background: white !important;
-            font-size: 10pt;
-            color: black !important;
-          }
-          a,
-          button,
-          .tracking-widest {
-            display: none !important;
-          }
-          .rounded-2xl,
-          .glass {
-            border-radius: 4px !important;
-            box-shadow: none !important;
-          }
-        }
-      `}</style>
+      {/* Hidden Print Content */}
+      {isPrinting && (
+        <PrintWrapper id="student-ledger-print">
+          <StudentStatementTemplate
+            mode="print"
+            data={{
+              student: {
+                name: student.name,
+                admissionNumber: student.admissionNumber,
+                class:
+                  enrollments.find((e) => e.status === "ACTIVE")?.className ||
+                  enrollments[0]?.className ||
+                  "N/A",
+              },
+              period: {
+                start:
+                  enrollments[enrollments.length - 1]?.sessionName || "N/A",
+                end: enrollments[0]?.sessionName || "N/A",
+              },
+              summary: {
+                totalAssigned: enrollments.reduce(
+                  (sum, e) => sum + e.totalFeesAssigned,
+                  0,
+                ),
+                totalPaid: enrollments.reduce((sum, e) => sum + e.totalPaid, 0),
+                outstanding: totalOutstanding,
+              },
+              enrollments: enrollments.map((e) => ({
+                sessionName: e.sessionName,
+                className: e.className,
+                totalFees: e.totalFeesAssigned,
+                paid: e.totalPaid,
+                remaining: e.remaining,
+                receipts: e.receipts.map((r) => ({
+                  date: r.date,
+                  receiptNumber: r.receiptNumber,
+                  paymentMode: r.paymentMode,
+                  amount: r.amount,
+                  status: r.status,
+                })),
+              })),
+              organizationName: "Wisdom Academy",
+            }}
+          />
+        </PrintWrapper>
+      )}
     </div>
   );
 }

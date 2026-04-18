@@ -15,6 +15,7 @@ import {
   Zap,
   Lock,
 } from "lucide-react";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 
 const fmt = (val: number) =>
   new Intl.NumberFormat("en-IN", {
@@ -65,6 +66,13 @@ export default function AcademicPage() {
     endDate: "",
   });
   const [actionLoading, setActionLoading] = useState(false);
+  const [pendingConfirm, setPendingConfirm] = useState<{
+    title: string;
+    message: string;
+    variant: "danger" | "warning" | "default";
+    confirmText: string;
+    action: () => void;
+  } | null>(null);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -100,9 +108,18 @@ export default function AcademicPage() {
   };
 
   const handleDeleteClass = async (id: string) => {
-    if (!confirm("Delete this class?")) return;
-    await fetch(`/api/classes/${id}`, { method: "DELETE" });
-    fetchData();
+    setPendingConfirm({
+      title: "Delete Class",
+      message:
+        "Are you sure you want to delete this class? This action cannot be undone.",
+      variant: "danger",
+      confirmText: "Delete",
+      action: async () => {
+        await fetch(`/api/classes/${id}`, { method: "DELETE" });
+        setPendingConfirm(null);
+        fetchData();
+      },
+    });
   };
 
   const handleAddDivision = async (classId: string) => {
@@ -120,9 +137,18 @@ export default function AcademicPage() {
   };
 
   const handleDeleteDivision = async (id: string) => {
-    if (!confirm("Delete this division?")) return;
-    await fetch(`/api/divisions/${id}`, { method: "DELETE" });
-    fetchData();
+    setPendingConfirm({
+      title: "Delete Division",
+      message:
+        "Are you sure you want to delete this division? This action cannot be undone.",
+      variant: "danger",
+      confirmText: "Delete",
+      action: async () => {
+        await fetch(`/api/divisions/${id}`, { method: "DELETE" });
+        setPendingConfirm(null);
+        fetchData();
+      },
+    });
   };
 
   const handleAddSession = async () => {
@@ -141,23 +167,35 @@ export default function AcademicPage() {
   };
 
   const handleActivateSession = async (id: string) => {
-    if (
-      !confirm(
-        "Activate this session? The currently active session will be closed.",
-      )
-    )
-      return;
-    await fetch(`/api/academic-sessions/${id}/activate`, { method: "POST" });
-    fetchData();
+    setPendingConfirm({
+      title: "Activate Session",
+      message:
+        "Activate this session? The currently active session will be closed automatically.",
+      variant: "warning",
+      confirmText: "Activate",
+      action: async () => {
+        await fetch(`/api/academic-sessions/${id}/activate`, {
+          method: "POST",
+        });
+        setPendingConfirm(null);
+        fetchData();
+      },
+    });
   };
 
   const handleCloseSession = async (id: string) => {
-    if (
-      !confirm("Close this session? Financial records will become read-only.")
-    )
-      return;
-    await fetch(`/api/academic-sessions/${id}/close`, { method: "POST" });
-    fetchData();
+    setPendingConfirm({
+      title: "Close Session",
+      message:
+        "Close this session? Financial records will become read-only. This action cannot be undone.",
+      variant: "danger",
+      confirmText: "Close Session",
+      action: async () => {
+        await fetch(`/api/academic-sessions/${id}/close`, { method: "POST" });
+        setPendingConfirm(null);
+        fetchData();
+      },
+    });
   };
 
   const statusBadge = (status: SessionStatus) => {
@@ -470,6 +508,18 @@ export default function AcademicPage() {
           )}
         </div>
       </section>
+
+      {pendingConfirm && (
+        <ConfirmDialog
+          open={true}
+          title={pendingConfirm.title}
+          message={pendingConfirm.message}
+          variant={pendingConfirm.variant}
+          confirmText={pendingConfirm.confirmText}
+          onConfirm={pendingConfirm.action}
+          onCancel={() => setPendingConfirm(null)}
+        />
+      )}
     </div>
   );
 }

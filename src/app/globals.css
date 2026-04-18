@@ -147,3 +147,22 @@
     @apply bg-clip-text text-transparent bg-linear-to-r from-primary to-emerald-400;
   }
 }
+
+@media print {
+  /* Hide everything except the dedicated print area */
+  body > *:not(.print-area) {
+    display: none !important;
+  }
+
+  /* Force show the print area at the absolute top of the page */
+  .print-area {
+    display: block !important;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    margin: 0 !important;
+    padding: 0 !important;
+    visibility: visible !important;
+  }
+}

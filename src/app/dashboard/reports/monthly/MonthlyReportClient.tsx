@@ -4,7 +4,7 @@ import React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Download, Printer } from "lucide-react";
-import * as XLSX from "xlsx";
+import { ExcelService } from "@/modules/document/services/excel.service";
 import { showToast } from "@/components/shared/Toast";
 
 interface MonthlyStats {
@@ -54,24 +54,31 @@ export function MonthlyReportClient({
     router.push(`/dashboard/reports/monthly?month=${newMonth}&year=${year}`);
   };
 
-  const handleExportExcel = () => {
+  const handleExportExcel = async () => {
     try {
-      const summaryData = [
-        ["Monthly Profit & Loss Summary"],
-        ["Period", `${months[month]} ${year}`],
-        [],
-        ["Metric", "Amount"],
-        ["Total Revenue", stats.totalIncome],
-        ["Total Expenditure", stats.totalExpense],
-        ["Net Position", net],
-        ["Current Liquidity", stats.currentFunds],
+      type SummaryRow = {
+        metric: string;
+        amount: number;
+      };
+      const summaryData: SummaryRow[] = [
+        { metric: "Total Revenue", amount: stats.totalIncome },
+        { metric: "Total Expenditure", amount: stats.totalExpense },
+        { metric: "Net Position", amount: net },
+        { metric: "Current Liquidity", amount: stats.currentFunds },
       ];
 
-      const ws = XLSX.utils.aoa_to_sheet(summaryData);
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, "Monthly Summary");
-
-      XLSX.writeFile(wb, `monthly_report_${months[month]}_${year}.xlsx`);
+      await ExcelService.export({
+        data: summaryData,
+        columns: [
+          { key: "metric", label: "Metric", format: "text", width: 30 },
+          { key: "amount", label: "Amount", format: "currency", width: 20 },
+        ],
+        fileName: `monthly_report_${months[month]}_${year}`,
+        options: {
+          sheetName: "Monthly Summary",
+          headerStyle: { fillColor: "111827", fontColor: "FFFFFF", bold: true },
+        },
+      });
       showToast("Excel report generated", "success");
     } catch (err) {
       showToast("Failed to export Excel", "error");
@@ -106,16 +113,8 @@ export function MonthlyReportClient({
           >
             <Download className="h-4 w-4" />
           </button>
-          <button
-            onClick={() => window.print()}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-black text-white text-xs font-bold uppercase tracking-widest hover:opacity-90 active:scale-95 transition-all"
-          >
-            <Printer className="h-4 w-4" />
-            Print
-          </button>
         </div>
       </div>
-
       <div className="text-center space-y-2 border-b pb-8 border-zinc-200">
         <h1 className="text-xl font-black uppercase tracking-[0.2em]">
           Wisdom Management System
@@ -188,41 +187,6 @@ export function MonthlyReportClient({
           {fmt(stats.currentFunds)}
         </p>
       </div>
-      <style jsx global>{`
-        @media print {
-          @page {
-            size: A4;
-            margin: 20mm;
-          }
-          body {
-            background: white !important;
-            font-size: 11pt;
-          }
-          .transition-colors,
-          .shadow-2xl,
-          a {
-            display: none !important;
-          }
-          .rounded-3xl {
-            border-radius: 8px !important;
-          }
-          .bg-zinc-900 {
-            background: #f3f4f6 !important;
-            color: black !important;
-            border-color: #e5e7eb !important;
-          }
-          .text-white {
-            color: black !important;
-          }
-          .bg-emerald-400,
-          .bg-red-400 {
-            background: #000 !important;
-          }
-          .border-b {
-            border-bottom: 2px solid black !important;
-          }
-        }
-      `}</style>
     </div>
   );
 }

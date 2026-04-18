@@ -37,9 +37,20 @@ export default async function ReceiptsPage({
       prisma.receipt.findMany({
         where,
         include: {
-          student: { select: { name: true } },
+          student: {
+            select: {
+              name: true,
+              admissionNumber: true,
+              fatherName: true,
+              rollNumber: true,
+            },
+          },
           studentEnrollment: {
-            include: { class: { select: { name: true } } },
+            include: {
+              class: { select: { name: true } },
+              division: { select: { name: true } },
+              academicSession: { select: { name: true } },
+            },
           },
           createdByUser: { select: { name: true } },
         },
@@ -60,7 +71,12 @@ export default async function ReceiptsPage({
       remarks: r.remarks,
       category: r.category,
       studentName: r.student?.name || "N/A",
+      admissionNumber: r.student?.admissionNumber || "",
+      fatherName: r.student?.fatherName || "",
+      rollNumber: r.student?.rollNumber || "",
       studentClass: r.studentEnrollment?.class?.name || "N/A",
+      divisionName: r.studentEnrollment?.division?.name || "",
+      sessionName: r.studentEnrollment?.academicSession?.name || "",
       recordedBy: r.createdByUser.name,
     }));
 
@@ -74,6 +90,10 @@ export default async function ReceiptsPage({
     );
   } catch (err: any) {
     if (err?.digest?.startsWith("NEXT_REDIRECT")) throw err;
+    console.error(
+      "[ReceiptsPage] Error loading receipts:",
+      err?.message || err,
+    );
     return (
       <ReceiptsClient
         receipts={[]}

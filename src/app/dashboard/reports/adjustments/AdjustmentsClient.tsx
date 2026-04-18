@@ -8,7 +8,8 @@ import {
 } from "@/components/dashboard/reports/ReportFilters";
 import { DataTable } from "@/components/dashboard/reports/DataTable";
 import { ColumnDef } from "@tanstack/react-table";
-import { exportToExcel, formatCurrency } from "@/lib/reportExport";
+import { ExcelService } from "@/modules/document/services/excel.service";
+import { formatCurrency } from "@/lib/reportExport";
 import { FileText, AlertCircle, TrendingUp } from "lucide-react";
 
 interface Adjustment {
@@ -69,28 +70,40 @@ export function AdjustmentsClient() {
     fetchReport(filters.start, filters.end, mode);
   };
 
-  const handleExport = () => {
+  const handleExport = async () => {
     if (!data) return;
-    const exportData = data.adjustments.map((a) => ({
-      Date: new Date(a.date).toLocaleDateString(),
-      Account: a.account,
-      Type: a.type,
-      Amount: a.amount,
-      Reason: a.reason,
-      "Performed By": a.createdBy,
+    type AdjRow = {
+      date: string;
+      account: string;
+      type: string;
+      amount: number;
+      reason: string;
+      performedBy: string;
+    };
+    const rows: AdjRow[] = data.adjustments.map((a) => ({
+      date: a.date,
+      account: a.account,
+      type: a.type,
+      amount: a.amount,
+      reason: a.reason,
+      performedBy: a.createdBy,
     }));
-
-    exportToExcel("Balance_Adjustments_Report", [
-      { name: "Adjustments", data: exportData },
-      {
-        name: "Summary",
-        data: [
-          ["Metric", "Value"],
-          ["Count", data.summary.totalAdjustments],
-          ["Net Impact", data.summary.netAdjustmentAmount],
-        ],
+    await ExcelService.export({
+      data: rows,
+      columns: [
+        { key: "date", label: "Date", format: "date" },
+        { key: "account", label: "Account", format: "text" },
+        { key: "type", label: "Type", format: "text" },
+        { key: "amount", label: "Amount", format: "currency" },
+        { key: "reason", label: "Reason", format: "text", width: 40 },
+        { key: "performedBy", label: "Performed By", format: "text" },
+      ],
+      fileName: "Balance_Adjustments_Report",
+      options: {
+        sheetName: "Adjustments",
+        headerStyle: { fillColor: "4F46E5", fontColor: "FFFFFF", bold: true },
       },
-    ]);
+    });
   };
 
   const columns: ColumnDef<Adjustment>[] = [
@@ -143,7 +156,6 @@ export function AdjustmentsClient() {
       title="Balance Adjustments"
       description="Audit trail of manual balance corrections performed by administrators."
       onExportExcel={handleExport}
-      onPrint={() => window.print()}
       isLoading={loading}
       hasData={!!data}
     >

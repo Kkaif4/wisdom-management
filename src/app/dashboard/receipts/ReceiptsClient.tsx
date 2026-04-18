@@ -15,9 +15,18 @@ import {
   GraduationCap,
   Loader2,
   AlertCircle,
+  Download,
+  Printer,
 } from "lucide-react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { Pagination } from "@/components/shared/Pagination";
+import { ExcelService } from "@/modules/document/services/excel.service";
+import { ColumnConfig } from "@/modules/document/types/excel.types";
+import { PrintService } from "@/modules/document/services/print.service";
+import { PrintWrapper } from "@/modules/document/components/PrintWrapper";
+import { ReceiptTemplate } from "@/modules/document/templates/receipt.template";
+import { logDocumentAction } from "@/modules/document/actions/audit.actions";
+import { DocumentErrorBoundary } from "@/modules/document/components/ErrorBoundary";
 
 interface Receipt {
   id: string;
@@ -29,7 +38,12 @@ interface Receipt {
   status: string;
   remarks: string | null;
   studentName: string;
+  admissionNumber: string;
+  fatherName: string;
+  rollNumber: string;
   studentClass: string;
+  divisionName: string;
+  sessionName: string;
   recordedBy: string;
 }
 
@@ -64,6 +78,8 @@ export function ReceiptsClient({
   const [isPending, startTransition] = useTransition();
   const [showEntry, setShowEntry] = useState(false);
   const [searchVal, setSearchVal] = useState(filters.query);
+  const [printingReceipt, setPrintingReceipt] = useState<Receipt | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
 
   useEffect(() => {
     setSearchVal(filters.query);
@@ -99,6 +115,83 @@ export function ReceiptsClient({
     params.set("p", "1");
     startTransition(() => {
       router.push(`${pathname}?${params.toString()}`);
+    });
+  };
+
+  const handleExport = async () => {
+    if (isExporting) return;
+
+    try {
+      setIsExporting(true);
+      const columns: ColumnConfig<Receipt>[] = [
+        { key: "date", label: "Date", format: "date" },
+        { key: "receiptNumber", label: "Receipt #", format: "text" },
+        { key: "studentName", label: "Student Name", format: "text" },
+        { key: "studentClass", label: "Class", format: "text" },
+        { key: "category", label: "Category", format: "text" },
+        { key: "paymentMode", label: "Mode", format: "text" },
+        { key: "amount", label: "Amount", format: "currency" },
+        { key: "status", label: "Status", format: "text" },
+      ];
+
+      // Add totals row
+      const totalAmount = receipts.reduce((sum, r) => sum + r.amount, 0);
+      const exportData = [
+        ...receipts,
+        {
+          receiptNumber: "TOTAL",
+          amount: totalAmount,
+          studentName: "",
+          studentClass: "",
+          category: "",
+          paymentMode: "",
+          status: "",
+          date: "",
+        },
+      ];
+
+      await ExcelService.export({
+        data: exportData as any[],
+        columns,
+        fileName: "Receipts_Report",
+        options: {
+          sheetName: "Receipts",
+          headerStyle: { fillColor: "4F46E5", fontColor: "FFFFFF", bold: true },
+        },
+      });
+
+      // Audit the action
+      await logDocumentAction({
+        type: "receipt_list",
+        action: "EXPORT_EXCEL",
+        entityId: "dashboard",
+        userId: "system", // TODO: Replace with real user ID from session
+        organizationId: "system", // TODO: Replace with real org ID from session
+        metadata: { count: receipts.length, filters },
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handlePrint = async (receipt: Receipt) => {
+    setPrintingReceipt(receipt);
+
+    // Audit the action
+    await logDocumentAction({
+      type: "receipt",
+      action: "PRINT",
+      entityId: receipt.id,
+      userId: "currentUser",
+      organizationId: "default",
+      metadata: { receiptNumber: receipt.receiptNumber },
+    });
+
+    // PrintService handles internal delay for DOM update
+    await PrintService.print({
+      elementId: "receipt-print-area",
+      onAfterPrint: () => setPrintingReceipt(null),
+      onError: () => setPrintingReceipt(null),
     });
   };
 
@@ -188,6 +281,19 @@ export function ReceiptsClient({
             onChange={(e) => setSearchVal(e.target.value)}
           />
         </form>
+
+        <button
+          onClick={handleExport}
+          disabled={isExporting}
+          className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-card border border-border/50 text-foreground/70 font-bold hover:bg-muted/50 transition-all active:scale-95 disabled:opacity-50"
+        >
+          {isExporting ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Download className="h-4 w-4" />
+          )}
+          {isExporting ? "Exporting..." : "Export Excel"}
+        </button>
       </div>
 
       {/* Table Section */}
@@ -207,13 +313,14 @@ export function ReceiptsClient({
                 <th className="px-8 py-5">Purpose</th>
                 <th className="px-8 py-5">Mode</th>
                 <th className="px-8 py-5 text-right">Amount</th>
-                <th className="px-8 py-5 text-right">Verification</th>
+                <th className="px-8 py-5 text-right">Status</th>
+                <th className="px-8 py-5 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border/30">
               {receipts.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-8 py-24 text-center">
+                  <td colSpan={8} className="px-8 py-24 text-center">
                     <div className="flex flex-col items-center justify-center opacity-40">
                       <Receipt className="h-10 w-10 mb-4" />
                       <p className="text-sm font-bold tracking-tight">
@@ -293,6 +400,15 @@ export function ReceiptsClient({
                         )}
                       </div>
                     </td>
+                    <td className="px-8 py-5 text-right">
+                      <button
+                        onClick={() => handlePrint(r)}
+                        className="p-2 rounded-xl bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all active:scale-95"
+                        title="Print Receipt"
+                      >
+                        <Printer className="h-3.5 w-3.5" />
+                      </button>
+                    </td>
                   </tr>
                 ))
               )}
@@ -313,6 +429,32 @@ export function ReceiptsClient({
           onClose={() => setShowEntry(false)}
           onSuccess={() => router.refresh()}
         />
+      )}
+
+      {/* Hidden Print Area */}
+      {printingReceipt && (
+        <PrintWrapper id="receipt-print-area">
+          <DocumentErrorBoundary onReset={() => setPrintingReceipt(null)}>
+            <ReceiptTemplate
+              mode="print"
+              data={{
+                receiptNumber: printingReceipt.receiptNumber,
+                date: printingReceipt.date,
+                amount: printingReceipt.amount,
+                paymentMode: printingReceipt.paymentMode,
+                category: printingReceipt.category,
+                remarks: printingReceipt.remarks,
+                studentName: printingReceipt.studentName,
+                admissionNumber: printingReceipt.admissionNumber,
+                fatherName: printingReceipt.fatherName,
+                rollNumber: printingReceipt.rollNumber,
+                studentClass: `${printingReceipt.studentClass}${printingReceipt.divisionName ? " - " + printingReceipt.divisionName : ""}`,
+                sessionName: printingReceipt.sessionName,
+                organizationName: "Wisdom Management",
+              }}
+            />
+          </DocumentErrorBoundary>
+        </PrintWrapper>
       )}
     </div>
   );

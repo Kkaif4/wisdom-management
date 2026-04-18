@@ -112,13 +112,6 @@ export function LedgerClient({
             onChange={(e) => setSearchVal(e.target.value)}
           />
         </form>
-        <button
-          onClick={() => window.print()}
-          className="px-6 py-4 rounded-2xl bg-muted border border-border/50 text-xs font-black uppercase tracking-widest hover:bg-muted/80 transition-all flex items-center gap-2"
-        >
-          <FileText className="h-4 w-4" />
-          Print Log
-        </button>
       </div>
 
       <div className="relative">

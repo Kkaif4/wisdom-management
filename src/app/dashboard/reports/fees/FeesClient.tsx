@@ -8,7 +8,8 @@ import {
 } from "@/components/dashboard/reports/ReportFilters";
 import { DataTable } from "@/components/dashboard/reports/DataTable";
 import { ColumnDef } from "@tanstack/react-table";
-import { exportToExcel, formatCurrency } from "@/lib/reportExport";
+import { ExcelService } from "@/modules/document/services/excel.service";
+import { formatCurrency } from "@/lib/reportExport";
 import { Receipt, Wallet, Building2, TrendingUp } from "lucide-react";
 
 interface FeeReceipt {
@@ -92,31 +93,51 @@ export function FeesClient() {
     fetchReport(filters.start, filters.end, filters.paymentMode, cat);
   };
 
-  const handleExport = () => {
+  const handleExport = async () => {
     if (!data) return;
-    const exportData = data.receipts.map((r) => ({
-      Date: new Date(r.date).toLocaleDateString(),
-      "Receipt Number": r.receiptNumber,
-      Student: r.studentName,
-      Class: r.class,
-      Purpose: r.category,
-      Mode: r.paymentMode,
-      Amount: r.amount,
-      Remarks: r.remarks || "",
+    type FeeRow = {
+      date: string;
+      receiptNumber: string;
+      studentName: string;
+      class: string;
+      category: string;
+      paymentMode: string;
+      amount: number;
+      remarks: string;
+    };
+    const rows: FeeRow[] = data.receipts.map((r) => ({
+      date: r.date,
+      receiptNumber: r.receiptNumber,
+      studentName: r.studentName,
+      class: r.class,
+      category: r.category,
+      paymentMode: r.paymentMode,
+      amount: r.amount,
+      remarks: r.remarks || "",
     }));
-
-    exportToExcel("Fee_Collection_Report", [
-      { name: "Payments", data: exportData },
-      {
-        name: "Summary",
-        data: [
-          ["Metric", "Value"],
-          ["Total Collected", data.summary.totalFeesCollected],
-          ["Cash Collections", data.summary.cashCollections],
-          ["Bank Collections", data.summary.bankCollections],
-        ],
+    await ExcelService.export({
+      data: rows,
+      columns: [
+        { key: "date", label: "Date", format: "date" },
+        { key: "receiptNumber", label: "Receipt #", format: "text" },
+        {
+          key: "studentName",
+          label: "Student Name",
+          format: "text",
+          width: 30,
+        },
+        { key: "class", label: "Class", format: "text" },
+        { key: "category", label: "Purpose", format: "text" },
+        { key: "paymentMode", label: "Mode", format: "text" },
+        { key: "amount", label: "Amount", format: "currency" },
+        { key: "remarks", label: "Remarks", format: "text", width: 30 },
+      ],
+      fileName: "Fee_Collection_Report",
+      options: {
+        sheetName: "Payments",
+        headerStyle: { fillColor: "4F46E5", fontColor: "FFFFFF", bold: true },
       },
-    ]);
+    });
   };
 
   const columns: ColumnDef<FeeReceipt>[] = [
@@ -181,7 +202,6 @@ export function FeesClient() {
       title="Income / Receipts Report"
       description="View student payments collected during a selected period."
       onExportExcel={handleExport}
-      onPrint={() => window.print()}
       isLoading={loading}
       hasData={!!data}
     >
