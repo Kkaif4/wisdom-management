@@ -52,6 +52,7 @@ export default async function StudentStatementPage({
           date: r.date.toISOString(),
           amount: Number(r.amount),
           paymentMode: r.paymentMode,
+          category: r.category,
           status: r.status,
           remarks: r.remarks,
         })),

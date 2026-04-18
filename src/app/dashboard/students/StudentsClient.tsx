@@ -164,11 +164,11 @@ export function StudentsClient({
     if (!withdrawTarget?.enrollmentId) return;
     try {
       const res = await fetch(
-        `/api/enrollments/${withdrawTarget.enrollmentId}`,
+        `/api/enrollments/${withdrawTarget.enrollmentId}/withdraw`,
         {
-          method: "PATCH",
+          method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ status: "WITHDRAWN" }),
+          body: JSON.stringify({ remarks: "Withdrawn from student list" }),
         },
       );
       if (!res.ok) throw new Error("Failed to withdraw student");
