@@ -10,13 +10,9 @@ const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
 async function main() {
-  console.log("Starting legacy data migration...");
-
   const orgs = await prisma.organization.findMany();
 
   for (const org of orgs) {
-    console.log(`Processing organization: ${org.name} (${org.id})`);
-
     // 1. Find receipts without studentId
     const receiptsWithoutStudent = await prisma.receipt.findMany({
       where: {
@@ -26,7 +22,7 @@ async function main() {
     });
 
     if (receiptsWithoutStudent.length === 0) {
-      console.log(`No student-less receipts found for ${org.name}.`);
+      console.warn(`No student-less receipts found for ${org.name}.`);
       continue;
     }
 
@@ -47,7 +43,6 @@ async function main() {
           status: "ACTIVE",
         },
       });
-      console.log(`Created placeholder student for ${org.name}`);
     }
 
     // 3. Link receipts to placeholder
@@ -60,19 +55,13 @@ async function main() {
         studentId: placeholderStudent.id,
       },
     });
-
-    console.log(
-      `Linked ${updateResult.count} receipts to placeholder student.`,
-    );
   }
-
-  console.log("Migration preparation complete.");
 }
 
 main()
   .catch((e) => {
     console.error(e);
-    process.exit(1);    
+    process.exit(1);
   })
   .finally(async () => {
     await prisma.$disconnect();

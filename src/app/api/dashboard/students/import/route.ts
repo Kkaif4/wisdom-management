@@ -80,20 +80,66 @@ export async function POST(req: Request) {
       }
 
       // Resolve class
-      const cls = classMap.get(className?.toLowerCase() || "");
+      let cls = classMap.get(className?.toLowerCase() || "");
+      if (!cls && className) {
+        // Auto-create class
+        try {
+          cls = (await prisma.class.create({
+            data: {
+              name: className,
+              organizationId: orgId,
+              displayOrder: classMap.size + 1,
+            },
+            include: { divisions: true },
+          })) as any;
+          if (cls) classMap.set(className.toLowerCase(), cls);
+        } catch (err: any) {
+          skipped.push({
+            name,
+            reason: `Failed to create class: ${err.message}`,
+          });
+          continue;
+        }
+      }
+
       if (!cls) {
-        skipped.push({ name, reason: `Class "${className}" not found` });
+        skipped.push({
+          name,
+          reason: className
+            ? `Class "${className}" resolution error`
+            : "Class name missing",
+        });
         continue;
       }
 
       // Resolve division
-      const div = cls.divisions.find(
-        (d) => d.name.toLowerCase() === divName.toLowerCase(),
+      let div = cls.divisions.find(
+        (d: any) => d.name.toLowerCase() === divName.toLowerCase(),
       );
+      if (!div && divName) {
+        // Auto-create division
+        try {
+          div = await prisma.division.create({
+            data: {
+              name: divName,
+              classId: cls.id,
+              organizationId: orgId,
+            },
+          });
+          cls.divisions.push(div);
+        } catch (err: any) {
+          skipped.push({
+            name,
+            reason: `Failed to create division: ${err.message}`,
+          });
+          continue;
+        }
+      }
+
       if (!div) {
         skipped.push({
           name,
-          reason: `Division "${divName}" not found in ${cls.name}`,
+          reason: `Division "${divName}" resolution error`,
         });
         continue;
       }

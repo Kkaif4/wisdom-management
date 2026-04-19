@@ -1,10 +1,11 @@
-import bcrypt from "bcryptjs";
-import { prisma } from "@/lib/prisma";
 import { NextRequest } from "next/server";
 import { OrganizationService } from "@/modules/organizations/organization.service";
 import { Prisma } from "@/prisma/generated";
-import { errorResponse, successResponse } from "@/lib/api-response";
+import { successResponse } from "@/lib/api-response";
 import { ValidationError } from "@/lib/api-errors";
+import { prisma } from "@/lib/prisma";
+import { PasswordUtils } from "@/modules/auth/utils/password.utils";
+import { ErrorUtils } from "@/modules/auth/utils/error.utils";
 
 export async function POST(req: NextRequest) {
   try {
@@ -16,6 +17,12 @@ export async function POST(req: NextRequest) {
       throw new ValidationError("Missing required fields");
     }
 
+    // Password Strength Check
+    const strength = PasswordUtils.validateStrength(password);
+    if (!strength.isValid) {
+      throw new ValidationError(strength.message!);
+    }
+
     // Check if user exists
     const existingUser = await prisma.user.findUnique({ where: { email } });
     if (existingUser) {
@@ -23,7 +30,7 @@ export async function POST(req: NextRequest) {
     }
 
     // 2. Organization & User Creation
-    const passwordHash = await bcrypt.hash(password, 10);
+    const passwordHash = await PasswordUtils.hashPassword(password);
 
     const result = await OrganizationService.setupOrganization({
       orgName,
@@ -50,6 +57,7 @@ export async function POST(req: NextRequest) {
       201,
     );
   } catch (error: any) {
-    return errorResponse(error);
+    // Standardized API error response
+    return ErrorUtils.handleApiError(error);
   }
 }

@@ -1,14 +1,15 @@
-import { auth } from "@/auth";
+import { SessionService } from "@/modules/auth/services/session.service";
+import { ErrorUtils } from "@/modules/auth/utils/error.utils";
 import { ReceiptService } from "@/modules/students/receipt.service";
 import { Prisma } from "@/prisma/generated";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
-export const POST = auth(async (req) => {
-  if (!req.auth?.user?.organizationId || !req.auth?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
+export async function POST(req: NextRequest) {
   try {
+    // 1. Central Session Gatekeeper (centralized error throwing)
+    const user = await SessionService.requireSession();
+    const organizationId = SessionService.requireOrgId(user);
+
     const body = await req.json();
     const {
       studentEnrollmentId,
@@ -32,8 +33,8 @@ export const POST = auth(async (req) => {
       studentEnrollmentId,
       studentId: studentId || undefined,
       category: category || "Tuition Fee",
-      organizationId: req.auth.user.organizationId,
-      userId: req.auth.user.id,
+      organizationId,
+      userId: user.id,
       amount: new Prisma.Decimal(amount),
       paymentMode,
       receiptNumber,
@@ -42,28 +43,20 @@ export const POST = auth(async (req) => {
     });
 
     return NextResponse.json(receipt);
-  } catch (error: any) {
-    return NextResponse.json(
-      { error: error.message || "Failed to collect fee" },
-      { status: 500 },
-    );
+  } catch (error) {
+    // 2. Transformed Standard Error Output
+    return ErrorUtils.handleApiError(error);
   }
-});
+}
 
-export const GET = auth(async (req) => {
-  if (!req.auth?.user?.organizationId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
+export async function GET(req: NextRequest) {
   try {
-    const receipts = await ReceiptService.listReceipts(
-      req.auth.user.organizationId,
-    );
+    const user = await SessionService.requireSession();
+    const organizationId = SessionService.requireOrgId(user);
+
+    const receipts = await ReceiptService.listReceipts(organizationId);
     return NextResponse.json(receipts);
   } catch (error) {
-    return NextResponse.json(
-      { error: "Failed to list receipts" },
-      { status: 500 },
-    );
+    return ErrorUtils.handleApiError(error);
   }
-});
+}

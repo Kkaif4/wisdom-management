@@ -11,12 +11,6 @@ datasource db {
 // Enums
 // ──────────────────────────────────────────────────────────────────────
 
-enum SystemRole {
-  SUPER_ADMIN
-  ORG_ADMIN
-  ORG_STAFF
-}
-
 enum PaymentMode {
   CASH
   BANK
@@ -94,6 +88,50 @@ model Organization {
   expenses               Expense[]
   auditLogs              AuditLog[]
   incomeCategories       IncomeCategory[]
+  roles                  Role[]
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// Role-Based Access Control (RBAC)
+// ──────────────────────────────────────────────────────────────────────
+
+model Role {
+  id              String           @id @default(uuid())
+  name            String           @unique
+  description     String?
+  scope           String           @default("ORGANIZATION") // SYSTEM | ORGANIZATION
+
+  organizationId  String?
+  organization    Organization?    @relation(fields: [organizationId], references: [id])
+
+  permissions     RolePermission[]
+  users           User[]
+
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  @@index([organizationId])
+  @@index([scope])
+}
+
+model Permission {
+  id          String           @id @default(uuid())
+  name        String           @unique // VIEW_RECEIPTS, CREATE_RECEIPT, etc.
+  description String?
+  scope       String           @default("ORGANIZATION") // SYSTEM | ORGANIZATION
+
+  roles       RolePermission[]
+
+  createdAt   DateTime         @default(now())
+}
+
+model RolePermission {
+  roleId       String
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permissionId String
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
 }
 
 // ──────────────────────────────────────────────────────────────────────
@@ -101,22 +139,34 @@ model Organization {
 // ──────────────────────────────────────────────────────────────────────
 
 model User {
-  id                String       @id @default(uuid())
-  name              String
-  email             String       @unique
-  passwordHash      String
-  role              SystemRole
+  id                  String       @id @default(uuid())
+  name                String
+  email               String       @unique
+  passwordHash        String
 
-  organizationId    String?
-  organization      Organization? @relation(fields: [organizationId], references: [id])
+  // RBAC
+  roleId              String       @default("00000000-0000-4000-a000-000000000002")
+  role                Role         @relation(fields: [roleId], references: [id])
 
-  createdAt         DateTime     @default(now())
-  updatedAt         DateTime     @updatedAt
+  // Security
+  tokenVersion        Int          @default(1)
+  isActive            Boolean      @default(true)
+  failedLoginAttempts Int          @default(0)
+  lockedUntil         DateTime?
+  lastActiveAt        DateTime?
 
-  auditLogs         AuditLog[]
-  receiptsCreated   Receipt[]            @relation("ReceiptCreatedBy")
-  receiptsCancelled Receipt[]            @relation("ReceiptCancelledBy")
-  transactions      TransactionHistory[] @relation("TransactionCreatedBy")
+  organizationId      String?
+  organization        Organization? @relation(fields: [organizationId], references: [id])
+
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+
+  auditLogs           AuditLog[]
+  receiptsCreated     Receipt[]            @relation("ReceiptCreatedBy")
+  receiptsCancelled   Receipt[]            @relation("ReceiptCancelledBy")
+  transactions        TransactionHistory[] @relation("TransactionCreatedBy")
+
+  @@index([roleId])
 }
 
 // ──────────────────────────────────────────────────────────────────────
@@ -431,12 +481,18 @@ model AuditLog {
   entityId       String
   oldValue       Json?
   newValue       Json?
+  ip             String?
+  userAgent      String?
+  reason         String?
   timestamp      DateTime     @default(now())
 
-  userId         String
-  user           User         @relation(fields: [userId], references: [id])
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id])
+  userId         String?
+  user           User?         @relation(fields: [userId], references: [id])
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id])
 
   @@index([organizationId])
+  @@index([action])
+  @@index([userId])
+  @@index([timestamp])
 }

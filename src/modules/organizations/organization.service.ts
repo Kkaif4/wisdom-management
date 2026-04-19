@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { Prisma, SystemRole } from "@/prisma/generated";
+import { Prisma } from "@/prisma/generated";
 
 export class OrganizationService {
   static async setupOrganization(params: {
@@ -21,6 +21,16 @@ export class OrganizationService {
 
     return await prisma.$transaction(
       async (tx) => {
+        // 0. Lookup ORG_ADMIN role from DB
+        const orgAdminRole = await tx.role.findUnique({
+          where: { name: "ORG_ADMIN" },
+        });
+        if (!orgAdminRole) {
+          throw new Error(
+            "ORG_ADMIN role not found. Please run the seed script first.",
+          );
+        }
+
         // 1. Create Organization
         const organization = await tx.organization.create({
           data: {
@@ -39,7 +49,7 @@ export class OrganizationService {
             name: adminName,
             email: adminEmail,
             passwordHash: passwordHash,
-            role: SystemRole.ORG_ADMIN,
+            roleId: orgAdminRole.id,
             organizationId: organization.id,
           },
         });
