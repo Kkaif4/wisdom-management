@@ -107,7 +107,7 @@ export default function LoginPage() {
               </button>
             </form>
 
-            <div className="mt-8 text-center border-t border-zinc-100 pt-6">
+            {/* <div className="mt-8 text-center border-t border-zinc-100 pt-6">
               <p className="text-sm text-zinc-500">
                 Don&apos;t have an organization account?{" "}
                 <a
@@ -117,7 +117,7 @@ export default function LoginPage() {
                   Register Your School
                 </a>
               </p>
-            </div>
+            </div> */}
           </div>
         </div>
       </div>

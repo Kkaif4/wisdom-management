@@ -47,13 +47,13 @@ export default function Home() {
               <span className="hidden sm:inline">[ Auth_Sign_In ]</span>
               <span className="sm:hidden">[ Auth_Login ]</span>
             </Link>
-            <Link
+            {/* <Link
               href="/register"
               className="flex min-h-[44px] md:min-h-[48px] items-center justify-center border border-primary bg-primary px-3 md:px-6 text-[10px] sm:text-xs md:text-sm font-bold text-primary-foreground transition-all hover:bg-background hover:text-primary active:scale-95 whitespace-nowrap"
             >
               <span className="hidden sm:inline">INITIALIZE SYSTEM</span>
               <span className="sm:hidden">INIT SYS</span>
-            </Link>
+            </Link> */}
           </div>
         </div>
       </nav>
@@ -87,13 +87,13 @@ export default function Home() {
               </p>
 
               <div className="mt-12 w-full flex flex-col sm:flex-row gap-4 border-t border-border pt-8">
-                <Link
+                {/* <Link
                   href="/register"
                   className="group flex min-h-[56px] w-full sm:w-auto items-center justify-between sm:justify-center gap-4 border-2 border-primary bg-primary px-8 text-sm font-bold uppercase tracking-widest text-primary-foreground transition-all hover:bg-background hover:text-primary active:scale-[0.98]"
                 >
                   Begine the Expereince
                   <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-2" />
-                </Link>
+                </Link> */}
                 <Link
                   href="#capabilities"
                   className="flex min-h-[56px] w-full sm:w-auto items-center justify-center gap-2 border border-border bg-card px-8 text-sm font-bold uppercase tracking-widest text-foreground transition-colors hover:bg-muted active:scale-[0.98]"
@@ -288,12 +288,12 @@ export default function Home() {
               >
                 Authenticate
               </Link>
-              <Link
+              {/* <Link
                 href="/register"
                 className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground hover:text-foreground min-h-[44px] sm:min-h-0 flex items-center"
               >
                 Initialize Engine
-              </Link>
+              </Link> */}
             </div>
           </div>
         </div>
