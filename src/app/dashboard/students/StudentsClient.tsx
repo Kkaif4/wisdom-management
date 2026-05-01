@@ -21,6 +21,7 @@ import { PromoteStudentDialog } from "@/components/forms/PromoteStudentDialog";
 import { Pagination } from "@/components/shared/Pagination";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { showToast } from "@/components/shared/Toast";
+import { PermissionGate } from "@/components/auth/PermissionGate";
 
 interface Student {
   id: string;
@@ -196,29 +197,36 @@ export function StudentsClient({
         </div>
         <div className="flex items-center gap-3">
           {selectedIds.length > 0 && (
-            <button
-              onClick={() => setShowPromote(true)}
-              className="group flex items-center gap-2 px-6 py-3 rounded-2xl bg-amber-500 text-white font-black shadow-xl shadow-amber-500/20 transition-all hover:scale-105 active:scale-95 animate-in slide-in-from-right-4"
-            >
-              <ArrowUpCircle className="h-5 w-5" /> Promote (
-              {selectedIds.length})
-            </button>
+            <PermissionGate permission="EDIT_STUDENT">
+              <button
+                onClick={() => setShowPromote(true)}
+                className="group flex items-center gap-2 px-6 py-3 rounded-2xl bg-amber-500 text-white font-black shadow-xl shadow-amber-500/20 transition-all hover:scale-105 active:scale-95 animate-in slide-in-from-right-4"
+              >
+                <ArrowUpCircle className="h-5 w-5" /> Promote (
+                {selectedIds.length})
+              </button>
+            </PermissionGate>
           )}
-          <button
-            onClick={() => setShowImport(true)}
-            className="group flex items-center gap-2 px-6 py-3 rounded-2xl bg-muted/50 border border-border/50 text-foreground font-bold shadow-sm transition-all hover:bg-muted/80 active:scale-95"
-          >
-            <Upload className="h-5 w-5 text-muted-foreground group-hover:text-foreground transition-colors" />{" "}
-            Import CSV
-          </button>
-          <button
-            onClick={() => setShowAdd(true)}
-            className="group flex items-center gap-2 px-6 py-3 rounded-2xl bg-primary text-primary-foreground font-bold shadow-xl shadow-primary/20 transition-all hover:scale-105 active:scale-95"
-          >
-            <UserPlus className="h-5 w-5" /> Add Student
-          </button>
+          <PermissionGate permission="IMPORT_STUDENTS">
+            <button
+              onClick={() => setShowImport(true)}
+              className="group flex items-center gap-2 px-6 py-3 rounded-2xl bg-muted/50 border border-border/50 text-foreground font-bold shadow-sm transition-all hover:bg-muted/80 active:scale-95"
+            >
+              <Upload className="h-5 w-5 text-muted-foreground group-hover:text-foreground transition-colors" />{" "}
+              Import CSV
+            </button>
+          </PermissionGate>
+          <PermissionGate permission="CREATE_STUDENT">
+            <button
+              onClick={() => setShowAdd(true)}
+              className="group flex items-center gap-2 px-6 py-3 rounded-2xl bg-primary text-primary-foreground font-bold shadow-xl shadow-primary/20 transition-all hover:scale-105 active:scale-95"
+            >
+              <UserPlus className="h-5 w-5" /> Add Student
+            </button>
+          </PermissionGate>
         </div>
       </div>
+
 
       {error && (
         <div className="animate-in fade-in slide-in-from-top-4 duration-300">
@@ -376,19 +384,23 @@ export function StudentsClient({
                       </td>
                       <td className="px-6 py-4 text-right">
                         <div className="flex items-center justify-end gap-1">
-                          <Link
-                            href={`/dashboard/students/${s.id}`}
-                            className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-primary hover:bg-primary/5 px-3 py-1.5 rounded-lg transition-all"
-                          >
-                            <Pencil className="h-3 w-3" /> Ledger
-                          </Link>
-                          {s.status === "ACTIVE" && s.enrollmentId && (
-                            <button
-                              onClick={() => setWithdrawTarget(s)}
-                              className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-rose-600 hover:bg-rose-500/10 px-3 py-1.5 rounded-lg transition-all"
+                          <PermissionGate permission="VIEW_STUDENT_DETAILS">
+                            <Link
+                              href={`/dashboard/students/${s.id}`}
+                              className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-primary hover:bg-primary/5 px-3 py-1.5 rounded-lg transition-all"
                             >
-                              <UserMinus className="h-3 w-3" /> Withdraw
-                            </button>
+                              <Pencil className="h-3 w-3" /> Ledger
+                            </Link>
+                          </PermissionGate>
+                          {s.status === "ACTIVE" && s.enrollmentId && (
+                            <PermissionGate permission="EDIT_STUDENT">
+                              <button
+                                onClick={() => setWithdrawTarget(s)}
+                                className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-rose-600 hover:bg-rose-500/10 px-3 py-1.5 rounded-lg transition-all"
+                              >
+                                <UserMinus className="h-3 w-3" /> Withdraw
+                              </button>
+                            </PermissionGate>
                           )}
                         </div>
                       </td>

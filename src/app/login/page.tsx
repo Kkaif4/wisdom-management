@@ -2,16 +2,48 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { loginAction } from "./actions";
 import { showToast } from "@/components/shared/Toast";
-import { Loader2 } from "lucide-react";
+import { Loader2, LayoutDashboard } from "lucide-react";
 
 export default function LoginPage() {
+  const { data: session, status } = useSession();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+
+  // If already authenticated, show a "Go to Dashboard" screen
+  if (status === "authenticated" && session?.user) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-zinc-50 p-4">
+        <div className="w-full max-w-md overflow-hidden rounded-3xl bg-white shadow-2xl shadow-zinc-200">
+          <div className="p-8 pt-12 text-center">
+            <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-black text-2xl font-black text-white italic tracking-tighter shadow-xl shadow-black/10">
+              W
+            </div>
+            <h1 className="text-2xl font-bold tracking-tight text-zinc-900">
+              Welcome, {session.user.name || "User"}
+            </h1>
+            <p className="mt-2 text-sm text-zinc-500">
+              You&apos;re already signed in
+            </p>
+          </div>
+          <div className="p-8 pt-0">
+            <button
+              onClick={() => router.push("/dashboard")}
+              className="w-full rounded-xl bg-black py-3 text-sm font-bold text-white transition-all hover:bg-zinc-800 active:scale-95 flex items-center justify-center gap-2"
+            >
+              <LayoutDashboard className="h-4 w-4" />
+              Go to Dashboard
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,9 +56,9 @@ export default function LoginPage() {
 
       if (result.success) {
         showToast("Login successful! Redirecting...", "success");
-        // 8. Ensure login success redirects to /dashboard
-        router.push("/dashboard");
-        router.refresh();
+        // Full page navigation so the browser sends the new session cookie
+        // and SessionProvider initializes fresh with authenticated state
+        window.location.href = "/dashboard";
       } else {
         // 4. Update login page to display errors
         setError(result.error || "Invalid email or password");

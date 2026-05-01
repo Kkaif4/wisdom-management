@@ -1,13 +1,20 @@
-import { auth } from "@/auth";
+import { SessionService } from "@/modules/auth/services/session.service";
+import { AuthenticationError, ForbiddenError } from "@/modules/auth/types/auth.types";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { DashboardClient } from "./DashboardClient";
 
 export default async function DashboardPage() {
-  const session = await auth();
-  if (!session?.user?.organizationId) redirect("/login");
+  let user;
+  try {
+    user = await SessionService.requirePermission("VIEW_DASHBOARD");
+  } catch (error) {
+    if (error instanceof AuthenticationError) redirect("/login");
+    if (error instanceof ForbiddenError) redirect("/login?error=forbidden"); // If they can't see dashboard, redirect to login or a public page
+    throw error;
+  }
 
-  const orgId = session.user.organizationId;
+  const orgId = user.organizationId!;
 
   // Server-side data fetching (no client waterfall)
   const [org, studentStats, expenseStats, recentTransactions] =

@@ -1,4 +1,5 @@
-import { auth } from "@/auth";
+import { SessionService } from "@/modules/auth/services/session.service";
+import { AuthenticationError, ForbiddenError } from "@/modules/auth/types/auth.types";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { StudentsClient } from "@/app/dashboard/students/StudentsClient";
@@ -9,10 +10,17 @@ export default async function StudentsPage({
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
   const searchParams = await searchParamsPromise;
-  const session = await auth();
-  if (!session?.user?.organizationId) redirect("/login");
 
-  const orgId = session.user.organizationId;
+  let user;
+  try {
+    user = await SessionService.requirePermission("VIEW_STUDENTS_SCREEN");
+  } catch (error) {
+    if (error instanceof AuthenticationError) redirect("/login");
+    if (error instanceof ForbiddenError) redirect("/dashboard?error=forbidden");
+    throw error;
+  }
+
+  const orgId = user.organizationId!;
 
   const getSingle = (val: string | string[] | undefined) =>
     Array.isArray(val) ? val[0] : val;

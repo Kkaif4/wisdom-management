@@ -85,4 +85,18 @@ export class PermissionService {
     const userPerms = await this.loadUserPermissions(user);
     return permissions.every((p) => userPerms.has(p));
   }
+
+  /**
+   * Throws ForbiddenError if user does not have specific permission.
+   */
+  static async enforce(user: SessionUser, permission: PermissionName) {
+    const hasPerm = await this.hasPermission(user, permission);
+    if (!hasPerm) {
+      const { ForbiddenError } = await import("../types/auth.types");
+      throw new ForbiddenError(
+        `Permission denied: You do not have the "${permission}" permission.`,
+      );
+    }
+  }
 }
+

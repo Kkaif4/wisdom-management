@@ -12,50 +12,155 @@ const prisma = new PrismaClient({ adapter });
 
 const SYSTEM_ROLES = {
   SUPER_ADMIN: {
-    id: "00000000-0000-4000-a000-000000000001",
     name: "SUPER_ADMIN",
     description: "System-wide super administrator",
     scope: "SYSTEM",
   },
   ORG_ADMIN: {
-    id: "00000000-0000-4000-a000-000000000002",
     name: "ORG_ADMIN",
     description: "Organization administrator",
     scope: "ORGANIZATION",
   },
   ORG_STAFF: {
-    id: "00000000-0000-4000-a000-000000000003",
     name: "ORG_STAFF",
     description: "Organization staff member",
     scope: "ORGANIZATION",
   },
+  GUEST: {
+    name: "GUEST",
+    description: "User with no permissions",
+    scope: "ORGANIZATION",
+  },
 } as const;
 
+// ──────────────────────────────────────────────────────────────
+// Permissions organized by module
+// ──────────────────────────────────────────────────────────────
+
+const PERMISSIONS = {
+  // Screen Access Permissions
+  SCREENS: [
+    { name: "VIEW_DASHBOARD", description: "Access dashboard screen" },
+    { name: "VIEW_STUDENTS_SCREEN", description: "Access students screen" },
+    { name: "VIEW_RECEIPTS_SCREEN", description: "Access receipts screen" },
+    { name: "VIEW_FEES_SCREEN", description: "Access fees management screen" },
+    { name: "VIEW_EXPENSES_SCREEN", description: "Access expenses screen" },
+    { name: "VIEW_REPORTS_SCREEN", description: "Access reports screen" },
+    { name: "VIEW_SETTINGS_SCREEN", description: "Access settings screen" },
+    {
+      name: "VIEW_USERS_SCREEN",
+      description: "Access users management screen",
+    },
+  ],
+
+  // Student Module Permissions
+  STUDENTS: [
+    { name: "VIEW_STUDENT_LIST", description: "View list of students" },
+    {
+      name: "VIEW_STUDENT_DETAILS",
+      description: "View individual student details",
+    },
+    { name: "CREATE_STUDENT", description: "Create new student records" },
+    { name: "EDIT_STUDENT", description: "Edit existing student records" },
+    { name: "DELETE_STUDENT", description: "Delete student records" },
+    { name: "IMPORT_STUDENTS", description: "Import students from file" },
+    { name: "EXPORT_STUDENTS", description: "Export student data" },
+  ],
+
+  // Receipt Module Permissions
+  RECEIPTS: [
+    { name: "VIEW_RECEIPT_LIST", description: "View list of receipts" },
+    {
+      name: "VIEW_RECEIPT_DETAILS",
+      description: "View individual receipt details",
+    },
+    { name: "CREATE_RECEIPT", description: "Create new fee receipts" },
+    { name: "EDIT_RECEIPT", description: "Edit receipt details" },
+    { name: "CANCEL_RECEIPT", description: "Cancel existing receipts" },
+    { name: "PRINT_RECEIPT", description: "Print receipts" },
+    {
+      name: "EMAIL_RECEIPT",
+      description: "Email receipts to students/parents",
+    },
+  ],
+
+  // Fee Management Permissions
+  FEES: [
+    { name: "VIEW_FEE_STRUCTURE", description: "View fee structures" },
+    { name: "CREATE_FEE_STRUCTURE", description: "Create fee structures" },
+    { name: "EDIT_FEE_STRUCTURE", description: "Edit fee structures" },
+    { name: "DELETE_FEE_STRUCTURE", description: "Delete fee structures" },
+    { name: "ASSIGN_FEES", description: "Assign fees to students" },
+    { name: "WAIVE_FEES", description: "Waive student fees" },
+    { name: "APPLY_DISCOUNTS", description: "Apply fee discounts" },
+  ],
+
+  // Expense Module Permissions
+  EXPENSES: [
+    { name: "VIEW_EXPENSE_LIST", description: "View list of expenses" },
+    {
+      name: "VIEW_EXPENSE_DETAILS",
+      description: "View individual expense details",
+    },
+    { name: "CREATE_EXPENSE", description: "Create new expense records" },
+    { name: "EDIT_EXPENSE", description: "Edit expense records" },
+    { name: "DELETE_EXPENSE", description: "Delete expense records" },
+    { name: "APPROVE_EXPENSE", description: "Approve expense records" },
+  ],
+
+  // Reports Module Permissions
+  REPORTS: [
+    { name: "VIEW_FINANCIAL_REPORTS", description: "View financial reports" },
+    {
+      name: "VIEW_STUDENT_REPORTS",
+      description: "View student-related reports",
+    },
+    { name: "VIEW_FEE_REPORTS", description: "View fee collection reports" },
+    { name: "VIEW_EXPENSE_REPORTS", description: "View expense reports" },
+    { name: "EXPORT_REPORTS", description: "Export reports to Excel/PDF" },
+    { name: "GENERATE_CUSTOM_REPORTS", description: "Generate custom reports" },
+  ],
+
+  // Organization & Settings Permissions
+  ORGANIZATION: [
+    { name: "VIEW_ORG_SETTINGS", description: "View organization settings" },
+    { name: "EDIT_ORG_SETTINGS", description: "Edit organization settings" },
+    {
+      name: "MANAGE_ACADEMIC_SESSIONS",
+      description: "Manage academic sessions",
+    },
+    {
+      name: "MANAGE_INCOME_CATEGORIES",
+      description: "Manage income categories",
+    },
+    {
+      name: "MANAGE_EXPENSE_CATEGORIES",
+      description: "Manage expense categories",
+    },
+    { name: "VIEW_AUDIT_LOGS", description: "View system audit logs" },
+  ],
+
+  // User Management Permissions
+  USERS: [
+    { name: "VIEW_USER_LIST", description: "View list of users" },
+    { name: "CREATE_USER", description: "Create new users" },
+    { name: "EDIT_USER", description: "Edit user details" },
+    { name: "DELETE_USER", description: "Delete users" },
+    { name: "ASSIGN_ROLES", description: "Assign roles to users" },
+    { name: "RESET_USER_PASSWORD", description: "Reset user passwords" },
+  ],
+} as const;
+
+// Flatten all permissions into a single array
 const ALL_PERMISSIONS = [
-  // Dashboard
-  { name: "VIEW_DASHBOARD", description: "View the main dashboard" },
-
-  // Receipts
-  { name: "VIEW_RECEIPTS", description: "View fee receipts" },
-  { name: "CREATE_RECEIPT", description: "Create new fee receipts" },
-  { name: "CANCEL_RECEIPT", description: "Cancel existing receipts" },
-
-  // Students
-  { name: "VIEW_STUDENTS", description: "View student records" },
-  { name: "MANAGE_STUDENTS", description: "Create and edit students" },
-  { name: "EDIT_STUDENT", description: "Edit student details" },
-
-  // Fees & Finance
-  { name: "MANAGE_FEES", description: "Manage fee assignments" },
-  { name: "MANAGE_EXPENSES", description: "Create and manage expenses" },
-
-  // Reports
-  { name: "VIEW_REPORTS", description: "View financial reports" },
-  { name: "EXPORT_REPORTS", description: "Export reports to Excel/PDF" },
-
-  // Organization
-  { name: "MANAGE_ORG", description: "Manage organization settings" },
-  { name: "MANAGE_USERS", description: "Create/edit/deactivate users" },
+  ...PERMISSIONS.SCREENS,
+  ...PERMISSIONS.STUDENTS,
+  ...PERMISSIONS.RECEIPTS,
+  ...PERMISSIONS.FEES,
+  ...PERMISSIONS.EXPENSES,
+  ...PERMISSIONS.REPORTS,
+  ...PERMISSIONS.ORGANIZATION,
+  ...PERMISSIONS.USERS,
 ] as const;
 
 // ──────────────────────────────────────────────────────────────
@@ -63,23 +168,88 @@ const ALL_PERMISSIONS = [
 // ──────────────────────────────────────────────────────────────
 
 const STAFF_PERMISSIONS = [
+  // Screens
   "VIEW_DASHBOARD",
-  "VIEW_RECEIPTS",
-  "CREATE_RECEIPT",
-  "VIEW_STUDENTS",
-  "MANAGE_STUDENTS",
+  "VIEW_STUDENTS_SCREEN",
+  "VIEW_RECEIPTS_SCREEN",
+  "VIEW_FEES_SCREEN",
+  "VIEW_REPORTS_SCREEN",
+
+  // Students
+  "VIEW_STUDENT_LIST",
+  "VIEW_STUDENT_DETAILS",
+  "CREATE_STUDENT",
   "EDIT_STUDENT",
-  "MANAGE_FEES",
-  "VIEW_REPORTS",
+  "EXPORT_STUDENTS",
+
+  // Receipts
+  "VIEW_RECEIPT_LIST",
+  "VIEW_RECEIPT_DETAILS",
+  "CREATE_RECEIPT",
+  "PRINT_RECEIPT",
+  "EMAIL_RECEIPT",
+
+  // Fees
+  "VIEW_FEE_STRUCTURE",
+  "ASSIGN_FEES",
+
+  // Reports
+  "VIEW_FINANCIAL_REPORTS",
+  "VIEW_STUDENT_REPORTS",
+  "VIEW_FEE_REPORTS",
 ];
 
 const ADMIN_PERMISSIONS = [
   ...STAFF_PERMISSIONS,
+
+  // Additional Screens
+  "VIEW_EXPENSES_SCREEN",
+  "VIEW_SETTINGS_SCREEN",
+  "VIEW_USERS_SCREEN",
+
+  // Students - additional
+  "DELETE_STUDENT",
+  "IMPORT_STUDENTS",
+
+  // Receipts - additional
+  "EDIT_RECEIPT",
   "CANCEL_RECEIPT",
-  "MANAGE_EXPENSES",
+
+  // Fees - additional
+  "CREATE_FEE_STRUCTURE",
+  "EDIT_FEE_STRUCTURE",
+  "DELETE_FEE_STRUCTURE",
+  "WAIVE_FEES",
+  "APPLY_DISCOUNTS",
+
+  // Expenses
+  "VIEW_EXPENSE_LIST",
+  "VIEW_EXPENSE_DETAILS",
+  "CREATE_EXPENSE",
+  "EDIT_EXPENSE",
+  "DELETE_EXPENSE",
+  "APPROVE_EXPENSE",
+
+  // Reports - additional
+  "VIEW_EXPENSE_REPORTS",
   "EXPORT_REPORTS",
-  "MANAGE_ORG",
-  "MANAGE_USERS",
+  "GENERATE_CUSTOM_REPORTS",
+
+  // Organization
+  "VIEW_ORG_SETTINGS",
+  "EDIT_ORG_SETTINGS",
+  "MANAGE_ACADEMIC_SESSIONS",
+  "MANAGE_INCOME_CATEGORIES",
+  "MANAGE_EXPENSE_CATEGORIES",
+  "VIEW_AUDIT_LOGS",
+
+  // Users
+  "VIEW_USER_LIST",
+  "CREATE_USER",
+  "EDIT_USER",
+  "DELETE_USER",
+  "ASSIGN_ROLES",
+  "RESET_USER_PASSWORD",
 ];
 
 // SUPER_ADMIN gets ALL permissions
@@ -131,6 +301,12 @@ async function main() {
     where: { name: SYSTEM_ROLES.ORG_STAFF.name },
     update: SYSTEM_ROLES.ORG_STAFF,
     create: SYSTEM_ROLES.ORG_STAFF,
+  });
+
+  const guestRole = await prisma.role.upsert({
+    where: { name: SYSTEM_ROLES.GUEST.name },
+    update: SYSTEM_ROLES.GUEST,
+    create: SYSTEM_ROLES.GUEST,
   });
 
   // ──────────────────────────────────────
@@ -213,6 +389,18 @@ async function main() {
     },
   });
 
+  await prisma.user.upsert({
+    where: { email: "guest@wisdom.com" },
+    update: { roleId: guestRole.id },
+    create: {
+      name: "Guest User (No Perms)",
+      email: "guest@wisdom.com",
+      passwordHash,
+      roleId: guestRole.id,
+      organizationId: org.id,
+    },
+  });
+
   // ──────────────────────────────────────
   // 6. Academic Session
   // ──────────────────────────────────────
@@ -286,10 +474,10 @@ async function main() {
   }
 
   console.log("✅ Seed completed successfully");
-  console.log("   → 12 Permissions");
-  console.log("   → 3 Roles (SUPER_ADMIN, ORG_ADMIN, ORG_STAFF)");
+  console.log("   → 52 Permissions (across 8 modules)");
+  console.log("   → 4 Roles (SUPER_ADMIN, ORG_ADMIN, ORG_STAFF, GUEST)");
   console.log("   → 1 Organization");
-  console.log("   → 2 Users (admin@wisdom.com / staff@wisdom.com)");
+  console.log("   → 3 Users (admin@wisdom.com / staff@wisdom.com / guest@wisdom.com)");
   console.log("   → 1 Active Academic Session (2025-26)");
   console.log("   → 7 Income Categories");
 }

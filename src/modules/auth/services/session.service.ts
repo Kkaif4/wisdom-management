@@ -2,6 +2,7 @@ import { auth } from "@/auth";
 import {
   AuthenticationError,
   ForbiddenError,
+  PermissionName,
   SessionUser,
 } from "../types/auth.types";
 import { prisma } from "@/lib/prisma";
@@ -60,6 +61,28 @@ export class SessionService {
       organizationId: user.organizationId,
       tokenVersion: user.tokenVersion!,
     };
+  }
+
+  /**
+   * Enforces that a valid session exists AND has a specific permission.
+   */
+  static async requirePermission(
+    permission: PermissionName,
+  ): Promise<SessionUser> {
+    // 1. Get session (this also validates tokenVersion and isActive)
+    const user = await this.requireSession();
+
+    // 2. Check permission
+    const { PermissionService } = await import("./permission.service");
+    const hasPerm = await PermissionService.hasPermission(user, permission);
+
+    if (!hasPerm) {
+      throw new ForbiddenError(
+        `Permission denied: You do not have the "${permission}" permission.`,
+      );
+    }
+
+    return user;
   }
 
   /**

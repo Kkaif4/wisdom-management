@@ -1,27 +1,32 @@
 import { auth } from "@/auth";
 import { StudentService } from "@/modules/students/student.service";
 import { NextResponse } from "next/server";
+import { PermissionService } from "@/modules/auth/services/permission.service";
+import { ErrorUtils } from "@/modules/auth/utils/error.utils";
+import { SessionUser } from "@/modules/auth/types/auth.types";
 
 export const GET = auth(async (req) => {
-  if (!req.auth?.user?.organizationId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const { searchParams } = new URL(req.url);
-  const query = searchParams.get("q") || undefined;
-  const page = parseInt(searchParams.get("p") || "1");
-  const limit = parseInt(searchParams.get("l") || "15");
-  const skip = (page - 1) * limit;
-
-  const sessionId = searchParams.get("sessionId") || undefined;
-  const classId = searchParams.get("classId") || undefined;
-  const divisionId = searchParams.get("divisionId") || undefined;
-  const status = (searchParams.get("status") as any) || "ACTIVE";
-
   try {
+    const user = req.auth?.user as SessionUser;
+    if (!user) throw new Error("Unauthorized");
+
+    await PermissionService.enforce(user, "VIEW_STUDENT_LIST");
+    const organizationId = user.organizationId!;
+
+    const { searchParams } = new URL(req.url);
+    const query = searchParams.get("q") || undefined;
+    const page = parseInt(searchParams.get("p") || "1");
+    const limit = parseInt(searchParams.get("l") || "15");
+    const skip = (page - 1) * limit;
+
+    const sessionId = searchParams.get("sessionId") || undefined;
+    const classId = searchParams.get("classId") || undefined;
+    const divisionId = searchParams.get("divisionId") || undefined;
+    const status = (searchParams.get("status") as any) || "ACTIVE";
+
     const [students, total] = await Promise.all([
       StudentService.getStudents({
-        organizationId: req.auth.user.organizationId,
+        organizationId,
         search: query,
         sessionId,
         classId,
@@ -31,7 +36,7 @@ export const GET = auth(async (req) => {
         take: limit,
       }),
       StudentService.countStudents({
-        organizationId: req.auth.user.organizationId,
+        organizationId,
         search: query,
         sessionId,
         classId,
@@ -48,19 +53,18 @@ export const GET = auth(async (req) => {
       totalPages: Math.ceil(total / limit),
     });
   } catch (error) {
-    return NextResponse.json(
-      { error: "Failed to fetch students" },
-      { status: 500 },
-    );
+    return ErrorUtils.handleApiError(error);
   }
 });
 
 export const POST = auth(async (req) => {
-  if (!req.auth?.user?.organizationId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
   try {
+    const user = req.auth?.user as SessionUser;
+    if (!user) throw new Error("Unauthorized");
+
+    await PermissionService.enforce(user, "CREATE_STUDENT");
+    const organizationId = user.organizationId!;
+
     const body = await req.json();
     const {
       admissionNumber,
@@ -85,7 +89,7 @@ export const POST = auth(async (req) => {
     const student = await StudentService.createStudent({
       admissionNumber,
       name,
-      organizationId: req.auth.user.organizationId,
+      organizationId,
       dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined,
       gender,
       contactNumber,
@@ -98,9 +102,7 @@ export const POST = auth(async (req) => {
 
     return NextResponse.json(student, { status: 201 });
   } catch (error: any) {
-    return NextResponse.json(
-      { error: error.message || "Failed to create student" },
-      { status: 500 },
-    );
+    return ErrorUtils.handleApiError(error);
   }
 });
+

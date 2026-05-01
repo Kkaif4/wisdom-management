@@ -24,6 +24,7 @@ import { ExcelService } from "@/modules/document/services/excel.service";
 import { ColumnConfig } from "@/modules/document/types/excel.types";
 import { PrintService } from "@/modules/document/services/print.service";
 import { PrintWrapper } from "@/modules/document/components/PrintWrapper";
+import { PermissionGate } from "@/components/auth/PermissionGate";
 import { ReceiptTemplate } from "@/modules/document/templates/receipt.template";
 import { logDocumentAction } from "@/modules/document/actions/audit.actions";
 import { DocumentErrorBoundary } from "@/modules/document/components/ErrorBoundary";
@@ -207,14 +208,17 @@ export function ReceiptsClient({
             Daily income and receipt management
           </p>
         </div>
-        <button
-          onClick={() => setShowEntry(true)}
-          className="group flex items-center gap-2 px-6 py-3 rounded-2xl bg-primary text-primary-foreground font-bold shadow-xl shadow-primary/20 transition-all hover:scale-105 active:scale-95"
-        >
-          <Plus className="h-5 w-5" />
-          New Collection
-        </button>
+        <PermissionGate permission="CREATE_RECEIPT">
+          <button
+            onClick={() => setShowEntry(true)}
+            className="group flex items-center gap-2 px-6 py-3 rounded-2xl bg-primary text-primary-foreground font-bold shadow-xl shadow-primary/20 transition-all hover:scale-105 active:scale-95"
+          >
+            <Plus className="h-5 w-5" />
+            New Collection
+          </button>
+        </PermissionGate>
       </div>
+
 
       {error && (
         <div className="animate-in fade-in slide-in-from-top-4 duration-300">
@@ -282,18 +286,20 @@ export function ReceiptsClient({
           />
         </form>
 
-        <button
-          onClick={handleExport}
-          disabled={isExporting}
-          className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-card border border-border/50 text-foreground/70 font-bold hover:bg-muted/50 transition-all active:scale-95 disabled:opacity-50"
-        >
-          {isExporting ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <Download className="h-4 w-4" />
-          )}
-          {isExporting ? "Exporting..." : "Export Excel"}
-        </button>
+        <PermissionGate permission="VIEW_FINANCIAL_REPORTS">
+          <button
+            onClick={handleExport}
+            disabled={isExporting}
+            className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-card border border-border/50 text-foreground/70 font-bold hover:bg-muted/50 transition-all active:scale-95 disabled:opacity-50"
+          >
+            {isExporting ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Download className="h-4 w-4" />
+            )}
+            {isExporting ? "Exporting..." : "Export Excel"}
+          </button>
+        </PermissionGate>
       </div>
 
       {/* Table Section */}
@@ -401,13 +407,15 @@ export function ReceiptsClient({
                       </div>
                     </td>
                     <td className="px-8 py-5 text-right">
-                      <button
-                        onClick={() => handlePrint(r)}
-                        className="p-2 rounded-xl bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all active:scale-95"
-                        title="Print Receipt"
-                      >
-                        <Printer className="h-3.5 w-3.5" />
-                      </button>
+                      <PermissionGate permission="PRINT_RECEIPT">
+                        <button
+                          onClick={() => handlePrint(r)}
+                          className="p-2 rounded-xl bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all active:scale-95"
+                          title="Print Receipt"
+                        >
+                          <Printer className="h-3.5 w-3.5" />
+                        </button>
+                      </PermissionGate>
                     </td>
                   </tr>
                 ))

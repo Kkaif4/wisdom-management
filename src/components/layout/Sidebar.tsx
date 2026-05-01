@@ -14,43 +14,108 @@ import {
   Settings,
   ChevronRight,
   TrendingUp,
-  X,
   BarChart3,
   ChevronDown,
   FileText,
   Landmark,
   School,
-  ArrowUpCircle,
+  X,
 } from "lucide-react";
 
-const NAV_ITEMS = [
-  { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { label: "Receipts", href: "/dashboard/receipts", icon: Receipt },
-  { label: "Academic", href: "/dashboard/academic", icon: School },
-  { label: "Students", href: "/dashboard/students", icon: Users },
-  { label: "Withdrawn", href: "/dashboard/students/withdrawn", icon: Users },
-  { label: "Expenses", href: "/dashboard/expenses", icon: TrendingUp },
-  { label: "Accounts", href: "/dashboard/accounts", icon: Wallet },
-  { label: "Ledger", href: "/dashboard/ledger", icon: Library },
+import { usePermissions } from "@/hooks/usePermissions";
+import { PermissionName } from "@/modules/auth/types/auth.types";
+
+const NAV_ITEMS: {
+  label: string;
+  href: string;
+  icon: any;
+  permission: PermissionName;
+}[] = [
+  {
+    label: "Dashboard",
+    href: "/dashboard",
+    icon: LayoutDashboard,
+    permission: "VIEW_DASHBOARD",
+  },
+  {
+    label: "Receipts",
+    href: "/dashboard/receipts",
+    icon: Receipt,
+    permission: "VIEW_RECEIPTS_SCREEN",
+  },
+  {
+    label: "Academic",
+    href: "/dashboard/academic",
+    icon: School,
+    permission: "VIEW_FEES_SCREEN",
+  },
+  {
+    label: "Students",
+    href: "/dashboard/students",
+    icon: Users,
+    permission: "VIEW_STUDENTS_SCREEN",
+  },
+  {
+    label: "Withdrawn",
+    href: "/dashboard/students/withdrawn",
+    icon: Users,
+    permission: "VIEW_STUDENTS_SCREEN",
+  },
+  {
+    label: "Expenses",
+    href: "/dashboard/expenses",
+    icon: TrendingUp,
+    permission: "VIEW_EXPENSES_SCREEN",
+  },
+  {
+    label: "Accounts",
+    href: "/dashboard/accounts",
+    icon: Wallet,
+    permission: "VIEW_SETTINGS_SCREEN",
+  },
+  {
+    label: "Ledger",
+    href: "/dashboard/ledger",
+    icon: Library,
+    permission: "VIEW_REPORTS_SCREEN",
+  },
 ];
 
-const REPORT_ITEMS = [
-  { label: "Overview", href: "/dashboard/reports", icon: BarChart3 },
+const REPORT_ITEMS: {
+  label: string;
+  href: string;
+  icon: any;
+  permission: PermissionName;
+}[] = [
+  {
+    label: "Overview",
+    href: "/dashboard/reports",
+    icon: BarChart3,
+    permission: "VIEW_REPORTS_SCREEN",
+  },
   {
     label: "Income / Receipts",
     href: "/dashboard/reports/fees",
     icon: Receipt,
+    permission: "VIEW_FEE_REPORTS",
   },
   {
     label: "Account Ledgers",
     href: "/dashboard/reports/accounts",
     icon: Landmark,
+    permission: "VIEW_FINANCIAL_REPORTS",
   },
-  { label: "Expenses", href: "/dashboard/reports/expenses", icon: TrendingUp },
+  {
+    label: "Expenses",
+    href: "/dashboard/reports/expenses",
+    icon: TrendingUp,
+    permission: "VIEW_EXPENSE_REPORTS",
+  },
   {
     label: "Adjustments",
     href: "/dashboard/reports/adjustments",
     icon: FileText,
+    permission: "VIEW_FINANCIAL_REPORTS",
   },
 ];
 
@@ -59,10 +124,25 @@ interface SidebarProps {
   onClose?: () => void;
 }
 
-export function Sidebar({ isOpen, onClose }: SidebarProps) {
+export const Sidebar = React.memo(function Sidebar({
+  isOpen,
+  onClose,
+}: SidebarProps) {
   const pathname = usePathname();
+  const { hasPermission } = usePermissions();
+
   const [isReportsOpen, setIsReportsOpen] = React.useState(
     pathname.startsWith("/dashboard/reports"),
+  );
+
+  // Memoize filtered items so they don't recompute on every render
+  const visibleNavItems = React.useMemo(
+    () => NAV_ITEMS.filter((item) => hasPermission(item.permission)),
+    [hasPermission],
+  );
+  const visibleReportItems = React.useMemo(
+    () => REPORT_ITEMS.filter((item) => hasPermission(item.permission)),
+    [hasPermission],
   );
 
   return (
@@ -110,7 +190,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         {/* Navigation */}
         <nav className="flex-1 overflow-y-auto px-4 py-4 scrollbar-hide">
           <div className="space-y-1.5">
-            {NAV_ITEMS.map((item) => {
+            {visibleNavItems.map((item) => {
               const isActive =
                 item.href === "/dashboard/students"
                   ? pathname === "/dashboard/students" ||
@@ -143,48 +223,50 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             })}
 
             {/* Reports Dropdown */}
-            <div className="space-y-1">
-              <button
-                onClick={() => setIsReportsOpen(!isReportsOpen)}
-                className={`group flex w-full items-center justify-between rounded-xl px-4 py-3 text-sm transition-all duration-200 ${
-                  pathname.startsWith("/dashboard/reports")
-                    ? "text-primary bg-primary/5 font-bold"
-                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <BarChart3 className="h-5 w-5" />
-                  <span className="tracking-tight">Reports</span>
-                </div>
-                <ChevronDown
-                  className={`h-4 w-4 transition-transform duration-200 ${
-                    isReportsOpen ? "rotate-180" : ""
+            {visibleReportItems.length > 0 && (
+              <div className="space-y-1">
+                <button
+                  onClick={() => setIsReportsOpen(!isReportsOpen)}
+                  className={`group flex w-full items-center justify-between rounded-xl px-4 py-3 text-sm transition-all duration-200 ${
+                    pathname.startsWith("/dashboard/reports")
+                      ? "text-primary bg-primary/5 font-bold"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                   }`}
-                />
-              </button>
+                >
+                  <div className="flex items-center gap-3">
+                    <BarChart3 className="h-5 w-5" />
+                    <span className="tracking-tight">Reports</span>
+                  </div>
+                  <ChevronDown
+                    className={`h-4 w-4 transition-transform duration-200 ${
+                      isReportsOpen ? "rotate-180" : ""
+                    }`}
+                  />
+                </button>
 
-              {isReportsOpen && (
-                <div className="pl-4 space-y-1 mt-1 border-l-2 border-primary/10 ml-6">
-                  {REPORT_ITEMS.map((item) => {
-                    const isActive = pathname === item.href;
-                    return (
-                      <Link
-                        key={item.href}
-                        href={item.href}
-                        onClick={() => onClose?.()}
-                        className={`block rounded-lg px-4 py-2 text-xs transition-all duration-200 ${
-                          isActive
-                            ? "text-primary bg-primary/10 font-bold"
-                            : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                        }`}
-                      >
-                        {item.label}
-                      </Link>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
+                {isReportsOpen && (
+                  <div className="pl-4 space-y-1 mt-1 border-l-2 border-primary/10 ml-6">
+                    {visibleReportItems.map((item) => {
+                      const isActive = pathname === item.href;
+                      return (
+                        <Link
+                          key={item.href}
+                          href={item.href}
+                          onClick={() => onClose?.()}
+                          className={`block rounded-lg px-4 py-2 text-xs transition-all duration-200 ${
+                            isActive
+                              ? "text-primary bg-primary/10 font-bold"
+                              : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                          }`}
+                        >
+                          {item.label}
+                        </Link>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="mt-8 px-2">
@@ -203,7 +285,10 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         {/* Footer Profile/SignOut Section */}
         <div className="border-t border-border/50 p-4 bg-muted/30">
           <button
-            onClick={() => signOut({ callbackUrl: "/login" })}
+            onClick={() => {
+              sessionStorage.removeItem("wisdom_splash_shown");
+              signOut({ callbackUrl: "/login" });
+            }}
             className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold text-muted-foreground transition-all hover:text-destructive hover:bg-destructive/10 group focus:outline-none focus:ring-2 focus:ring-destructive/20"
           >
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-background border border-border group-hover:bg-destructive/10 group-hover:border-destructive/20 transition-colors">
@@ -215,4 +300,4 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
       </aside>
     </>
   );
-}
+});

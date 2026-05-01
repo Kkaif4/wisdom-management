@@ -6,8 +6,8 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(req: NextRequest) {
   try {
-    // 1. Central Session Gatekeeper (centralized error throwing)
-    const user = await SessionService.requireSession();
+    // 1. Central Session Gatekeeper with Permission
+    const user = await SessionService.requirePermission("CREATE_RECEIPT");
     const organizationId = SessionService.requireOrgId(user);
 
     const body = await req.json();
@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
 
 export async function GET(req: NextRequest) {
   try {
-    const user = await SessionService.requireSession();
+    const user = await SessionService.requirePermission("VIEW_RECEIPT_LIST");
     const organizationId = SessionService.requireOrgId(user);
 
     const receipts = await ReceiptService.listReceipts(organizationId);
@@ -60,3 +60,4 @@ export async function GET(req: NextRequest) {
     return ErrorUtils.handleApiError(error);
   }
 }
+
