@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { showToast } from "@/components/shared/Toast";
 import { StudentSearchSelect } from "./StudentSearchSelect";
+import { DatePicker } from "@/components/ui/date-picker";
 
 interface IncomeCategory {
   id: string;
@@ -350,23 +351,15 @@ export function ReceiptEntryModal({
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Date */}
               <div className="space-y-1.5">
                 <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
                   Collection Date
                 </label>
-                <div className="relative">
-                  <CalendarIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground opacity-50" />
-                  <input
-                    required
-                    type="date"
-                    className="w-full bg-muted/20 border border-border/50 rounded-2xl pl-11 pr-5 py-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all font-medium"
-                    value={formData.date}
-                    onChange={(e) =>
-                      setFormData({ ...formData, date: e.target.value })
-                    }
-                  />
-                </div>
+                <DatePicker
+                  value={formData.date}
+                  onChange={(val) => setFormData({ ...formData, date: val })}
+                  required
+                />
               </div>
 
               {/* Remarks */}

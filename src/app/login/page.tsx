@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { loginAction } from "./actions";
@@ -15,7 +15,13 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  // If already authenticated, show a "Go to Dashboard" screen
+  // Automatically redirect if already authenticated
+  useEffect(() => {
+    if (status === "authenticated") {
+      router.replace("/dashboard");
+    }
+  }, [status, router]);
+
   if (status === "authenticated" && session?.user) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-zinc-50 p-4">

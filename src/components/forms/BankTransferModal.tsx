@@ -9,6 +9,7 @@ import {
   Loader2,
   AlertCircle,
 } from "lucide-react";
+import { DatePicker } from "../ui/date-picker";
 
 interface BankTransferModalProps {
   onSuccess: () => void;
@@ -175,14 +176,10 @@ export const BankTransferModal: React.FC<BankTransferModalProps> = ({
                 <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">
                   Date
                 </label>
-                <input
-                  type="date"
-                  required
-                  className="w-full bg-muted/30 border border-border/50 rounded-2xl px-4 py-4 font-bold text-sm focus:outline-none"
+                <DatePicker
                   value={formData.date}
-                  onChange={(e) =>
-                    setFormData({ ...formData, date: e.target.value })
-                  }
+                  onChange={(val) => setFormData({ ...formData, date: val })}
+                  required
                 />
               </div>
             </div>

@@ -15,6 +15,8 @@ import {
 } from "lucide-react";
 import { ExcelService } from "@/modules/document/services/excel.service";
 import { showToast } from "@/components/shared/Toast";
+import { DatePicker } from "@/components/ui/date-picker";
+import { ReportFilters } from "@/components/dashboard/reports/ReportFilters";
 
 // --- Types ---
 type ReportData = {
@@ -48,23 +50,12 @@ type ReportData = {
   }[];
 };
 
-type PredefinedRange =
-  | "TODAY"
-  | "LAST_7_DAYS"
-  | "LAST_30_DAYS"
-  | "LAST_MONTH"
-  | "LAST_3_MONTHS"
-  | "THIS_YEAR"
-  | "CUSTOM";
-
 export function ReportsClient() {
   const [data, setData] = useState<ReportData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   // Date State
-  const [activeRange, setActiveRange] =
-    useState<PredefinedRange>("LAST_30_DAYS");
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
 
@@ -91,6 +82,8 @@ export function ReportsClient() {
       }
       const json = await res.json();
       setData(json);
+      setStartDate(start);
+      setEndDate(end);
     } catch (err: any) {
       setError(err.message);
       showToast(err.message, "error");
@@ -99,76 +92,8 @@ export function ReportsClient() {
     }
   };
 
-  // Helper to set dates based on preset
-  const applyPreset = (preset: PredefinedRange) => {
-    setActiveRange(preset);
-    if (preset === "CUSTOM") return;
-
-    const today = new Date();
-    let start = new Date();
-    let end = new Date();
-
-    switch (preset) {
-      case "TODAY":
-        start = new Date();
-        break;
-      case "LAST_7_DAYS":
-        start.setDate(today.getDate() - 7);
-        break;
-      case "LAST_30_DAYS":
-        start.setDate(today.getDate() - 30);
-        break;
-      case "LAST_MONTH":
-        start = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-        end = new Date(today.getFullYear(), today.getMonth(), 0);
-        break;
-      case "LAST_3_MONTHS":
-        start = new Date(
-          today.getFullYear(),
-          today.getMonth() - 3,
-          today.getDate(),
-        );
-        break;
-      case "THIS_YEAR":
-        start = new Date(today.getFullYear(), 0, 1);
-        break;
-    }
-
-    const startStr = start.toISOString().split("T")[0];
-    const endStr = end.toISOString().split("T")[0];
-    setStartDate(startStr);
-    setEndDate(endStr);
-    fetchReport(startStr, endStr);
-  };
-
-  // Initial load
-  useEffect(() => {
-    // Check if there are query params pre-filling
-    const params = new URLSearchParams(window.location.search);
-    const rangeParam = params.get("range");
-    if (
-      rangeParam &&
-      rangeParam.toUpperCase() in
-        [
-          "TODAY",
-          "LAST_7_DAYS",
-          "LAST_30_DAYS",
-          "LAST_MONTH",
-          "LAST_3_MONTHS",
-          "THIS_YEAR",
-        ]
-    ) {
-      applyPreset(rangeParam.toUpperCase() as PredefinedRange);
-    } else {
-      applyPreset("LAST_30_DAYS");
-    }
-  }, []);
-
   const handleCustomDateApply = () => {
-    if (startDate && endDate) {
-      setActiveRange("CUSTOM");
-      fetchReport(startDate, endDate);
-    }
+    // This is now handled by ReportFilters but kept as a placeholder if needed
   };
 
   const handleExportExcel = async () => {
@@ -247,102 +172,11 @@ export function ReportsClient() {
           </button>
         </div>
       </div>
-
-      {/* 2. Date Range Filters */}
-      <div className="bg-card border border-border/50 rounded-3xl p-5 md:p-6 shadow-sm hide-print overflow-hidden relative group/filters transition-all hover:border-primary/20">
-        {/* Subtle background decoration */}
-        <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -mr-32 -mt-32 pointer-events-none" />
-
-        <div className="relative z-10 flex flex-col xl:flex-row xl:items-end gap-6 md:gap-8">
-          {/* Quick Selection Section */}
-          <div className="flex-1 space-y-4">
-            <div className="flex items-center gap-2">
-              <div className="h-1.5 w-1.5 rounded-full bg-primary" />
-              <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-                Time Period Presets
-              </label>
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 md:gap-3">
-              {[
-                { id: "TODAY", label: "Today" },
-                { id: "LAST_7_DAYS", label: "Last 7 Days" },
-                { id: "LAST_30_DAYS", label: "Last 30 Days" },
-                { id: "LAST_MONTH", label: "Monthly" },
-                { id: "LAST_3_MONTHS", label: "Quarterly" },
-                { id: "THIS_YEAR", label: "Yearly" },
-              ].map((preset) => (
-                <button
-                  key={preset.id}
-                  onClick={() => applyPreset(preset.id as PredefinedRange)}
-                  className={`px-3 py-2.5 rounded-xl text-[10px] md:text-xs font-bold transition-all border border-transparent shadow-sm ${
-                    activeRange === preset.id
-                      ? "bg-primary text-primary-foreground shadow-primary/20 scale-[1.02]"
-                      : "bg-muted/40 text-muted-foreground hover:bg-muted hover:border-border/50"
-                  }`}
-                >
-                  {preset.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Divider on desktop */}
-          <div className="hidden xl:block w-[1px] h-12 bg-border/50 mb-1" />
-
-          {/* Custom Date Range Section */}
-          <div className="flex-none space-y-4">
-            <div className="flex items-center gap-2">
-              <CalendarIcon className="h-3.5 w-3.5 text-primary" />
-              <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-                Custom Range Definition
-              </label>
-            </div>
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-              <div className="flex items-center gap-2 flex-1">
-                <div className="relative group/input flex-1">
-                  <input
-                    type="date"
-                    value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
-                    className="w-full bg-muted/40 border border-border/50 rounded-xl pl-4 pr-3 py-2.5 text-xs md:text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all font-bold appearance-none hover:bg-muted/60"
-                  />
-                  <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none opacity-40">
-                    <div className="h-1 w-1 rounded-full bg-foreground" />
-                  </div>
-                </div>
-                <span className="text-[10px] font-black uppercase text-muted-foreground shrink-0 px-1 opacity-50">
-                  to
-                </span>
-                <div className="relative group/input flex-1">
-                  <input
-                    type="date"
-                    value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
-                    className="w-full bg-muted/40 border border-border/50 rounded-xl pl-4 pr-3 py-2.5 text-xs md:text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all font-bold appearance-none hover:bg-muted/60"
-                  />
-                  <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none opacity-40">
-                    <div className="h-1 w-1 rounded-full bg-foreground" />
-                  </div>
-                </div>
-              </div>
-              <button
-                onClick={handleCustomDateApply}
-                disabled={loading}
-                className="group/apply flex items-center justify-center gap-2 px-6 py-2.5 bg-primary text-primary-foreground rounded-xl font-black text-xs uppercase tracking-widest hover:opacity-90 transition-all active:scale-[0.98] disabled:opacity-50 shadow-lg shadow-primary/20 sm:min-w-[100px]"
-              >
-                {loading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <>
-                    <span>Apply</span>
-                    <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover/apply:translate-x-1" />
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
+      <ReportFilters
+        onRangeChange={(s, e) => fetchReport(s, e)}
+        isLoading={loading}
+        showPaymentMode={false}
+      />
 
       {/* Loading & Error States */}
       {loading && !data ? (

@@ -13,6 +13,7 @@ import {
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { Pagination } from "@/components/shared/Pagination";
 import { AccountTransactionModal } from "@/components/forms/AccountTransactionModal";
+import { DatePicker } from "@/components/ui/date-picker";
 
 interface Transaction {
   id: string;
@@ -226,26 +227,19 @@ export function AccountsClient({
 
         <div className="flex flex-col md:flex-row gap-4">
           <div className="flex flex-wrap items-center gap-3 bg-card/50 p-3 rounded-2xl border border-border/30 flex-1">
-            <div className="flex items-center gap-2">
-              <Calendar className="h-4 w-4 text-muted-foreground" />
-              <input
-                type="date"
-                className="bg-transparent text-sm font-bold outline-none"
-                value={filters.startDate}
-                onChange={(e) => updateFilters({ startDate: e.target.value })}
-              />
-            </div>
+            <DatePicker
+              value={filters.startDate}
+              onChange={(val) => updateFilters({ startDate: val })}
+              className="bg-transparent border-none px-0 py-0 w-32"
+            />
             <span className="text-muted-foreground/50 font-black px-2 text-xs">
               TO
             </span>
-            <div className="flex items-center gap-2">
-              <input
-                type="date"
-                className="bg-transparent text-sm font-bold outline-none"
-                value={filters.endDate}
-                onChange={(e) => updateFilters({ endDate: e.target.value })}
-              />
-            </div>
+            <DatePicker
+              value={filters.endDate}
+              onChange={(val) => updateFilters({ endDate: val })}
+              className="bg-transparent border-none px-0 py-0 w-32"
+            />
           </div>
 
           <form onSubmit={handleSearch} className="relative flex-1">

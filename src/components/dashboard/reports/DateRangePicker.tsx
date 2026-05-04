@@ -3,6 +3,7 @@
 import React from "react";
 import { Calendar as CalendarIcon, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { DatePicker } from "@/components/ui/date-picker";
 
 export type PredefinedRange =
   | "TODAY"
@@ -120,33 +121,31 @@ export function DateRangePicker({
               Custom Range
             </label>
           </div>
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-            <div className="flex items-center gap-2 flex-1">
-              <input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="w-full bg-muted/40 border border-border/50 rounded-xl px-4 py-2.5 text-xs md:text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all font-bold"
-              />
-              <span className="text-[10px] font-black uppercase text-muted-foreground opacity-50">
-                to
-              </span>
-              <input
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className="w-full bg-muted/40 border border-border/50 rounded-xl px-4 py-2.5 text-xs md:text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all font-bold"
-              />
-            </div>
-            <Button
-              onClick={handleCustomApply}
-              disabled={isLoading}
-              className="h-11 rounded-xl px-6 font-black text-xs uppercase tracking-widest"
-            >
-              Apply
-              <ArrowRight className="ml-2 h-3.5 w-3.5" />
-            </Button>
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-1">
+            <DatePicker
+              value={startDate}
+              onChange={setStartDate}
+              placeholder="Start Date"
+              className="bg-muted/40"
+            />
+            <span className="text-[10px] font-black uppercase text-muted-foreground opacity-50 text-center sm:px-2">
+              to
+            </span>
+            <DatePicker
+              value={endDate}
+              onChange={setEndDate}
+              placeholder="End Date"
+              className="bg-muted/40"
+            />
           </div>
+          <Button
+            onClick={handleCustomApply}
+            disabled={isLoading}
+            className="h-11 rounded-xl px-6 font-black text-xs uppercase tracking-widest"
+          >
+            Apply
+            <ArrowRight className="ml-2 h-3.5 w-3.5" />
+          </Button>
         </div>
       </div>
     </div>

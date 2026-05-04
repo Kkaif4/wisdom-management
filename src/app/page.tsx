@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { auth } from "@/auth";
 import {
   ArrowRight,
   ShieldCheck,
@@ -7,9 +8,12 @@ import {
   Database,
   BarChart4,
   CheckCircle2,
+  LayoutDashboard,
 } from "lucide-react";
 
-export default function Home() {
+export default async function Home() {
+  const session = await auth();
+  const isLoggedIn = !!session;
   return (
     <div className="flex min-h-screen flex-col bg-background font-sans selection:bg-primary/20">
       {/* Background Grid - Refined Precision element */}
@@ -41,19 +45,22 @@ export default function Home() {
 
           <div className="flex items-center gap-2 sm:gap-4">
             <Link
-              href="/login"
-              className="flex min-h-[44px] md:min-h-[48px] items-center px-2 md:px-4 font-mono text-[10px] md:text-xs font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors"
+              href={isLoggedIn ? "/dashboard" : "/login"}
+              className="flex min-h-[44px] md:min-h-[48px] items-center px-2 md:px-4 font-mono text-[10px] md:text-xs font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors group"
             >
-              <span className="hidden sm:inline">[ Auth_Sign_In ]</span>
-              <span className="sm:hidden">[ Auth_Login ]</span>
+              {isLoggedIn ? (
+                <>
+                  <LayoutDashboard className="h-3 w-3 mr-2 text-primary" />
+                  <span className="hidden sm:inline">[ System_Dashboard ]</span>
+                  <span className="sm:hidden">[ Dashboard ]</span>
+                </>
+              ) : (
+                <>
+                  <span className="hidden sm:inline">[ Auth_Sign_In ]</span>
+                  <span className="sm:hidden">[ Auth_Login ]</span>
+                </>
+              )}
             </Link>
-            {/* <Link
-              href="/register"
-              className="flex min-h-[44px] md:min-h-[48px] items-center justify-center border border-primary bg-primary px-3 md:px-6 text-[10px] sm:text-xs md:text-sm font-bold text-primary-foreground transition-all hover:bg-background hover:text-primary active:scale-95 whitespace-nowrap"
-            >
-              <span className="hidden sm:inline">INITIALIZE SYSTEM</span>
-              <span className="sm:hidden">INIT SYS</span>
-            </Link> */}
           </div>
         </div>
       </nav>
@@ -87,13 +94,13 @@ export default function Home() {
               </p>
 
               <div className="mt-12 w-full flex flex-col sm:flex-row gap-4 border-t border-border pt-8">
-                {/* <Link
-                  href="/register"
+                <Link
+                  href={isLoggedIn ? "/dashboard" : "/login"}
                   className="group flex min-h-[56px] w-full sm:w-auto items-center justify-between sm:justify-center gap-4 border-2 border-primary bg-primary px-8 text-sm font-bold uppercase tracking-widest text-primary-foreground transition-all hover:bg-background hover:text-primary active:scale-[0.98]"
                 >
-                  Begine the Expereince
+                  {isLoggedIn ? "Enter Dashboard" : "Initialize Session"}
                   <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-2" />
-                </Link> */}
+                </Link>
                 <Link
                   href="#capabilities"
                   className="flex min-h-[56px] w-full sm:w-auto items-center justify-center gap-2 border border-border bg-card px-8 text-sm font-bold uppercase tracking-widest text-foreground transition-colors hover:bg-muted active:scale-[0.98]"
@@ -283,10 +290,10 @@ export default function Home() {
                 Actions
               </span>
               <Link
-                href="/login"
+                href={isLoggedIn ? "/dashboard" : "/login"}
                 className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground hover:text-foreground min-h-[44px] sm:min-h-0 flex items-center"
               >
-                Authenticate
+                {isLoggedIn ? "System Dashboard" : "Authenticate"}
               </Link>
               {/* <Link
                 href="/register"

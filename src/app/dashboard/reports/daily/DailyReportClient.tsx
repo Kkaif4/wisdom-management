@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Download, Printer } from "lucide-react";
 import { ExcelService } from "@/modules/document/services/excel.service";
 import { showToast } from "@/components/shared/Toast";
+import { DatePicker } from "@/components/ui/date-picker";
 
 interface ReceiptEntry {
   id: string;
@@ -89,11 +90,10 @@ export function DailyReportClient({
           ← Back
         </Link>
         <div className="flex items-center gap-3">
-          <input
-            type="date"
-            className="rounded-xl border border-zinc-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+          <DatePicker
             value={date}
-            onChange={(e) => handleDateChange(e.target.value)}
+            onChange={handleDateChange}
+            className="w-40 bg-white"
           />
           <button
             onClick={handleExportExcel}

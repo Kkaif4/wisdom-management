@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import { apiClient } from "@/lib/api-client";
 import { showToast } from "../shared/Toast";
 import { X, Receipt, Loader2 } from "lucide-react";
+import { DatePicker } from "../ui/date-picker";
 
 const EXPENSE_CATEGORIES = [
   "Salary",
@@ -144,14 +145,10 @@ export const ExpenseEntryModal: React.FC<ExpenseEntryModalProps> = ({
               <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
                 Date
               </label>
-              <input
-                type="date"
-                required
-                className="w-full bg-muted/20 border border-border/50 rounded-2xl px-4 py-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all font-medium"
+              <DatePicker
                 value={formData.date}
-                onChange={(e) =>
-                  setFormData({ ...formData, date: e.target.value })
-                }
+                onChange={(val) => setFormData({ ...formData, date: val })}
+                required
               />
             </div>
 

@@ -8,6 +8,7 @@ export class PrintService {
    * Leverages Portal-based isolation and CSS rules to show only the template.
    */
   static async print(options: PrintOptions = {}): Promise<void> {
+    console.log("printing in service");
     if (this.isPrinting) return;
 
     const {

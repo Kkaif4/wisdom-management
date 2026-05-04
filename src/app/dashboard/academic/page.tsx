@@ -16,6 +16,7 @@ import {
   Lock,
 } from "lucide-react";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
+import { DatePicker } from "@/components/ui/date-picker";
 
 const fmt = (val: number) =>
   new Intl.NumberFormat("en-IN", {
@@ -50,21 +51,28 @@ export default function AcademicPage() {
   const router = useRouter();
   const [classes, setClasses] = useState<ClassItem[]>([]);
   const [sessions, setSessions] = useState<Session[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [initialLoad, setInitialLoad] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [expandedClass, setExpandedClass] = useState<string | null>(null);
 
   // Form states
   const [showAddClass, setShowAddClass] = useState(false);
   const [newClassName, setNewClassName] = useState("");
   const [newClassOrder, setNewClassOrder] = useState(1);
+  const [classError, setClassError] = useState("");
+  
   const [showAddDivision, setShowAddDivision] = useState<string | null>(null);
   const [newDivName, setNewDivName] = useState("");
+  const [divError, setDivError] = useState("");
+  
   const [showAddSession, setShowAddSession] = useState(false);
   const [newSession, setNewSession] = useState({
     name: "",
     startDate: "",
     endDate: "",
   });
+  const [sessionError, setSessionError] = useState("");
+
   const [actionLoading, setActionLoading] = useState(false);
   const [pendingConfirm, setPendingConfirm] = useState<{
     title: string;
@@ -75,7 +83,7 @@ export default function AcademicPage() {
   } | null>(null);
 
   const fetchData = useCallback(async () => {
-    setLoading(true);
+    setIsRefreshing(true);
     try {
       const [classRes, sessionRes] = await Promise.all([
         fetch("/api/classes"),
@@ -86,7 +94,8 @@ export default function AcademicPage() {
     } catch (e) {
       console.error(e);
     }
-    setLoading(false);
+    setIsRefreshing(false);
+    setInitialLoad(false);
   }, []);
 
   useEffect(() => {
@@ -95,12 +104,19 @@ export default function AcademicPage() {
 
   const handleAddClass = async () => {
     if (!newClassName.trim()) return;
+    setClassError("");
     setActionLoading(true);
-    await fetch("/api/classes", {
+    const res = await fetch("/api/classes", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name: newClassName, displayOrder: newClassOrder }),
     });
+    if (!res.ok) {
+      const err = await res.json();
+      setClassError(err.error || res.statusText);
+      setActionLoading(false);
+      return;
+    }
     setNewClassName("");
     setShowAddClass(false);
     setActionLoading(false);
@@ -115,7 +131,11 @@ export default function AcademicPage() {
       variant: "danger",
       confirmText: "Delete",
       action: async () => {
-        await fetch(`/api/classes/${id}`, { method: "DELETE" });
+        const res = await fetch(`/api/classes/${id}`, { method: "DELETE" });
+        if (!res.ok) {
+          const err = await res.json();
+          alert(`Error: ${err.error || res.statusText}`);
+        }
         setPendingConfirm(null);
         fetchData();
       },
@@ -124,12 +144,19 @@ export default function AcademicPage() {
 
   const handleAddDivision = async (classId: string) => {
     if (!newDivName.trim()) return;
+    setDivError("");
     setActionLoading(true);
-    await fetch("/api/divisions", {
+    const res = await fetch("/api/divisions", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name: newDivName, classId }),
     });
+    if (!res.ok) {
+      const err = await res.json();
+      setDivError(err.error || res.statusText);
+      setActionLoading(false);
+      return;
+    }
     setNewDivName("");
     setShowAddDivision(null);
     setActionLoading(false);
@@ -144,7 +171,11 @@ export default function AcademicPage() {
       variant: "danger",
       confirmText: "Delete",
       action: async () => {
-        await fetch(`/api/divisions/${id}`, { method: "DELETE" });
+        const res = await fetch(`/api/divisions/${id}`, { method: "DELETE" });
+        if (!res.ok) {
+          const err = await res.json();
+          alert(`Error: ${err.error || res.statusText}`);
+        }
         setPendingConfirm(null);
         fetchData();
       },
@@ -154,12 +185,19 @@ export default function AcademicPage() {
   const handleAddSession = async () => {
     if (!newSession.name || !newSession.startDate || !newSession.endDate)
       return;
+    setSessionError("");
     setActionLoading(true);
-    await fetch("/api/academic-sessions", {
+    const res = await fetch("/api/academic-sessions", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(newSession),
     });
+    if (!res.ok) {
+      const err = await res.json();
+      setSessionError(err.error || res.statusText);
+      setActionLoading(false);
+      return;
+    }
     setNewSession({ name: "", startDate: "", endDate: "" });
     setShowAddSession(false);
     setActionLoading(false);
@@ -174,9 +212,13 @@ export default function AcademicPage() {
       variant: "warning",
       confirmText: "Activate",
       action: async () => {
-        await fetch(`/api/academic-sessions/${id}/activate`, {
+        const res = await fetch(`/api/academic-sessions/${id}/activate`, {
           method: "POST",
         });
+        if (!res.ok) {
+          const err = await res.json();
+          alert(`Error activating session: ${err.error || res.statusText}`);
+        }
         setPendingConfirm(null);
         fetchData();
       },
@@ -191,7 +233,11 @@ export default function AcademicPage() {
       variant: "danger",
       confirmText: "Close Session",
       action: async () => {
-        await fetch(`/api/academic-sessions/${id}/close`, { method: "POST" });
+        const res = await fetch(`/api/academic-sessions/${id}/close`, { method: "POST" });
+        if (!res.ok) {
+          const err = await res.json();
+          alert(`Error closing session: ${err.error || res.statusText}`);
+        }
         setPendingConfirm(null);
         fetchData();
       },
@@ -220,7 +266,7 @@ export default function AcademicPage() {
     );
   };
 
-  if (loading) {
+  if (initialLoad) {
     return (
       <div className="flex items-center justify-center min-h-[40vh]">
         <Loader2 className="h-8 w-8 text-primary animate-spin" />
@@ -257,6 +303,11 @@ export default function AcademicPage() {
 
         {showAddSession && (
           <div className="glass rounded-2xl p-6 border border-border/50 mb-4 space-y-3">
+            {sessionError && (
+              <div className="text-destructive text-sm font-bold bg-destructive/10 px-3 py-2 rounded-lg border border-destructive/20">
+                {sessionError}
+              </div>
+            )}
             <input
               value={newSession.name}
               onChange={(e) =>
@@ -266,21 +317,17 @@ export default function AcademicPage() {
               className="w-full bg-background border border-border/50 rounded-xl px-4 py-2.5 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-primary/20"
             />
             <div className="grid grid-cols-2 gap-3">
-              <input
-                type="date"
+              <DatePicker
                 value={newSession.startDate}
-                onChange={(e) =>
-                  setNewSession({ ...newSession, startDate: e.target.value })
-                }
-                className="bg-background border border-border/50 rounded-xl px-4 py-2.5 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-primary/20"
+                onChange={(val) => setNewSession({ ...newSession, startDate: val })}
+                placeholder="Start Date"
+                required
               />
-              <input
-                type="date"
+              <DatePicker
                 value={newSession.endDate}
-                onChange={(e) =>
-                  setNewSession({ ...newSession, endDate: e.target.value })
-                }
-                className="bg-background border border-border/50 rounded-xl px-4 py-2.5 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-primary/20"
+                onChange={(val) => setNewSession({ ...newSession, endDate: val })}
+                placeholder="End Date"
+                required
               />
             </div>
             <div className="flex gap-2">
@@ -305,7 +352,12 @@ export default function AcademicPage() {
           </div>
         )}
 
-        <div className="glass rounded-3xl overflow-hidden border-border/50 shadow-sm">
+        <div className="glass rounded-3xl overflow-hidden border-border/50 shadow-sm relative min-h-[100px]">
+          {isRefreshing && (
+            <div className="absolute inset-0 bg-background/50 backdrop-blur-[1px] flex items-center justify-center z-10">
+              <Loader2 className="h-6 w-6 text-primary animate-spin" />
+            </div>
+          )}
           <table className="w-full text-left">
             <thead>
               <tr className="text-[10px] font-black uppercase tracking-[0.15em] text-muted-foreground/70 bg-muted/20 border-b border-border/50">
@@ -379,6 +431,11 @@ export default function AcademicPage() {
 
         {showAddClass && (
           <div className="glass rounded-2xl p-6 border border-border/50 mb-4 space-y-3">
+            {classError && (
+              <div className="text-destructive text-sm font-bold bg-destructive/10 px-3 py-2 rounded-lg border border-destructive/20">
+                {classError}
+              </div>
+            )}
             <div className="grid grid-cols-2 gap-3">
               <input
                 value={newClassName}
@@ -416,7 +473,12 @@ export default function AcademicPage() {
           </div>
         )}
 
-        <div className="space-y-3">
+        <div className="space-y-3 relative min-h-[100px]">
+          {isRefreshing && (
+            <div className="absolute inset-0 bg-background/50 backdrop-blur-[1px] flex items-center justify-center z-10 rounded-2xl">
+              <Loader2 className="h-6 w-6 text-primary animate-spin" />
+            </div>
+          )}
           {classes.length === 0 ? (
             <div className="glass rounded-3xl p-16 text-center text-muted-foreground/50 text-sm font-bold border-border/50">
               No classes created yet
@@ -465,32 +527,40 @@ export default function AcademicPage() {
                         </span>
                       ))}
                       {showAddDivision === cls.id ? (
-                        <div className="inline-flex items-center gap-2">
-                          <input
-                            value={newDivName}
-                            onChange={(e) => setNewDivName(e.target.value)}
-                            placeholder="e.g. A"
-                            className="w-20 bg-background border border-border/50 rounded-lg px-3 py-1.5 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-primary/20"
-                            autoFocus
-                            onKeyDown={(e) =>
-                              e.key === "Enter" && handleAddDivision(cls.id)
-                            }
-                          />
-                          <button
-                            onClick={() => handleAddDivision(cls.id)}
-                            className="px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-bold"
-                          >
-                            Add
-                          </button>
-                          <button
-                            onClick={() => {
-                              setShowAddDivision(null);
-                              setNewDivName("");
-                            }}
-                            className="px-3 py-1.5 rounded-lg bg-muted text-muted-foreground text-xs font-bold"
-                          >
-                            ✕
-                          </button>
+                        <div className="flex flex-col gap-2">
+                          <div className="inline-flex items-center gap-2">
+                            <input
+                              value={newDivName}
+                              onChange={(e) => setNewDivName(e.target.value)}
+                              placeholder="e.g. A"
+                              className="w-20 bg-background border border-border/50 rounded-lg px-3 py-1.5 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-primary/20"
+                              autoFocus
+                              onKeyDown={(e) =>
+                                e.key === "Enter" && handleAddDivision(cls.id)
+                              }
+                            />
+                            <button
+                              onClick={() => handleAddDivision(cls.id)}
+                              className="px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-bold"
+                            >
+                              Add
+                            </button>
+                            <button
+                              onClick={() => {
+                                setShowAddDivision(null);
+                                setNewDivName("");
+                                setDivError("");
+                              }}
+                              className="px-3 py-1.5 rounded-lg bg-muted text-muted-foreground text-xs font-bold"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                          {divError && (
+                            <div className="text-destructive text-xs font-bold bg-destructive/10 px-3 py-1.5 rounded-lg border border-destructive/20">
+                              {divError}
+                            </div>
+                          )}
                         </div>
                       ) : (
                         <button

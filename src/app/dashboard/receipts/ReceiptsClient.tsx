@@ -121,7 +121,6 @@ export function ReceiptsClient({
 
   const handleExport = async () => {
     if (isExporting) return;
-
     try {
       setIsExporting(true);
       const columns: ColumnConfig<Receipt>[] = [
@@ -218,7 +217,6 @@ export function ReceiptsClient({
           </button>
         </PermissionGate>
       </div>
-
 
       {error && (
         <div className="animate-in fade-in slide-in-from-top-4 duration-300">
@@ -441,7 +439,7 @@ export function ReceiptsClient({
 
       {/* Hidden Print Area */}
       {printingReceipt && (
-        <PrintWrapper id="receipt-print-area">
+        <PrintWrapper id="receipt-print-area" width="148mm">
           <DocumentErrorBoundary onReset={() => setPrintingReceipt(null)}>
             <ReceiptTemplate
               mode="print"

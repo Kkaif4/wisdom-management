@@ -36,201 +36,139 @@ export const ReceiptTemplate: React.FC<TemplateProps<ReceiptData>> = ({
 
   return (
     <DocumentLayout
-      pageSize="A4"
+      pageSize="A5"
       branding={{ name: data.organizationName }}
       watermark={isVoid ? { text: "VOID" } : undefined}
     >
-      <div className="flex flex-col h-full font-sans text-gray-900">
-        {/* ── Header Section ──────────────────────────── */}
-        <div className="flex flex-col items-center text-center border-b-2 border-gray-800 pb-4 mb-6">
-          <h1 className="text-2xl font-bold uppercase tracking-tight mb-1">
-            {data.organizationName}
-          </h1>
-          {data.organizationAddress && (
-            <p className="text-xs text-gray-600">{data.organizationAddress}</p>
-          )}
-          {data.organizationContact && (
-            <p className="text-xs text-gray-600 font-medium mt-0.5">
-              {data.organizationContact}
-            </p>
-          )}
+      <div className="flex flex-col h-auto min-h-full font-sans text-black print:min-h-0">
+        {/* ── Document Type Header ───────────────────── */}
+        <div className="flex justify-between items-center border border-black p-2 bg-gray-50 mb-4">
+          <span className="text-[10px] font-black uppercase tracking-widest text-gray-900">
+            Collection Receipt
+          </span>
+          <span className="text-[11px] font-black font-mono">
+            #{data.receiptNumber}
+          </span>
         </div>
 
-        {/* ── Title and Metadata ──────────────────────── */}
-        <div className="flex justify-between items-end mb-6">
-          <div>
-            <h2 className="text-lg font-bold border-b-2 border-gray-800 inline-block uppercase">
-              Fee Receipt
-            </h2>
-          </div>
-          <div className="text-right text-sm space-y-0.5">
-            <p>
-              <span className="font-bold">Receipt No:</span>{" "}
-              {data.receiptNumber}
-            </p>
-            <p>
-              <span className="font-bold">Date:</span> {formatDate(data.date)}
-            </p>
-            {data.sessionName && (
-              <p>
-                <span className="font-bold">Session:</span> {data.sessionName}
-              </p>
-            )}
-          </div>
-        </div>
-
-        {/* ── Student Information Grid ────────────────── */}
-        <div className="grid grid-cols-2 gap-y-3 gap-x-8 mb-8 text-sm border p-4 bg-gray-50 rounded">
-          <div className="flex">
-            <span className="w-36 font-bold text-gray-700 shrink-0">
-              Student Name:
-            </span>
-            <span className="border-b border-gray-300 flex-1">
-              {data.studentName}
-            </span>
-          </div>
-          {data.fatherName && (
-            <div className="flex">
-              <span className="w-36 font-bold text-gray-700 shrink-0">
-                Father&apos;s Name:
-              </span>
-              <span className="border-b border-gray-300 flex-1">
-                {data.fatherName}
-              </span>
-            </div>
-          )}
-          {data.admissionNumber && (
-            <div className="flex">
-              <span className="w-36 font-bold text-gray-700 shrink-0">
-                Admission No:
-              </span>
-              <span className="border-b border-gray-300 flex-1">
-                {data.admissionNumber}
-              </span>
-            </div>
-          )}
-          {data.studentClass && (
-            <div className="flex">
-              <span className="w-36 font-bold text-gray-700 shrink-0">
-                Class &amp; Section:
-              </span>
-              <span className="border-b border-gray-300 flex-1">
-                {data.studentClass}
-              </span>
-            </div>
-          )}
-          {data.rollNumber && (
-            <div className="flex">
-              <span className="w-36 font-bold text-gray-700 shrink-0">
-                Roll Number:
-              </span>
-              <span className="border-b border-gray-300 flex-1">
-                {data.rollNumber}
-              </span>
-            </div>
-          )}
-        </div>
-
-        {/* ── Fee Breakdown Table ─────────────────────── */}
-        <table className="w-full border-collapse border border-gray-800 mb-6 text-sm">
-          <thead>
-            <tr className="bg-gray-100">
-              <th className="border border-gray-800 p-2 text-left w-14">
-                S.No
-              </th>
-              <th className="border border-gray-800 p-2 text-left">
-                Description of Fees
-              </th>
-              <th className="border border-gray-800 p-2 text-right w-36">
-                Amount (₹)
-              </th>
-            </tr>
-          </thead>
+        {/* ── Student Information Grid ───────────────── */}
+        <table className="w-full border-collapse border-[1.2pt] border-black text-[11px]">
           <tbody>
             <tr>
-              <td className="border border-gray-800 p-2 text-center">1</td>
-              <td className="border border-gray-800 p-2 uppercase">
-                {data.category}
+              <td className="w-1/3 bg-gray-50 border border-black p-1.5 font-bold uppercase text-[9px] text-gray-500">
+                Student Name
               </td>
-              <td className="border border-gray-800 p-2 text-right font-mono font-bold">
-                {formatCurrency(numAmount)}
+              <td className="border border-black p-1.5 font-black text-sm uppercase">
+                {data.studentName}
+              </td>
+              <td className="w-1/4 bg-gray-50 border border-black p-1.5 font-bold uppercase text-[9px] text-gray-500">
+                Date
+              </td>
+              <td className="border border-black p-1.5 font-bold font-mono">
+                {formatDate(data.date)}
               </td>
             </tr>
-            {/* Payment Mode Row */}
             <tr>
-              <td className="border border-gray-800 p-2"></td>
-              <td className="border border-gray-800 p-2 text-right italic text-gray-500">
-                Payment Mode:{" "}
-                <span className="uppercase font-bold not-italic text-gray-700">
-                  {data.paymentMode}
-                </span>
+              <td className="bg-gray-50 border border-black p-1.5 font-bold uppercase text-[9px] text-gray-500">
+                Admission No
               </td>
-              <td className="border border-gray-800 p-2"></td>
+              <td className="border border-black p-1.5 font-mono">
+                {data.admissionNumber || "---"}
+              </td>
+              <td className="bg-gray-50 border border-black p-1.5 font-bold uppercase text-[9px] text-gray-500">
+                Session
+              </td>
+              <td className="border border-black p-1.5">
+                {data.sessionName || "---"}
+              </td>
             </tr>
-            {/* Total Row */}
-            <tr className="bg-gray-50">
-              <td className="border border-gray-800 p-2"></td>
-              <td className="border border-gray-800 p-2 font-bold text-right">
-                Total Amount Received
+            <tr>
+              <td className="bg-gray-50 border border-black p-1.5 font-bold uppercase text-[9px] text-gray-500">
+                Father&apos;s Name
               </td>
-              <td className="border border-gray-800 p-2 text-right font-bold font-mono text-lg">
-                {formatCurrency(numAmount)}
+              <td className="border border-black p-1.5 uppercase">
+                {data.fatherName || "---"}
+              </td>
+              <td className="bg-gray-50 border border-black p-1.5 font-bold uppercase text-[9px] text-gray-500">
+                Class & Sec
+              </td>
+              <td className="border border-black p-1.5 uppercase">
+                {data.studentClass || "---"}
               </td>
             </tr>
           </tbody>
         </table>
 
-        {/* ── Amount in Words ─────────────────────────── */}
-        <div className="mb-10 text-sm">
-          <p>
-            <span className="font-bold underline">Amount in Words:</span>{" "}
-            <span className="italic">{amountToWords(numAmount)}</span>
-          </p>
+        {/* ── Fee Particulars Table ────────────────────── */}
+        <div className="mt-4 flex-1 min-h-0">
+          <table className="w-full border-collapse border-[1.2pt] border-black text-[11px]">
+            <thead>
+              <tr className="bg-gray-50">
+                <th className="border border-black p-1.5 text-left text-[9px] font-black uppercase">
+                  Particulars / Purpose of Payment
+                </th>
+                <th className="border border-black p-1.5 text-right w-32 text-[9px] font-black uppercase">
+                  Amount
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr className="h-20">
+                <td className="border border-black p-2 align-top italic font-bold">
+                  {data.category}
+                  {data.remarks && (
+                    <p className="text-[9px] text-gray-400 mt-1 font-medium non-italic">
+                      Note: {data.remarks}
+                    </p>
+                  )}
+                </td>
+                <td className="border border-black p-2 text-right align-bottom font-black font-mono text-lg text-gray-900">
+                  {formatCurrency(numAmount)}
+                </td>
+              </tr>
+              <tr>
+                <td colSpan={2} className="bg-gray-50 border border-black p-2">
+                  <span className="text-[8px] font-black uppercase text-gray-400 block mb-0.5">
+                    Amount in Words:
+                  </span>
+                  <span className="font-bold italic text-[11px] capitalize text-gray-800">
+                    {amountToWords(numAmount)} Only
+                  </span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
 
-        {/* ── Remarks ─────────────────────────────────── */}
-        {data.remarks && (
-          <div className="mb-8">
-            <p className="text-[10px] font-bold uppercase text-gray-400 tracking-wider mb-1">
-              Notes / Remarks
+        {/* ── Footer / Payment Details ─────────────────── */}
+        <div className="mt-4 grid grid-cols-2 gap-4 items-end">
+          <div className="border border-black p-2 text-[10px] space-y-1">
+            <p className="font-black underline uppercase text-gray-900">
+              Payment Details:
             </p>
-            <p className="text-sm text-gray-600 leading-relaxed font-medium">
-              {data.remarks}
+            <p className="font-bold text-gray-700">
+              Mode: <span className="font-black uppercase text-gray-900">{data.paymentMode}</span>
+            </p>
+            <p className="text-[8px] text-gray-400">
+              * This is a computer generated valid financial record.
             </p>
           </div>
-        )}
 
-        {/* ── Footer Signatures ──────────────────────── */}
-        <div className="mt-auto grid grid-cols-2 gap-16 text-sm pt-8">
-          <div className="text-center border-t border-gray-800 pt-2">
-            <p className="font-bold">Parent / Guardian Signature</p>
-          </div>
-          <div className="text-center border-t border-gray-800 pt-2 flex flex-col items-center">
-            <div className="h-10 flex items-center justify-center italic text-gray-400 opacity-50 mb-1 text-xs">
-              [Authorized Seal]
+          <div className="text-right">
+            <div className="inline-block text-center min-w-[140px]">
+              <div className="h-8 mb-1"></div>
+              <p className="text-[9px] font-black uppercase tracking-widest border-t border-black pt-1">
+                Authorized Signatory
+              </p>
             </div>
-            <p className="font-bold uppercase">Authorized Signatory</p>
-            <p className="text-[10px] text-gray-500 italic">
-              Computer Generated Receipt
-            </p>
           </div>
-        </div>
-
-        {/* ── Terms / Note ────────────────────────────── */}
-        <div className="mt-6 text-[10px] text-gray-500 border-t pt-3 leading-tight">
-          <p>
-            Note: 1. Fees once paid are non-refundable. 2. Please preserve this
-            receipt for future reference. 3. This is a computer generated
-            document and does not require a physical signature if stamped by the
-            institution.
-          </p>
         </div>
 
         {!isPrint && (
-          <div className="mt-8 flex gap-4 no-print border-t pt-6 justify-end">
+          <div className="mt-4 flex gap-4 no-print border-t pt-3 justify-end">
             <button
               onClick={() => window.print()}
-              className="px-6 py-2 bg-primary text-white rounded-xl font-black text-xs uppercase tracking-widest shadow-lg shadow-primary/20"
+              className="px-6 py-2 bg-blue-800 text-white rounded font-black text-xs uppercase tracking-widest shadow-lg"
             >
               Print Receipt
             </button>

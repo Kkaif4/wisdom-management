@@ -1,7 +1,7 @@
 @media print {
   @page {
-    size: A4 portrait;
-    margin: 15mm;
+    size: auto;
+    margin: 0;
   }
 
   /* Hide everything by default in print */
@@ -12,10 +12,13 @@
   /* Show only the print area */
   .print-area {
     display: block !important;
-    width: 210mm;
-    min-height: 297mm;
-    margin: 0 auto;
+    margin: 0;
+    padding: 0;
     background: white;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
   }
 
   /* Page Break Utilities */

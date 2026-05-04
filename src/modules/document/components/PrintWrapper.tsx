@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 
 interface PrintWrapperProps {
   id?: string;
+  width?: string;
   children: React.ReactNode;
 }
 
@@ -13,7 +14,11 @@ interface PrintWrapperProps {
  * Works with the global `@media print { body > *:not(.print-area) { display: none } }`
  * rule in globals.css to isolate print content from the dashboard.
  */
-export const PrintWrapper: React.FC<PrintWrapperProps> = ({ id, children }) => {
+export const PrintWrapper: React.FC<PrintWrapperProps> = ({
+  id,
+  width = "210mm",
+  children,
+}) => {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -32,7 +37,7 @@ export const PrintWrapper: React.FC<PrintWrapperProps> = ({ id, children }) => {
         position: "fixed",
         top: "-9999px",
         left: "-9999px",
-        width: "210mm",
+        width: width,
         overflow: "hidden",
         visibility: "hidden",
       }}

@@ -3,6 +3,7 @@
 import React from "react";
 import { Download, Printer, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 interface ReportLayoutProps {
   title: string;
@@ -49,12 +50,12 @@ export function ReportLayout({
       {/* Main Content */}
       <div className="relative">
         {isLoading && (
-          <div className="fixed top-24 right-8 z-50 bg-primary text-primary-foreground px-4 py-2 rounded-full shadow-2xl flex items-center gap-2 animate-bounce">
+          <div className="fixed bottom-8 right-8 z-50 bg-foreground text-background px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-3 animate-in slide-in-from-bottom-10 duration-300">
             <Loader2 className="h-4 w-4 animate-spin" />
-            <span className="text-xs font-bold">Refreshing...</span>
+            <span className="text-xs font-black uppercase tracking-widest">Updating Data...</span>
           </div>
         )}
-        <div className={isLoading ? "opacity-50 pointer-events-none" : ""}>
+        <div className={cn("transition-opacity duration-300", isLoading ? "opacity-70" : "opacity-100")}>
           {children}
         </div>
       </div>
