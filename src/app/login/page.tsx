@@ -6,6 +6,7 @@ import { useSession } from "next-auth/react";
 import { loginAction } from "./actions";
 import { showToast } from "@/components/shared/Toast";
 import { Loader2, LayoutDashboard, Eye, EyeOff } from "lucide-react";
+import Image from "next/image";
 
 export default function LoginPage() {
   const { data: session, status } = useSession();
@@ -28,8 +29,14 @@ export default function LoginPage() {
       <div className="flex min-h-screen items-center justify-center bg-zinc-50 p-4">
         <div className="w-full max-w-md overflow-hidden rounded-3xl bg-white shadow-2xl shadow-zinc-200">
           <div className="p-8 pt-12 text-center">
-            <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-black text-2xl font-black text-white italic tracking-tighter shadow-xl shadow-black/10">
-              W
+            <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-white shadow-xl shadow-black/10 overflow-hidden border border-zinc-100 p-1">
+              <Image
+                src="/icon.png"
+                alt="Logo"
+                width={64}
+                height={64}
+                className="object-contain"
+              />
             </div>
             <h1 className="text-2xl font-bold tracking-tight text-zinc-900">
               Welcome, {session.user.name || "User"}
@@ -87,9 +94,15 @@ export default function LoginPage() {
           <div className="p-8 pt-12 text-center">
             <a
               href="/"
-              className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-black text-2xl font-black text-white italic tracking-tighter shadow-xl shadow-black/10"
+              className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-white shadow-xl shadow-black/10 overflow-hidden border border-zinc-100 p-1"
             >
-              W
+              <Image
+                src="/wfm-logo.png"
+                alt="Logo"
+                width={64}
+                height={64}
+                className="object-contain"
+              />
             </a>
             <h1 className="text-2xl font-bold tracking-tight text-zinc-900">
               Welcome Back
