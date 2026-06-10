@@ -225,20 +225,22 @@ export function AccountsClient({
           </div>
         </div>
 
-        <div className="flex flex-col md:flex-row gap-4">
-          <div className="flex flex-wrap items-center gap-3 bg-card/50 p-3 rounded-2xl border border-border/30 flex-1">
+        <div className="flex flex-col md:flex-row gap-4 items-stretch md:items-center">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-1">
             <DatePicker
               value={filters.startDate}
               onChange={(val) => updateFilters({ startDate: val })}
-              className="bg-transparent border-none px-0 py-0 w-32"
+              placeholder="Start Date"
+              className="bg-card border-border/50"
             />
-            <span className="text-muted-foreground/50 font-black px-2 text-xs">
-              TO
+            <span className="text-[10px] font-black uppercase text-muted-foreground/50 opacity-80 text-center sm:px-2">
+              to
             </span>
             <DatePicker
               value={filters.endDate}
               onChange={(val) => updateFilters({ endDate: val })}
-              className="bg-transparent border-none px-0 py-0 w-32"
+              placeholder="End Date"
+              className="bg-card border-border/50"
             />
           </div>
 
@@ -247,7 +249,7 @@ export function AccountsClient({
             <input
               type="text"
               placeholder="Search description or type..."
-              className="w-full bg-card/50 border border-border/50 rounded-2xl pl-11 pr-4 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all font-bold"
+              className="w-full bg-card border border-border/50 rounded-2xl pl-11 pr-4 py-[13.5px] text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all font-bold"
               value={searchVal}
               onChange={(e) => setSearchVal(e.target.value)}
             />

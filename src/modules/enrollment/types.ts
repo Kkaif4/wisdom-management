@@ -7,12 +7,14 @@ export interface CreateEnrollmentInput {
   divisionId: string;
   academicSessionId: string;
   totalFeesAssigned: Prisma.Decimal;
+  discount?: Prisma.Decimal;
   organizationId: string;
   remarks?: string;
 }
 
 export interface UpdateEnrollmentInput {
   totalFeesAssigned?: Prisma.Decimal;
+  discount?: Prisma.Decimal;
   remarks?: string;
 }
 
@@ -22,6 +24,7 @@ export interface PromoteStudentInput {
   targetDivisionId: string;
   targetSessionId: string;
   newFeesAssigned: Prisma.Decimal;
+  newDiscount?: Prisma.Decimal;
   organizationId: string;
 }
 
@@ -31,6 +34,7 @@ export interface BulkPromoteInput {
   targetDivisionId: string;
   targetSessionId: string;
   newFeesAssigned: Prisma.Decimal;
+  newDiscount?: Prisma.Decimal;
   organizationId: string;
 }
 

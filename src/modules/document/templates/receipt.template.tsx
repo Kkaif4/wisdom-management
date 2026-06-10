@@ -13,7 +13,7 @@ interface ReceiptData {
   remarks?: string | null;
   // Student fields
   studentName: string;
-  admissionNumber?: string;
+  grNo?: string;
   fatherName?: string;
   rollNumber?: string;
   studentClass?: string;
@@ -70,10 +70,10 @@ export const ReceiptTemplate: React.FC<TemplateProps<ReceiptData>> = ({
             </tr>
             <tr>
               <td className="bg-gray-50 border border-black p-1.5 font-bold uppercase text-[9px] text-gray-500">
-                Admission No
+                G.R. No.
               </td>
               <td className="border border-black p-1.5 font-mono">
-                {data.admissionNumber || "---"}
+                {data.grNo || "---"}
               </td>
               <td className="bg-gray-50 border border-black p-1.5 font-bold uppercase text-[9px] text-gray-500">
                 Session

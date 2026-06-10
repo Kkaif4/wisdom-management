@@ -1,36 +1,11 @@
-Admission No,Student Name,Class Name,Division,Total Fees,Paid Fees
-WS001,Rahul Sharma,Class 5,A,30000,0
-WS002,Aman Patel,Class 6,B,35000,0
-WS003,Priya Singh,Class 7,A,40000,0
-WS004,Rohan Verma,Class 5,B,28000,0
-WS005,Neha Kulkarni,Class 8,A,45000,0
-WS006,Arjun Mehta,Class 4,A,12000,0
-WS007,Sneha Patil,Class 3,C,9500,0
-WS008,Karan Desai,Class 5,C,11000,0
-WS009,Pooja Kulkarni,Class 6,A,14000,0
-WS010,Vikram Singh,Class 7,B,13500,0
-WS011,Anjali Sharma,Class 4,B,9000,0
-WS012,Siddharth Patil,Class 2,A,8000,0
-WS013,Meera Nair,Class 3,A,10000,0
-WS014,Ritika Joshi,Class 6,C,14500,0
-WS015,Dev Kapoor,Class 5,A,12000,0
-WS016,Nikhil Bansal,Class 4,C,10500,0
-WS017,Kavya Iyer,Class 3,B,9200,0
-WS018,Aditya Chauhan,Class 7,C,13800,0
-WS019,Tanvi Shinde,Class 2,B,7500,0
-WS020,Harsh Vyas,Class 6,A,13000,0
-WS021,Ishita Agarwal,Class 5,B,11200,0
-WS022,Rohit Shetty,Class 4,A,9800,0
-WS023,Aditi Rao,Class 3,C,8900,0
-WS024,Manav Jain,Class 6,B,14200,0
-WS025,Pallavi Gupta,Class 7,A,14700,0
-WS026,Yash Malhotra,Class 5,C,11800,0
-WS027,Simran Kaur,Class 4,B,9700,0
-WS028,Dhruv Shah,Class 2,C,7600,0
-WS029,Neel Patel,Class 3,A,10100,0
-WS030,Riya Chatterjee,Class 6,C,13900,0
-WS031,Aryan Mishra,Class 5,A,12300,0
-WS032,Muskan Khan,Class 4,C,9400,0
-WS033,Pranav Reddy,Class 3,B,8700,0
-WS034,Aarav Kapoor,Class 6,A,14100,0
-WS035,Shreya Banerjee,Class 7,B,14600,0
+G.R. No,Student Name,Class Name,Division,Total Fees,Paid Fees,Fee Discount,Roll Number,Gender,Date of Birth,Place of Birth,Aadhar No,Religion,Caste,Sub Caste,Nationality,Father Name,Father Qualification,Father Occupation,Mother Name,Mother Qualification,Mother Occupation,Mobile No,Tel No,Email,Address,Received Application Of
+GR-2026-001,Rahul Sharma,Class 5,A,30000,0,0,15,Male,2015-05-15,Mumbai,123456789012,Hindu,General,None,Indian,Vijay Sharma,Graduate,Business,Rita Sharma,Graduate,Homemaker,9876543210,022-123456,rahul@mail.com,123 Main St Mumbai,Online
+GR-2026-002,Aman Patel,Class 6,B,35000,0,0,10,Male,2014-08-20,Surat,987654321098,Hindu,OBC,None,Indian,Kiran Patel,Graduate,Service,Sonal Patel,Undergraduate,Homemaker,8765432109,,aman@mail.com,456 Park St Surat,Referral
+GR-2026-003,Priya Singh,Class 7,A,40000,0,0,1,Female,2013-11-02,Delhi,555566667777,Sikh,General,None,Indian,Sukhdev Singh,Postgraduate,Business,Gurpreet Kaur,Graduate,Teacher,9999888877,011-234567,priya@singh.com,789 Broad Rd Delhi,Walk-in
+GR-2026-004,Rohan Verma,Class 5,B,28000,0,0,4,Male,2015-07-22,Pune,111122223333,Hindu,SC,None,Indian,Anil Verma,Undergraduate,Farmer,Manju Verma,Literate,Homemaker,8888777766,,rohan@verma.com,Pune East,Online
+GR-2026-005,Neha Kulkarni,Class 8,A,45000,0,0,12,Female,2012-04-30,Bangalore,444455556666,Hindu,General,None,Indian,Sanjay Kulkarni,Postgraduate,IT Specialist,Medha Kulkarni,Postgraduate,Professor,7777666655,080-654321,neha@kulkarni.com,Whitefield Bangalore,Direct
+GR-2026-006,Arjun Mehta,Class 4,A,12000,0,0,18,Male,2016-09-12,Mumbai,777788889999,Hindu,General,None,Indian,Rajesh Mehta,Graduate,Business,Priti Mehta,Graduate,Homemaker,9123456789,,arjun@mehta.com,Andheri West Mumbai,Referral
+GR-2026-007,Sneha Patil,Class 3,C,9500,0,0,8,Female,2017-02-18,Thane,888899990000,Hindu,OBC,Kunbi,Indian,Vijay Patil,Graduate,Service,Smita Patil,Graduate,Homemaker,9234567890,022-987654,sneha@patil.com,Thane West,Online
+GR-2026-008,Karan Desai,Class 5,C,11000,0,0,9,Male,2015-10-05,Mumbai,999900001111,Hindu,General,None,Indian,Sunil Desai,Graduate,Service,Archana Desai,Graduate,Homemaker,9345678901,,karan@desai.com,Dadar Mumbai,Walk-in
+GR-2026-009,Pooja Kulkarni,Class 6,A,14000,0,0,22,Female,2014-12-01,Pune,222233334444,Hindu,General,None,Indian,Milind Kulkarni,Postgraduate,Engineer,Anjali Kulkarni,Graduate,Banker,9456789012,020-567890,pooja@kulkarni.com,Kothrud Pune,Walk-in
+GR-2026-010,Vikram Singh,Class 7,B,13500,0,0,2,Male,2013-03-14,Jaipur,333344445555,Sikh,General,None,Indian,Gopal Singh,Graduate,Business,Jaspreet Kaur,Graduate,Homemaker,9567890123,,vikram@singh.com,Jaipur Rajasthan,Online

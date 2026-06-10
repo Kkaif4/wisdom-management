@@ -33,7 +33,7 @@ export default async function WithdrawnStudentsPage() {
     return {
       id: s.id,
       name: s.name,
-      admissionNumber: s.admissionNumber,
+      grNo: s.grNo,
       status: s.status,
       className: enrollment?.class?.name || "—",
       divisionName: enrollment?.division?.name || "",

@@ -5,11 +5,40 @@ import { NextResponse } from "next/server";
 
 interface ImportRow {
   name: string;
-  admissionNumber: string;
+  grNo?: string;
+  admissionNumber?: string;
+  rollNumber?: string;
   className: string;
-  divisionName: string;
-  totalFeesAssigned: number;
-  totalPaid: number;
+  divisionName?: string;
+  totalFeesAssigned?: number;
+  discount?: number;
+  totalPaid?: number;
+
+  // Demographics
+  dateOfBirth?: string;
+  gender?: string;
+  placeOfBirth?: string;
+  aadharNo?: string;
+  lastSchoolAttended?: string;
+  religion?: string;
+  caste?: string;
+  subCaste?: string;
+  nationality?: string;
+
+  // Parent/Guardian info
+  fatherName?: string;
+  fatherQualification?: string;
+  fatherOccupation?: string;
+  motherName?: string;
+  motherQualification?: string;
+  motherOccupation?: string;
+  receivedApplicationOf?: string;
+
+  // Contact
+  contactNumber?: string;
+  telNo?: string;
+  email?: string;
+  address?: string;
 }
 
 export async function POST(req: Request) {
@@ -48,13 +77,13 @@ export async function POST(req: Request) {
     });
     const classMap = new Map(classes.map((c) => [c.name.toLowerCase(), c]));
 
-    // 3. Check existing students by admission number
+    // 3. Check existing students by GR No
     const existingStudents = await prisma.student.findMany({
       where: { organizationId: orgId },
-      select: { admissionNumber: true },
+      select: { grNo: true },
     });
     const existingAdmNos = new Set(
-      existingStudents.map((s) => s.admissionNumber.toLowerCase().trim()),
+      existingStudents.map((s) => s.grNo.toLowerCase().trim()),
     );
 
     const skipped: { name: string; reason: string }[] = [];
@@ -62,21 +91,29 @@ export async function POST(req: Request) {
 
     for (const row of rows) {
       const name = row.name?.trim();
-      const admNo = row.admissionNumber?.trim();
+      const admNo = (row.grNo || row.admissionNumber)?.toString().trim();
       const className = row.className?.trim();
       const divName = row.divisionName?.trim() || "A";
+      const aadhar = row.aadharNo?.toString().trim();
 
       if (!name) {
         skipped.push({ name: "(empty)", reason: "Name is empty" });
         continue;
       }
       if (!admNo) {
-        skipped.push({ name, reason: "Admission number is missing" });
+        skipped.push({ name, reason: "G.R. No. is missing" });
         continue;
       }
       if (existingAdmNos.has(admNo.toLowerCase())) {
-        skipped.push({ name, reason: "Admission number already exists" });
+        skipped.push({ name, reason: "G.R. No. already exists" });
         continue;
+      }
+
+      if (aadhar) {
+        if (!/^\d{12}$/.test(aadhar)) {
+          skipped.push({ name, reason: "Aadhar number must be a 12-digit number" });
+          continue;
+        }
       }
 
       // Resolve class
@@ -149,8 +186,29 @@ export async function POST(req: Request) {
         await prisma.$transaction(async (tx) => {
           const student = await tx.student.create({
             data: {
-              admissionNumber: admNo,
+              grNo: admNo,
               name,
+              rollNumber: row.rollNumber ? row.rollNumber.toString() : null,
+              dateOfBirth: row.dateOfBirth ? new Date(row.dateOfBirth) : null,
+              gender: row.gender || null,
+              placeOfBirth: row.placeOfBirth || null,
+              aadharNo: aadhar || null,
+              lastSchoolAttended: row.lastSchoolAttended || null,
+              religion: row.religion || null,
+              caste: row.caste || null,
+              subCaste: row.subCaste || null,
+              nationality: row.nationality || null,
+              fatherName: row.fatherName || null,
+              fatherQualification: row.fatherQualification || null,
+              fatherOccupation: row.fatherOccupation || null,
+              motherName: row.motherName || null,
+              motherQualification: row.motherQualification || null,
+              motherOccupation: row.motherOccupation || null,
+              contactNumber: row.contactNumber ? row.contactNumber.toString() : null,
+              telNo: row.telNo ? row.telNo.toString() : null,
+              email: row.email || null,
+              address: row.address || null,
+              receivedApplicationOf: row.receivedApplicationOf || null,
               organizationId: orgId,
             },
           });
@@ -162,6 +220,7 @@ export async function POST(req: Request) {
               divisionId: div.id,
               academicSessionId: activeSession.id,
               totalFeesAssigned: row.totalFeesAssigned || 0,
+              discount: row.discount || 0,
               totalPaid: row.totalPaid || 0,
               status: EnrollmentStatus.ACTIVE,
               organizationId: orgId,

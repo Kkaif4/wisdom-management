@@ -4,11 +4,12 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { apiClient } from "@/lib/api-client";
 import { showToast } from "@/components/shared/Toast";
-import { Loader2 } from "lucide-react";
+import { Loader2, Eye, EyeOff } from "lucide-react";
 
 export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
 
   const [formData, setFormData] = useState({
@@ -122,16 +123,29 @@ export default function RegisterPage() {
                   <label className="block text-xs font-bold uppercase tracking-widest text-zinc-400 mb-2">
                     Admin Password
                   </label>
-                  <input
-                    type="password"
-                    required
-                    className="w-full rounded-xl border border-zinc-200 bg-zinc-50 p-3 text-sm focus:border-black focus:outline-none focus:ring-1 focus:ring-black transition-all"
-                    placeholder="••••••••"
-                    value={formData.password}
-                    onChange={(e) =>
-                      setFormData({ ...formData, password: e.target.value })
-                    }
-                  />
+                  <div className="relative">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      required
+                      className="w-full rounded-xl border border-zinc-200 bg-zinc-50 p-3 pr-10 text-sm focus:border-black focus:outline-none focus:ring-1 focus:ring-black transition-all"
+                      placeholder="••••••••"
+                      value={formData.password}
+                      onChange={(e) =>
+                        setFormData({ ...formData, password: e.target.value })
+                      }
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 transition-colors"
+                    >
+                      {showPassword ? (
+                        <EyeOff className="h-4 w-4" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
+                    </button>
+                  </div>
                 </div>
 
                 <div className="col-span-full border-t border-zinc-100 pt-6 mt-2">

@@ -26,11 +26,6 @@ const SYSTEM_ROLES = {
     description: "Organization staff member",
     scope: "ORGANIZATION",
   },
-  GUEST: {
-    name: "GUEST",
-    description: "User with no permissions",
-    scope: "ORGANIZATION",
-  },
 } as const;
 
 // ──────────────────────────────────────────────────────────────
@@ -303,12 +298,6 @@ async function main() {
     create: SYSTEM_ROLES.ORG_STAFF,
   });
 
-  const guestRole = await prisma.role.upsert({
-    where: { name: SYSTEM_ROLES.GUEST.name },
-    update: SYSTEM_ROLES.GUEST,
-    create: SYSTEM_ROLES.GUEST,
-  });
-
   // ──────────────────────────────────────
   // 3. RolePermission mappings
   // ──────────────────────────────────────
@@ -343,15 +332,29 @@ async function main() {
   await assignPermissions(orgStaffRole.id, STAFF_PERMISSIONS);
 
   // ──────────────────────────────────────
-  // 4. Organization
+  // 4. Organizations
   // ──────────────────────────────────────
-  console.log("Creating Organization...");
-  const org = await prisma.organization.upsert({
-    where: { id: "seed-org-wisdom" },
+  console.log("Creating Organizations...");
+  const org1 = await prisma.organization.upsert({
+    where: { id: "seed-org-wisdom-1" },
     update: {},
     create: {
-      id: "seed-org-wisdom",
-      name: "Wisdom School",
+      id: "seed-org-wisdom-1",
+      name: "Wisdom School Alpha",
+      openingCashBalance: 0,
+      openingBankBalance: 0,
+      currentCashBalance: 0,
+      currentBankBalance: 0,
+      isFirstTransactionDone: false,
+    },
+  });
+
+  const org2 = await prisma.organization.upsert({
+    where: { id: "seed-org-wisdom-2" },
+    update: {},
+    create: {
+      id: "seed-org-wisdom-2",
+      name: "Wisdom School Beta",
       openingCashBalance: 0,
       openingBankBalance: 0,
       currentCashBalance: 0,
@@ -366,61 +369,37 @@ async function main() {
   console.log("Creating Users...");
 
   await prisma.user.upsert({
-    where: { email: "admin@wisdom.com" },
-    update: { roleId: orgAdminRole.id },
+    where: { email: "admin1@wisdom.com" },
+    update: {
+      roleId: orgAdminRole.id,
+      organizationId: org1.id,
+    },
     create: {
-      name: "Organization Admin",
-      email: "admin@wisdom.com",
+      name: "Wisdom Admin 1",
+      email: "admin1@wisdom.com",
       passwordHash,
       roleId: orgAdminRole.id,
-      organizationId: org.id,
+      organizationId: org1.id,
     },
   });
 
   await prisma.user.upsert({
-    where: { email: "staff@wisdom.com" },
-    update: { roleId: orgStaffRole.id },
+    where: { email: "admin2@wisdom.com" },
+    update: {
+      roleId: orgAdminRole.id,
+      organizationId: org2.id,
+    },
     create: {
-      name: "Staff User",
-      email: "staff@wisdom.com",
+      name: "Wisdom Admin 2",
+      email: "admin2@wisdom.com",
       passwordHash,
-      roleId: orgStaffRole.id,
-      organizationId: org.id,
-    },
-  });
-
-  await prisma.user.upsert({
-    where: { email: "guest@wisdom.com" },
-    update: { roleId: guestRole.id },
-    create: {
-      name: "Guest User (No Perms)",
-      email: "guest@wisdom.com",
-      passwordHash,
-      roleId: guestRole.id,
-      organizationId: org.id,
+      roleId: orgAdminRole.id,
+      organizationId: org2.id,
     },
   });
 
   // ──────────────────────────────────────
-  // 6. Academic Session
-  // ──────────────────────────────────────
-  console.log("Creating Academic Session...");
-  await prisma.academicSession.upsert({
-    where: {
-      name_organizationId: { name: "2025-26", organizationId: org.id },
-    },
-    update: {},
-    create: {
-      name: "2025-26",
-      startDate: new Date("2025-04-01"),
-      endDate: new Date("2026-03-31"),
-      status: "ACTIVE",
-      organizationId: org.id,
-    },
-  });
-
-  // ──────────────────────────────────────
-  // 7. Default Income Categories
+  // 6. Default Income Categories
   // ──────────────────────────────────────
   console.log("Creating Income Categories...");
   const categories = [
@@ -463,23 +442,24 @@ async function main() {
     { name: "Other", code: "OTHER", affectsTuition: false, displayOrder: 99 },
   ];
 
-  for (const cat of categories) {
-    await prisma.incomeCategory.upsert({
-      where: {
-        code_organizationId: { code: cat.code, organizationId: org.id },
-      },
-      update: {},
-      create: { ...cat, organizationId: org.id },
-    });
+  for (const org of [org1, org2]) {
+    for (const cat of categories) {
+      await prisma.incomeCategory.upsert({
+        where: {
+          code_organizationId: { code: cat.code, organizationId: org.id },
+        },
+        update: {},
+        create: { ...cat, organizationId: org.id },
+      });
+    }
   }
 
   console.log("✅ Seed completed successfully");
   console.log("   → 52 Permissions (across 8 modules)");
-  console.log("   → 4 Roles (SUPER_ADMIN, ORG_ADMIN, ORG_STAFF, GUEST)");
-  console.log("   → 1 Organization");
-  console.log("   → 3 Users (admin@wisdom.com / staff@wisdom.com / guest@wisdom.com)");
-  console.log("   → 1 Active Academic Session (2025-26)");
-  console.log("   → 7 Income Categories");
+  console.log("   → 3 Roles (SUPER_ADMIN, ORG_ADMIN, ORG_STAFF)");
+  console.log("   → 2 Organizations");
+  console.log("   → 2 Users (admin1@wisdom.com / admin2@wisdom.com)");
+  console.log("   → 14 Income Categories");
 }
 
 main()

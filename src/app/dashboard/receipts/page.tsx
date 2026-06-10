@@ -48,7 +48,7 @@ export default async function ReceiptsPage({
           student: {
             select: {
               name: true,
-              admissionNumber: true,
+              grNo: true,
               fatherName: true,
               rollNumber: true,
             },
@@ -79,7 +79,7 @@ export default async function ReceiptsPage({
       remarks: r.remarks,
       category: r.category,
       studentName: r.student?.name || "N/A",
-      admissionNumber: r.student?.admissionNumber || "",
+      grNo: r.student?.grNo || "",
       fatherName: r.student?.fatherName || "",
       rollNumber: r.student?.rollNumber || "",
       studentClass: r.studentEnrollment?.class?.name || "N/A",

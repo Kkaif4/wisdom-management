@@ -5,12 +5,13 @@ import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { loginAction } from "./actions";
 import { showToast } from "@/components/shared/Toast";
-import { Loader2, LayoutDashboard } from "lucide-react";
+import { Loader2, LayoutDashboard, Eye, EyeOff } from "lucide-react";
 
 export default function LoginPage() {
   const { data: session, status } = useSession();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
@@ -126,14 +127,27 @@ export default function LoginPage() {
                 <label className="block text-xs font-bold uppercase tracking-widest text-zinc-400 mb-2">
                   Password
                 </label>
-                <input
-                  type="password"
-                  required
-                  className="w-full rounded-xl border border-zinc-200 bg-zinc-50 p-3 text-sm focus:border-black focus:outline-none focus:ring-1 focus:ring-black transition-all"
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    required
+                    className="w-full rounded-xl border border-zinc-200 bg-zinc-50 p-3 pr-10 text-sm focus:border-black focus:outline-none focus:ring-1 focus:ring-black transition-all"
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 transition-colors"
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
               </div>
               <button
                 type="submit"

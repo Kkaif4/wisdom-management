@@ -4,7 +4,7 @@ import { StudentStatus } from "@/prisma/generated";
 // ──────────────────────────────────────────────────────────────────────
 // Student Service — Identity Layer Only
 //
-// Financial fields (totalFeesAssigned, totalPaid) are now on
+// Financial fields (totalFeesAssigned, totalPaid, discount) are now on
 // StudentEnrollment. This service manages student identity and status.
 // ──────────────────────────────────────────────────────────────────────
 
@@ -13,33 +13,65 @@ export class StudentService {
    * Creates a new student record (identity only — no fee fields).
    */
   static async createStudent(params: {
-    admissionNumber: string;
+    grNo: string;
     name: string;
     rollNumber?: string;
     organizationId: string;
     dateOfBirth?: Date;
     gender?: string;
+    placeOfBirth?: string;
+    aadharNo?: string;
+    lastSchoolAttended?: string;
+    religion?: string;
+    caste?: string;
+    subCaste?: string;
+    nationality?: string;
+    fatherName?: string;
+    fatherQualification?: string;
+    fatherOccupation?: string;
+    motherName?: string;
+    motherQualification?: string;
+    motherOccupation?: string;
     contactNumber?: string;
+    telNo?: string;
     email?: string;
     address?: string;
-    fatherName?: string;
-    motherName?: string;
-    guardianContact?: string;
+    receivedApplicationOf?: string;
   }) {
+    // Validate 12-digit Aadhar No. if provided
+    if (params.aadharNo) {
+      const aadhar = params.aadharNo.trim();
+      if (aadhar && !/^\d{12}$/.test(aadhar)) {
+        throw new Error("Aadhar Number must be a 12-digit number.");
+      }
+    }
+
     return prisma.student.create({
       data: {
-        admissionNumber: params.admissionNumber,
+        grNo: params.grNo,
         name: params.name,
         rollNumber: params.rollNumber,
         organizationId: params.organizationId,
         dateOfBirth: params.dateOfBirth,
         gender: params.gender,
+        placeOfBirth: params.placeOfBirth,
+        aadharNo: params.aadharNo,
+        lastSchoolAttended: params.lastSchoolAttended,
+        religion: params.religion,
+        caste: params.caste,
+        subCaste: params.subCaste,
+        nationality: params.nationality,
+        fatherName: params.fatherName,
+        fatherQualification: params.fatherQualification,
+        fatherOccupation: params.fatherOccupation,
+        motherName: params.motherName,
+        motherQualification: params.motherQualification,
+        motherOccupation: params.motherOccupation,
         contactNumber: params.contactNumber,
+        telNo: params.telNo,
         email: params.email,
         address: params.address,
-        fatherName: params.fatherName,
-        motherName: params.motherName,
-        guardianContact: params.guardianContact,
+        receivedApplicationOf: params.receivedApplicationOf,
       },
     });
   }
@@ -75,7 +107,7 @@ export class StudentService {
         ? {
             OR: [
               { name: { contains: search, mode: "insensitive" } },
-              { admissionNumber: { contains: search, mode: "insensitive" } },
+              { grNo: { contains: search, mode: "insensitive" } },
             ],
           }
         : {}),
@@ -125,6 +157,7 @@ export class StudentService {
         totalFeesAssigned: activeEnrollment
           ? Number(activeEnrollment.totalFeesAssigned)
           : 0,
+        discount: activeEnrollment ? Number(activeEnrollment.discount) : 0,
         totalPaid: activeEnrollment ? Number(activeEnrollment.totalPaid) : 0,
       };
     });
@@ -151,7 +184,7 @@ export class StudentService {
         ? {
             OR: [
               { name: { contains: search, mode: "insensitive" } },
-              { admissionNumber: { contains: search, mode: "insensitive" } },
+              { grNo: { contains: search, mode: "insensitive" } },
             ],
           }
         : {}),
@@ -198,18 +231,38 @@ export class StudentService {
     organizationId: string,
     data: {
       name?: string;
-      admissionNumber?: string;
+      grNo?: string;
       rollNumber?: string;
       dateOfBirth?: Date;
       gender?: string;
+      placeOfBirth?: string;
+      aadharNo?: string;
+      lastSchoolAttended?: string;
+      religion?: string;
+      caste?: string;
+      subCaste?: string;
+      nationality?: string;
+      fatherName?: string;
+      fatherQualification?: string;
+      fatherOccupation?: string;
+      motherName?: string;
+      motherQualification?: string;
+      motherOccupation?: string;
       contactNumber?: string;
+      telNo?: string;
       email?: string;
       address?: string;
-      fatherName?: string;
-      motherName?: string;
-      guardianContact?: string;
+      receivedApplicationOf?: string;
     },
   ) {
+    // Validate 12-digit Aadhar No. if provided
+    if (data.aadharNo) {
+      const aadhar = data.aadharNo.trim();
+      if (aadhar && !/^\d{12}$/.test(aadhar)) {
+        throw new Error("Aadhar Number must be a 12-digit number.");
+      }
+    }
+
     return prisma.student.update({
       where: { id, organizationId },
       data,

@@ -32,10 +32,16 @@ export const PUT = auth(async (req, { params }) => {
     const { id } = await params!;
     const body = await req.json();
 
-    const updateData: { totalFeesAssigned?: Prisma.Decimal; remarks?: string } =
-      {};
+    const updateData: {
+      totalFeesAssigned?: Prisma.Decimal;
+      discount?: Prisma.Decimal;
+      remarks?: string;
+    } = {};
     if (body.totalFeesAssigned !== undefined) {
       updateData.totalFeesAssigned = new Prisma.Decimal(body.totalFeesAssigned);
+    }
+    if (body.discount !== undefined) {
+      updateData.discount = new Prisma.Decimal(body.discount);
     }
     if (body.remarks !== undefined) {
       updateData.remarks = body.remarks;

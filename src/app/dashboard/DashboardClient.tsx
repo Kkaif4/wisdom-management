@@ -1,5 +1,6 @@
 "use client";
 
+import React, { useState } from "react";
 import {
   Wallet,
   Building2,
@@ -12,8 +13,11 @@ import {
   TrendingUp,
   Receipt,
   ShieldCheck,
+  Plus,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { PermissionGate } from "@/components/auth/PermissionGate";
+import { ReceiptEntryModal } from "@/components/forms/ReceiptEntryModal";
 
 interface DashboardStats {
   orgName: string;
@@ -50,6 +54,7 @@ const fmt = (val: number) =>
 
 export function DashboardClient({ stats, transactions }: DashboardClientProps) {
   const router = useRouter();
+  const [showReceiptModal, setShowReceiptModal] = useState(false);
   const outstanding = stats.totalFeesAssigned - stats.totalFeesCollected;
   const totalFunds = stats.cashBalance + stats.bankBalance;
 
@@ -67,6 +72,15 @@ export function DashboardClient({ stats, transactions }: DashboardClientProps) {
           </p>
         </div>
         <div className="flex items-center gap-3">
+          <PermissionGate permission="CREATE_RECEIPT">
+            <button
+              onClick={() => setShowReceiptModal(true)}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-primary-foreground font-bold text-sm shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] active:scale-95"
+            >
+              <Plus className="h-4 w-4" />
+              New Collection
+            </button>
+          </PermissionGate>
           <div className="glass px-4 py-2 rounded-xl border border-primary/20 bg-primary/5">
             <p className="text-[10px] font-bold uppercase tracking-widest text-primary/70">
               Total Liquidity
@@ -347,6 +361,13 @@ export function DashboardClient({ stats, transactions }: DashboardClientProps) {
           </div>
         </div>
       </div>
+
+      {showReceiptModal && (
+        <ReceiptEntryModal
+          onClose={() => setShowReceiptModal(false)}
+          onSuccess={() => router.refresh()}
+        />
+      )}
     </div>
   );
 }

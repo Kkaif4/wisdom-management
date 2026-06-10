@@ -25,6 +25,7 @@ export const GET = auth(async (req) => {
       where: { organizationId: orgId },
       _sum: {
         totalFeesAssigned: true,
+        discount: true,
         totalPaid: true,
       },
     });
@@ -39,6 +40,8 @@ export const GET = auth(async (req) => {
 
     const totalAssigned =
       enrollmentStats._sum.totalFeesAssigned ?? new Prisma.Decimal(0);
+    const totalDiscount =
+      enrollmentStats._sum.discount ?? new Prisma.Decimal(0);
     const totalPaid = enrollmentStats._sum.totalPaid ?? new Prisma.Decimal(0);
     const totalExpenses = expenseStats._sum.amount ?? new Prisma.Decimal(0);
 
@@ -48,7 +51,7 @@ export const GET = auth(async (req) => {
       totalFeesAssigned: totalAssigned.toNumber(),
       totalFeesCollected: totalPaid.toNumber(),
       totalExpenses: totalExpenses.toNumber(),
-      outstandingFees: totalAssigned.minus(totalPaid).toNumber(),
+      outstandingFees: totalAssigned.minus(totalDiscount).minus(totalPaid).toNumber(),
     });
   } catch (error) {
     return NextResponse.json(

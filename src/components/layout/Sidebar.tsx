@@ -20,6 +20,7 @@ import {
   Landmark,
   School,
   X,
+  User,
 } from "lucide-react";
 
 import { usePermissions } from "@/hooks/usePermissions";
@@ -269,12 +270,28 @@ export const Sidebar = React.memo(function Sidebar({
             )}
           </div>
 
-          <div className="mt-8 px-2">
+          <div className="mt-8 px-2 space-y-1">
             <div className="h-px bg-border/50 w-full mb-8" />
+            <Link
+              href="/dashboard/profile"
+              onClick={() => onClose?.()}
+              className={`group flex items-center gap-3 px-4 py-3 text-sm rounded-xl transition-all ${
+                pathname === "/dashboard/profile"
+                  ? "text-primary bg-primary/10 font-bold"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+              }`}
+            >
+              <User className="h-5 w-5" />
+              <span>My Profile</span>
+            </Link>
             <Link
               href="/dashboard/settings"
               onClick={() => onClose?.()}
-              className="group flex items-center gap-3 px-4 py-3 text-sm text-muted-foreground hover:text-foreground transition-colors"
+              className={`group flex items-center gap-3 px-4 py-3 text-sm rounded-xl transition-all ${
+                pathname === "/dashboard/settings"
+                  ? "text-primary bg-primary/10 font-bold"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+              }`}
             >
               <Settings className="h-5 w-5" />
               <span>Settings</span>

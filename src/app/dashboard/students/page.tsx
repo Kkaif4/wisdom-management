@@ -1,5 +1,8 @@
 import { SessionService } from "@/modules/auth/services/session.service";
-import { AuthenticationError, ForbiddenError } from "@/modules/auth/types/auth.types";
+import {
+  AuthenticationError,
+  ForbiddenError,
+} from "@/modules/auth/types/auth.types";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { StudentsClient } from "@/app/dashboard/students/StudentsClient";
@@ -44,7 +47,7 @@ export default async function StudentsPage({
   if (searchParam) {
     where.OR = [
       { name: { contains: searchParam, mode: "insensitive" } },
-      { admissionNumber: { contains: searchParam, mode: "insensitive" } },
+      { grNo: { contains: searchParam, mode: "insensitive" } },
     ];
   }
 
@@ -100,7 +103,7 @@ export default async function StudentsPage({
       return {
         id: s.id,
         name: s.name,
-        admissionNumber: s.admissionNumber,
+        grNo: s.grNo,
         status: s.status,
         className: activeEnrollment?.class?.name || "—",
         divisionName: activeEnrollment?.division?.name || "",
@@ -108,6 +111,7 @@ export default async function StudentsPage({
         totalFeesAssigned: activeEnrollment
           ? Number(activeEnrollment.totalFeesAssigned)
           : 0,
+        discount: activeEnrollment ? Number(activeEnrollment.discount) : 0,
         totalPaid: activeEnrollment ? Number(activeEnrollment.totalPaid) : 0,
         enrollmentId: activeEnrollment?.id || null,
       };
@@ -132,7 +136,7 @@ export default async function StudentsPage({
         totalCount={0}
         currentPage={1}
         totalPages={0}
-        error="Failed to load student records. Please retry."
+        error={err?.message || "Failed to load student records. Please retry."}
         initialSearch={searchParam || ""}
         classes={[]}
         sessions={[]}

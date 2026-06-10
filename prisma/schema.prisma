@@ -246,23 +246,35 @@ model Student {
   id                String        @id @default(uuid())
 
   // Identity
-  admissionNumber   String        // Unique school-level ID
+  grNo              String        // Unique school-level G.R. Number
   name              String
   rollNumber        String?       // Roll number within class
 
-  // Demographics (optional)
+  // Demographics
   dateOfBirth       DateTime?
   gender            String?
+  placeOfBirth      String?
+  aadharNo          String?
+  lastSchoolAttended String?
+  religion          String?
+  caste             String?
+  subCaste          String?
+  nationality       String?
+
+  // Parent/Guardian info
+  fatherName          String?
+  fatherQualification String?
+  fatherOccupation    String?
+  motherName          String?
+  motherQualification String?
+  motherOccupation    String?
+  receivedApplicationOf String?
 
   // Contact
-  contactNumber     String?
+  contactNumber     String?       // Mobile No.
+  telNo             String?       // Tel. No.
   email             String?
-  address           String?
-
-  // Guardian info
-  fatherName        String?
-  motherName        String?
-  guardianContact   String?
+  address           String?       // Residential Address
 
   status            StudentStatus @default(ACTIVE)
 
@@ -277,7 +289,7 @@ model Student {
   createdAt         DateTime      @default(now())
   updatedAt         DateTime      @updatedAt
 
-  @@unique([admissionNumber, organizationId])
+  @@unique([grNo, organizationId])
   @@index([organizationId])
   @@index([status])
 }
@@ -306,6 +318,7 @@ model StudentEnrollment {
 
   // Financial fields (belong HERE, not on Student)
   totalFeesAssigned   Decimal          @default(0) @db.Decimal(14, 2)
+  discount            Decimal          @default(0) @db.Decimal(14, 2)
   totalPaid           Decimal          @default(0) @db.Decimal(14, 2)
 
   status              EnrollmentStatus @default(ACTIVE)

@@ -17,7 +17,7 @@ interface Enrollment {
   status: string;
   totalFeesAssigned: number;
   totalPaid: number;
-  student: { id: string; name: string; admissionNumber: string };
+  student: { id: string; name: string; grNo: string };
   class: { name: string };
   division: { name: string };
   academicSession: { name: string };
@@ -166,7 +166,7 @@ export default function EnrollmentsPage() {
                       <td className="px-6 py-4">
                         <p className="text-sm font-black">{e.student.name}</p>
                         <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mt-0.5">
-                          {e.student.admissionNumber}
+                          {e.student.grNo}
                         </p>
                       </td>
                       <td className="px-6 py-4 text-sm font-bold">

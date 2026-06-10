@@ -1,16 +1,17 @@
 "use client";
 
-import React, { useState } from "react";
-import { ChevronLeft, ChevronRight, X } from "lucide-react";
+import React, { useState, useEffect, useRef } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface CalendarPickerProps {
   value: string; // YYYY-MM-DD
   onChange: (value: string) => void;
   onClose: () => void;
+  style?: React.CSSProperties;
 }
 
-export function CalendarPicker({ value, onChange, onClose }: CalendarPickerProps) {
+export function CalendarPicker({ value, onChange, onClose, style }: CalendarPickerProps) {
   const getInitialDate = () => {
     if (!value) return new Date();
     const [y, m, d] = value.split("-").map(Number);
@@ -20,6 +21,20 @@ export function CalendarPicker({ value, onChange, onClose }: CalendarPickerProps
   const [currentMonth, setCurrentMonth] = useState(
     new Date(initialDate.getFullYear(), initialDate.getMonth(), 1)
   );
+
+  const [focusedDate, setFocusedDate] = useState<Date>(initialDate);
+
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Focus the calendar container on mount for keyboard accessibility
+  useEffect(() => {
+    containerRef.current?.focus();
+  }, []);
+
+  // Update currentMonth when focusedDate changes (e.g. via arrow keys)
+  useEffect(() => {
+    setCurrentMonth(new Date(focusedDate.getFullYear(), focusedDate.getMonth(), 1));
+  }, [focusedDate]);
 
   const daysInMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0).getDate();
   const firstDayOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1).getDay();
@@ -32,12 +47,20 @@ export function CalendarPicker({ value, onChange, onClose }: CalendarPickerProps
     "July", "August", "September", "October", "November", "December"
   ];
 
+  const currentYear = new Date().getFullYear();
+  // 100 years past, 50 years future
+  const years = Array.from({ length: 151 }, (_, i) => currentYear - 100 + i);
+
   const prevMonth = () => {
-    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1));
+    const newDate = new Date(focusedDate);
+    newDate.setMonth(focusedDate.getMonth() - 1);
+    setFocusedDate(newDate);
   };
 
   const nextMonth = () => {
-    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1));
+    const newDate = new Date(focusedDate);
+    newDate.setMonth(focusedDate.getMonth() + 1);
+    setFocusedDate(newDate);
   };
 
   const selectDate = (day: number) => {
@@ -60,29 +83,133 @@ export function CalendarPicker({ value, onChange, onClose }: CalendarPickerProps
 
   const isSelected = (day: number) => {
     if (!value) return false;
-    const selected = new Date(value);
+    const [y, m, d] = value.split("-").map(Number);
     return (
-      selected.getDate() === day &&
-      selected.getMonth() === currentMonth.getMonth() &&
-      selected.getFullYear() === currentMonth.getFullYear()
+      d === day &&
+      (m - 1) === currentMonth.getMonth() &&
+      y === currentMonth.getFullYear()
     );
   };
 
+  const isFocused = (day: number) => {
+    return (
+      focusedDate.getDate() === day &&
+      focusedDate.getMonth() === currentMonth.getMonth() &&
+      focusedDate.getFullYear() === currentMonth.getFullYear()
+    );
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    let handled = false;
+    const newDate = new Date(focusedDate);
+
+    switch (e.key) {
+      case "ArrowLeft":
+        newDate.setDate(focusedDate.getDate() - 1);
+        setFocusedDate(newDate);
+        handled = true;
+        break;
+      case "ArrowRight":
+        newDate.setDate(focusedDate.getDate() + 1);
+        setFocusedDate(newDate);
+        handled = true;
+        break;
+      case "ArrowUp":
+        newDate.setDate(focusedDate.getDate() - 7);
+        setFocusedDate(newDate);
+        handled = true;
+        break;
+      case "ArrowDown":
+        newDate.setDate(focusedDate.getDate() + 7);
+        setFocusedDate(newDate);
+        handled = true;
+        break;
+      case "Enter":
+        const y = focusedDate.getFullYear();
+        const m = String(focusedDate.getMonth() + 1).padStart(2, "0");
+        const d = String(focusedDate.getDate()).padStart(2, "0");
+        onChange(`${y}-${m}-${d}`);
+        onClose();
+        handled = true;
+        break;
+      case "Escape":
+        onClose();
+        handled = true;
+        break;
+      default:
+        break;
+    }
+
+    if (handled) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  };
+
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[999] animate-in fade-in duration-200">
-      <div className="bg-card border shadow-2xl rounded-3xl w-full max-w-[350px] overflow-hidden animate-in zoom-in-95 duration-200">
+    <div
+      className="fixed inset-0 z-[999] md:bg-transparent bg-black/40 flex md:block items-center justify-center p-4"
+      onClick={onClose}
+    >
+      <div
+        ref={containerRef}
+        tabIndex={0}
+        onClick={(e) => e.stopPropagation()}
+        onKeyDown={handleKeyDown}
+        className={cn(
+          "bg-card border border-border/80 shadow-2xl rounded-3xl w-full max-w-[350px] overflow-hidden focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all",
+          "md:absolute"
+        )}
+        style={style}
+      >
         {/* Header */}
         <div className="p-4 border-b bg-muted/30 flex items-center justify-between">
           <button
+            type="button"
             onClick={prevMonth}
             className="p-2 hover:bg-muted rounded-xl transition-colors text-muted-foreground"
           >
             <ChevronLeft className="h-5 w-5" />
           </button>
-          <div className="text-sm font-black uppercase tracking-widest">
-            {months[currentMonth.getMonth()]} {currentMonth.getFullYear()}
+          
+          <div className="flex items-center gap-1 font-bold">
+            <select
+              value={currentMonth.getMonth()}
+              onChange={(e) => {
+                const m = parseInt(e.target.value, 10);
+                const nextFocused = new Date(focusedDate);
+                nextFocused.setMonth(m);
+                setFocusedDate(nextFocused);
+              }}
+              className="bg-transparent text-sm font-extrabold border-none outline-none cursor-pointer text-foreground hover:text-primary transition-colors focus:ring-0"
+            >
+              {months.map((m, idx) => (
+                <option key={m} value={idx} className="bg-card text-foreground">
+                  {m}
+                </option>
+              ))}
+            </select>
+
+            <select
+              value={currentMonth.getFullYear()}
+              onChange={(e) => {
+                const y = parseInt(e.target.value, 10);
+                const nextFocused = new Date(focusedDate);
+                nextFocused.setFullYear(y);
+                setFocusedDate(nextFocused);
+              }}
+              className="bg-transparent text-sm font-extrabold border-none outline-none cursor-pointer text-foreground hover:text-primary transition-colors focus:ring-0"
+            >
+              {years.map((y) => (
+                <option key={y} value={y} className="bg-card text-foreground">
+                  {y}
+                </option>
+              ))}
+            </select>
           </div>
+
           <button
+            type="button"
             onClick={nextMonth}
             className="p-2 hover:bg-muted rounded-xl transition-colors text-muted-foreground"
           >
@@ -107,14 +234,16 @@ export function CalendarPicker({ value, onChange, onClose }: CalendarPickerProps
           {days.map((day) => (
             <button
               key={day}
+              type="button"
               onClick={() => selectDate(day)}
               className={cn(
-                "h-10 rounded-xl text-xs font-bold transition-all flex items-center justify-center relative group",
+                "h-10 rounded-xl text-xs font-bold transition-all flex items-center justify-center relative group focus:outline-none",
                 isSelected(day)
                   ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20"
                   : isToday(day)
                     ? "bg-primary/10 text-primary"
-                    : "hover:bg-muted text-foreground"
+                    : "hover:bg-muted text-foreground",
+                isFocused(day) && "ring-2 ring-primary ring-offset-2 ring-offset-card"
               )}
             >
               {day}
@@ -128,12 +257,14 @@ export function CalendarPicker({ value, onChange, onClose }: CalendarPickerProps
         {/* Footer */}
         <div className="p-4 border-t bg-muted/30 flex justify-between gap-3">
           <button
+            type="button"
             onClick={onClose}
             className="flex-1 py-2 text-xs font-bold text-muted-foreground hover:bg-muted rounded-xl transition-all"
           >
             Cancel
           </button>
           <button
+            type="button"
             onClick={() => {
               const date = new Date();
               const y = date.getFullYear();

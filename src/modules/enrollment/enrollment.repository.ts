@@ -11,6 +11,7 @@ export class EnrollmentRepository {
         divisionId: data.divisionId,
         academicSessionId: data.academicSessionId,
         totalFeesAssigned: data.totalFeesAssigned,
+        discount: data.discount || new Prisma.Decimal(0),
         totalPaid: new Prisma.Decimal(0),
         status: EnrollmentStatus.ACTIVE,
         organizationId: data.organizationId,
@@ -128,6 +129,13 @@ export class EnrollmentRepository {
     return prisma.studentEnrollment.update({
       where: { id },
       data: { totalFeesAssigned },
+    });
+  }
+
+  static async updateDiscount(id: string, discount: Prisma.Decimal) {
+    return prisma.studentEnrollment.update({
+      where: { id },
+      data: { discount },
     });
   }
 

@@ -8,7 +8,7 @@ import { AddStudentDialog } from "./AddStudentDialog";
 interface Student {
   id: string;
   name: string;
-  admissionNumber: string;
+  grNo: string;
   className?: string;
   totalFeesAssigned?: number;
   totalPaid?: number;
@@ -79,7 +79,7 @@ export function StudentSearchSelect({
             }
           >
             {selectedStudent
-              ? `${selectedStudent.name} (${selectedStudent.admissionNumber})`
+              ? `${selectedStudent.name} (${selectedStudent.grNo})`
               : "Search or select student..."}
           </span>
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -147,7 +147,7 @@ export function StudentSearchSelect({
                         <span
                           className={`text-[10px] uppercase tracking-wider ${value === s.id ? "text-primary-foreground/70" : "text-muted-foreground font-bold"}`}
                         >
-                          {s.admissionNumber}
+                          {s.grNo}
                           {s.className ? ` · ${s.className}` : ""}
                         </span>
                       </div>

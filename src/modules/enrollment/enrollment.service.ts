@@ -106,6 +106,10 @@ export class EnrollmentService {
       await EnrollmentRepository.updateFees(id, data.totalFeesAssigned);
     }
 
+    if (data.discount !== undefined) {
+      await EnrollmentRepository.updateDiscount(id, data.discount);
+    }
+
     return this.getEnrollmentById(id, organizationId);
   }
 
@@ -170,6 +174,7 @@ export class EnrollmentService {
           divisionId: input.targetDivisionId,
           academicSessionId: input.targetSessionId,
           totalFeesAssigned: input.newFeesAssigned,
+          discount: input.newDiscount || 0,
           totalPaid: 0,
           status: EnrollmentStatus.ACTIVE,
           organizationId: input.organizationId,
@@ -202,6 +207,7 @@ export class EnrollmentService {
           targetDivisionId: input.targetDivisionId,
           targetSessionId: input.targetSessionId,
           newFeesAssigned: input.newFeesAssigned,
+          newDiscount: input.newDiscount,
           organizationId: input.organizationId,
         });
         results.push({ studentId, success: true });

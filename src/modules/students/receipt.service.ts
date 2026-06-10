@@ -227,7 +227,7 @@ export class ReceiptService {
     return await prisma.receipt.findMany({
       where: { organizationId },
       include: {
-        student: { select: { name: true, admissionNumber: true } },
+        student: { select: { name: true, grNo: true } },
         studentEnrollment: {
           include: {
             class: { select: { name: true } },

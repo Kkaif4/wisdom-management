@@ -26,14 +26,14 @@ export const GET = auth(async (req, { params }: any) => {
 
     // Compute total outstanding across all enrollments
     const totalOutstanding = enrollments.reduce((sum, e) => {
-      const remaining = Number(e.totalFeesAssigned) - Number(e.totalPaid);
+      const remaining = Number(e.totalFeesAssigned) - Number(e.discount) - Number(e.totalPaid);
       return sum + Math.max(0, remaining);
     }, 0);
 
     return NextResponse.json({
       student: {
         id: student.id,
-        admissionNumber: student.admissionNumber,
+        grNo: student.grNo,
         name: student.name,
         status: student.status,
       },
@@ -43,9 +43,11 @@ export const GET = auth(async (req, { params }: any) => {
         divisionName: e.division.name,
         sessionName: e.academicSession.name,
         status: e.status,
-        totalFeesAssigned: e.totalFeesAssigned,
-        totalPaid: e.totalPaid,
-        remaining: Number(e.totalFeesAssigned) - Number(e.totalPaid),
+        totalFeesAssigned: Number(e.totalFeesAssigned),
+        discount: Number(e.discount),
+        totalPaid: Number(e.totalPaid),
+        remaining: Number(e.totalFeesAssigned) - Number(e.discount) - Number(e.totalPaid),
+        remarks: e.remarks,
         receipts: e.receipts,
       })),
       totalOutstanding,

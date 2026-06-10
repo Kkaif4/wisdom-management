@@ -6,7 +6,7 @@ import { formatDate, formatCurrency } from "../utils/formatters";
 interface StudentStatementData {
   student: {
     name: string;
-    admissionNumber: string;
+    grNo: string;
     class: string;
   };
   period: {
@@ -22,6 +22,7 @@ interface StudentStatementData {
     sessionName: string;
     className: string;
     totalFees: number;
+    discount?: number;
     paid: number;
     remaining: number;
     receipts: Array<{
@@ -68,10 +69,10 @@ export const StudentStatementTemplate: React.FC<
                 {data.student.name}
               </td>
               <td className="w-1/4 bg-gray-50 border border-black p-2 font-bold uppercase text-[9px] text-gray-500">
-                Admission No
+                G.R. No.
               </td>
               <td className="border border-black p-2 font-black font-mono">
-                {data.student.admissionNumber}
+                {data.student.grNo}
               </td>
             </tr>
             <tr>
@@ -134,6 +135,9 @@ export const StudentStatementTemplate: React.FC<
                   Total Fees
                 </th>
                 <th className="border border-black p-2 text-right text-[9px] font-black uppercase">
+                  Discount
+                </th>
+                <th className="border border-black p-2 text-right text-[9px] font-black uppercase">
                   Paid Amount
                 </th>
                 <th className="border border-black p-2 text-right text-[9px] font-black uppercase">
@@ -149,6 +153,9 @@ export const StudentStatementTemplate: React.FC<
                   </td>
                   <td className="border border-black p-2 text-right font-mono">
                     {formatCurrency(en.totalFees)}
+                  </td>
+                  <td className="border border-black p-2 text-right font-mono text-amber-700">
+                    {formatCurrency(en.discount || 0)}
                   </td>
                   <td className="border border-black p-2 text-right font-mono text-blue-700">
                     {formatCurrency(en.paid)}

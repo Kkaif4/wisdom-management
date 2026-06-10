@@ -78,4 +78,65 @@ export class OrganizationService {
       },
     });
   }
+
+  /**
+   * Retrieves an organization's details.
+   */
+  static async getOrganization(id: string) {
+    return await prisma.organization.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        name: true,
+        openingCashBalance: true,
+        openingBankBalance: true,
+        currentCashBalance: true,
+        currentBankBalance: true,
+        isFirstTransactionDone: true,
+      },
+    });
+  }
+
+  /**
+   * Updates organization details. opening balances can only be updated if no transaction is done.
+   */
+  static async updateOrganization(
+    id: string,
+    data: {
+      name: string;
+      openingCashBalance?: Prisma.Decimal;
+      openingBankBalance?: Prisma.Decimal;
+    },
+  ) {
+    const org = await prisma.organization.findUnique({
+      where: { id },
+      select: {
+        openingCashBalance: true,
+        openingBankBalance: true,
+        currentCashBalance: true,
+        currentBankBalance: true,
+      },
+    });
+    if (!org) throw new Error("Organization not found");
+
+    const updateData: any = { name: data.name };
+
+    if (data.openingCashBalance !== undefined) {
+      const diff = data.openingCashBalance.minus(org.openingCashBalance);
+      updateData.openingCashBalance = data.openingCashBalance;
+      updateData.currentCashBalance = org.currentCashBalance.plus(diff);
+    }
+
+    if (data.openingBankBalance !== undefined) {
+      const diff = data.openingBankBalance.minus(org.openingBankBalance);
+      updateData.openingBankBalance = data.openingBankBalance;
+      updateData.currentBankBalance = org.currentBankBalance.plus(diff);
+    }
+
+    return await prisma.organization.update({
+      where: { id },
+      data: updateData,
+    });
+  }
 }
+

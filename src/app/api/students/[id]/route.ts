@@ -44,11 +44,29 @@ export const PATCH = auth(async (req, { params }) => {
     const orgId = req.auth.user.organizationId;
 
     const student = await StudentService.updateStudent(id, orgId, {
+      grNo: body.grNo,
       name: body.name,
       rollNumber: body.rollNumber,
+      dateOfBirth: body.dateOfBirth ? new Date(body.dateOfBirth) : undefined,
+      gender: body.gender,
+      placeOfBirth: body.placeOfBirth,
+      aadharNo: body.aadharNo,
+      lastSchoolAttended: body.lastSchoolAttended,
+      religion: body.religion,
+      caste: body.caste,
+      subCaste: body.subCaste,
+      nationality: body.nationality,
       fatherName: body.fatherName,
+      fatherQualification: body.fatherQualification,
+      fatherOccupation: body.fatherOccupation,
+      motherName: body.motherName,
+      motherQualification: body.motherQualification,
+      motherOccupation: body.motherOccupation,
       contactNumber: body.contactNumber,
-      admissionNumber: body.admissionNumber,
+      telNo: body.telNo,
+      email: body.email,
+      address: body.address,
+      receivedApplicationOf: body.receivedApplicationOf,
     });
 
     return NextResponse.json(student);

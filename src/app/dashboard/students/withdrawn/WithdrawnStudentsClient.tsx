@@ -7,7 +7,7 @@ import { GraduationCap, ChevronRight, UserMinus } from "lucide-react";
 interface Student {
   id: string;
   name: string;
-  admissionNumber: string;
+  grNo: string;
   status: string;
   enrollments?: {
     class: { name: string };
@@ -79,8 +79,9 @@ export function WithdrawnStudentsClient({
                   const assigned = Number(
                     lastEnrollment?.totalFeesAssigned || 0,
                   );
+                  const discount = Number(lastEnrollment?.discount || 0);
                   const paid = Number(lastEnrollment?.totalPaid || 0);
-                  const remaining = assigned - paid;
+                  const remaining = assigned - discount - paid;
 
                   return (
                     <tr
@@ -92,7 +93,7 @@ export function WithdrawnStudentsClient({
                           {s.name}
                         </p>
                         <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1.5 mt-0.5">
-                          {s.admissionNumber}
+                          {s.grNo}
                         </p>
                       </td>
                       <td className="px-6 py-4 text-sm font-bold">

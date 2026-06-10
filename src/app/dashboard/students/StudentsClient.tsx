@@ -12,8 +12,8 @@ import {
   Loader2,
   AlertCircle,
   ArrowUpCircle,
-  Pencil,
-  UserMinus,
+  Eye,
+  Percent,
 } from "lucide-react";
 import { AddStudentDialog } from "@/components/forms/AddStudentDialog";
 import { BulkImportDialog } from "@/components/forms/BulkImportDialog";
@@ -26,12 +26,13 @@ import { PermissionGate } from "@/components/auth/PermissionGate";
 interface Student {
   id: string;
   name: string;
-  admissionNumber: string;
+  grNo: string;
   status: string;
   className: string;
   divisionName: string;
   sessionName: string;
   totalFeesAssigned: number;
+  discount: number;
   totalPaid: number;
   enrollmentId: string | null;
 }
@@ -227,7 +228,6 @@ export function StudentsClient({
         </div>
       </div>
 
-
       {error && (
         <div className="animate-in fade-in slide-in-from-top-4 duration-300">
           <div className="flex items-center gap-3 p-4 rounded-2xl bg-destructive/10 border border-destructive/20 text-destructive font-bold text-sm">
@@ -338,7 +338,8 @@ export function StudentsClient({
                 </tr>
               ) : (
                 students.map((s) => {
-                  const remaining = s.totalFeesAssigned - s.totalPaid;
+                  const remaining =
+                    s.totalFeesAssigned - s.totalPaid - s.discount;
                   const isSelected = selectedIds.includes(s.id);
                   return (
                     <tr
@@ -354,11 +355,21 @@ export function StudentsClient({
                         />
                       </td>
                       <td className="px-6 py-4">
-                        <p className="text-sm font-black text-foreground group-hover:text-primary transition-colors">
-                          {s.name}
-                        </p>
+                        <Link href={`/dashboard/students/${s.id}`}>
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <p className="text-sm font-black text-foreground hover:text-primary transition-colors cursor-pointer">
+                              {s.name}
+                            </p>
+                            {s.discount > 0 && (
+                              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[9px] font-black uppercase tracking-wider">
+                                <Percent className="h-2.5 w-2.5" />
+                                Discount
+                              </span>
+                            )}
+                          </div>
+                        </Link>
                         <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1.5 mt-0.5">
-                          {s.admissionNumber}
+                          {s.grNo}
                           <span className={statusColor(s.status)}>
                             • {s.status}
                           </span>
@@ -389,19 +400,9 @@ export function StudentsClient({
                               href={`/dashboard/students/${s.id}`}
                               className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-primary hover:bg-primary/5 px-3 py-1.5 rounded-lg transition-all"
                             >
-                              <Pencil className="h-3 w-3" /> Ledger
+                              <Eye className="h-3.5 w-3.5" /> Profile
                             </Link>
                           </PermissionGate>
-                          {s.status === "ACTIVE" && s.enrollmentId && (
-                            <PermissionGate permission="EDIT_STUDENT">
-                              <button
-                                onClick={() => setWithdrawTarget(s)}
-                                className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-rose-600 hover:bg-rose-500/10 px-3 py-1.5 rounded-lg transition-all"
-                              >
-                                <UserMinus className="h-3 w-3" /> Withdraw
-                              </button>
-                            </PermissionGate>
-                          )}
                         </div>
                       </td>
                     </tr>

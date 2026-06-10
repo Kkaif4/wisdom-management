@@ -67,37 +67,73 @@ export const POST = auth(async (req) => {
 
     const body = await req.json();
     const {
-      admissionNumber,
+      grNo,
       name,
+      rollNumber,
       dateOfBirth,
       gender,
+      placeOfBirth,
+      aadharNo,
+      lastSchoolAttended,
+      religion,
+      caste,
+      subCaste,
+      nationality,
+      fatherName,
+      fatherQualification,
+      fatherOccupation,
+      motherName,
+      motherQualification,
+      motherOccupation,
       contactNumber,
+      telNo,
       email,
       address,
-      fatherName,
-      motherName,
-      guardianContact,
+      receivedApplicationOf,
     } = body;
 
-    if (!admissionNumber || !name) {
+    if (!grNo || !name) {
       return NextResponse.json(
-        { error: "admissionNumber and name are required" },
+        { error: "grNo and name are required" },
         { status: 400 },
       );
     }
 
+    if (aadharNo) {
+      const aadhar = aadharNo.trim();
+      if (aadhar && !/^\d{12}$/.test(aadhar)) {
+        return NextResponse.json(
+          { error: "Aadhar Number must be a 12-digit number" },
+          { status: 400 },
+        );
+      }
+    }
+
     const student = await StudentService.createStudent({
-      admissionNumber,
+      grNo,
       name,
+      rollNumber,
       organizationId,
       dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined,
       gender,
+      placeOfBirth,
+      aadharNo,
+      lastSchoolAttended,
+      religion,
+      caste,
+      subCaste,
+      nationality,
+      fatherName,
+      fatherQualification,
+      fatherOccupation,
+      motherName,
+      motherQualification,
+      motherOccupation,
       contactNumber,
+      telNo,
       email,
       address,
-      fatherName,
-      motherName,
-      guardianContact,
+      receivedApplicationOf,
     });
 
     return NextResponse.json(student, { status: 201 });

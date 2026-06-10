@@ -39,7 +39,7 @@ export default function PromotionsPage() {
 
   // Load students from source
   const [sourceStudents, setSourceStudents] = useState<
-    { id: string; name: string; admissionNumber: string }[]
+    { id: string; name: string; grNo: string }[]
   >([]);
   const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
   const [loadingStudents, setLoadingStudents] = useState(false);
@@ -73,7 +73,7 @@ export default function PromotionsPage() {
     const students = (data.data || []).map((e: any) => ({
       id: e.student.id,
       name: e.student.name,
-      admissionNumber: e.student.admissionNumber,
+      grNo: e.student.grNo,
     }));
     setSourceStudents(students);
     setSelectedStudents(students.map((s: any) => s.id));
@@ -228,7 +228,7 @@ export default function PromotionsPage() {
                 <div>
                   <p className="text-sm font-bold">{s.name}</p>
                   <p className="text-[10px] text-muted-foreground font-medium">
-                    {s.admissionNumber}
+                    {s.grNo}
                   </p>
                 </div>
               </label>

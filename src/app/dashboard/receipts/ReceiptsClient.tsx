@@ -39,7 +39,7 @@ interface Receipt {
   status: string;
   remarks: string | null;
   studentName: string;
-  admissionNumber: string;
+  grNo: string;
   fatherName: string;
   rollNumber: string;
   studentClass: string;
@@ -451,7 +451,7 @@ export function ReceiptsClient({
                 category: printingReceipt.category,
                 remarks: printingReceipt.remarks,
                 studentName: printingReceipt.studentName,
-                admissionNumber: printingReceipt.admissionNumber,
+                grNo: printingReceipt.grNo,
                 fatherName: printingReceipt.fatherName,
                 rollNumber: printingReceipt.rollNumber,
                 studentClass: `${printingReceipt.studentClass}${printingReceipt.divisionName ? " - " + printingReceipt.divisionName : ""}`,

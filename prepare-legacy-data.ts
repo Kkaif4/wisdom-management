@@ -38,7 +38,7 @@ async function main() {
       placeholderStudent = await prisma.student.create({
         data: {
           name: "General / Legacy Income",
-          admissionNumber: `LEGACY-${org.id.slice(0, 4)}`,
+          grNo: `LEGACY-${org.id.slice(0, 4)}`,
           organizationId: org.id,
           status: "ACTIVE",
         },

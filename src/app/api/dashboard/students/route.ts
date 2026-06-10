@@ -17,22 +17,52 @@ export async function POST(req: Request) {
 
     const body = await req.json();
     const {
-      admissionNumber,
+      grNo,
       name,
+      rollNumber,
+      dateOfBirth,
+      gender,
+      placeOfBirth,
+      aadharNo,
+      lastSchoolAttended,
+      religion,
+      caste,
+      subCaste,
+      nationality,
+      fatherName,
+      fatherQualification,
+      fatherOccupation,
+      motherName,
+      motherQualification,
+      motherOccupation,
+      contactNumber,
+      telNo,
+      email,
+      address,
+      receivedApplicationOf,
       classId,
       divisionId,
       totalFeesAssigned,
-      fatherName,
-      contactNumber,
+      discount,
     } = body;
 
-    if (!admissionNumber || !name || !classId || !divisionId) {
+    if (!grNo || !name || !classId || !divisionId) {
       return NextResponse.json(
         {
-          error: "admissionNumber, name, classId, and divisionId are required",
+          error: "grNo, name, classId, and divisionId are required",
         },
         { status: 400 },
       );
+    }
+
+    if (aadharNo) {
+      const aadhar = aadharNo.trim();
+      if (aadhar && !/^\d{12}$/.test(aadhar)) {
+        return NextResponse.json(
+          { error: "Aadhar Number must be a 12-digit number" },
+          { status: 400 },
+        );
+      }
     }
 
     const orgId = session.user.organizationId;
@@ -54,10 +84,29 @@ export async function POST(req: Request) {
     const result = await prisma.$transaction(async (tx) => {
       const student = await tx.student.create({
         data: {
-          admissionNumber,
+          grNo,
           name,
-          fatherName: fatherName || undefined,
-          contactNumber: contactNumber || undefined,
+          rollNumber: rollNumber || null,
+          dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : null,
+          gender: gender || null,
+          placeOfBirth: placeOfBirth || null,
+          aadharNo: aadharNo || null,
+          lastSchoolAttended: lastSchoolAttended || null,
+          religion: religion || null,
+          caste: caste || null,
+          subCaste: subCaste || null,
+          nationality: nationality || null,
+          fatherName: fatherName || null,
+          fatherQualification: fatherQualification || null,
+          fatherOccupation: fatherOccupation || null,
+          motherName: motherName || null,
+          motherQualification: motherQualification || null,
+          motherOccupation: motherOccupation || null,
+          contactNumber: contactNumber || null,
+          telNo: telNo || null,
+          email: email || null,
+          address: address || null,
+          receivedApplicationOf: receivedApplicationOf || null,
           organizationId: orgId,
         },
       });
@@ -69,6 +118,7 @@ export async function POST(req: Request) {
           divisionId,
           academicSessionId: activeSession.id,
           totalFeesAssigned: totalFeesAssigned || 0,
+          discount: discount || 0,
           totalPaid: 0,
           status: EnrollmentStatus.ACTIVE,
           organizationId: orgId,
