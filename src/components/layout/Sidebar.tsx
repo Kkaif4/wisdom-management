@@ -1,4 +1,5 @@
 "use client";
+import Image from "next/image";
 
 import React from "react";
 import Link from "next/link";
@@ -165,10 +166,14 @@ export const Sidebar = React.memo(function Sidebar({
         {/* Brand */}
         <div className="flex items-center justify-between px-6 py-8">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary shadow-lg shadow-primary/20 rotate-3 group hover:rotate-0 transition-transform cursor-pointer">
-              <span className="text-xl font-bold text-primary-foreground">
-                W
-              </span>
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl overflow-hidden shadow-md group hover:scale-105 transition-transform cursor-pointer bg-white">
+              <Image
+                src="/wfm-logo.png"
+                alt="Wisdom Finance Logo"
+                width={40}
+                height={40}
+                className="object-contain"
+              />
             </div>
             <div>
               <p className="text-lg font-black tracking-tighter text-foreground leading-none">

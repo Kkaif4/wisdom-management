@@ -6,6 +6,12 @@ import {
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { StudentsClient } from "@/app/dashboard/students/StudentsClient";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Students | Wisdom Finance",
+  description: "View and manage active student profiles, discount settings, academic billing fees, and fee records.",
+};
 
 export default async function StudentsPage({
   searchParams: searchParamsPromise,

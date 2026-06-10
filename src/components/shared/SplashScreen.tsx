@@ -1,7 +1,8 @@
 "use client";
 
 import React from "react";
-import { GraduationCap, ShieldCheck, Loader2 } from "lucide-react";
+import Image from "next/image";
+import { ShieldCheck, Loader2 } from "lucide-react";
 
 export function SplashScreen() {
   const [msgIndex, setMsgIndex] = React.useState(0);
@@ -33,10 +34,16 @@ export function SplashScreen() {
         {/* Animated Logo Container */}
         <div className="relative mb-8 group">
           <div className="absolute inset-0 bg-primary/20 blur-2xl rounded-full scale-150 animate-pulse" />
-          <div className="relative h-24 w-24 bg-primary rounded-[2rem] flex items-center justify-center shadow-2xl shadow-primary/40 transform transition-transform group-hover:scale-105 duration-500">
-            <GraduationCap className="h-12 w-12 text-primary-foreground stroke-[2.5]" />
+          <div className="relative h-24 w-24 bg-white rounded-[2rem] flex items-center justify-center shadow-2xl shadow-primary/40 transform transition-transform group-hover:scale-105 duration-500 overflow-hidden border border-zinc-150 p-2">
+            <Image
+              src="/wfm-logo.png"
+              alt="Logo"
+              width={80}
+              height={80}
+              className="object-contain"
+            />
           </div>
-          
+
           {/* Decorative Rings */}
           <div className="absolute -inset-4 border border-primary/10 rounded-[2.5rem] animate-[spin_8s_linear_infinite]" />
           <div className="absolute -inset-8 border border-primary/5 rounded-[3rem] animate-[spin_12s_linear_infinite_reverse]" />
@@ -58,7 +65,7 @@ export function SplashScreen() {
           <div className="relative h-1 w-48 bg-muted rounded-full overflow-hidden">
             <div className="absolute inset-0 bg-primary w-1/3 rounded-full animate-[loading_1.5s_ease-in-out_infinite]" />
           </div>
-          
+
           <div className="flex items-center gap-2 text-sm font-bold text-muted-foreground/60 h-5">
             <Loader2 className="h-4 w-4 animate-spin text-primary" />
             <span className="animate-in fade-in slide-in-from-bottom-2 duration-300">
@@ -77,9 +84,15 @@ export function SplashScreen() {
 
       <style jsx global>{`
         @keyframes loading {
-          0% { transform: translateX(-100%); }
-          50% { transform: translateX(200%); }
-          100% { transform: translateX(-100%); }
+          0% {
+            transform: translateX(-100%);
+          }
+          50% {
+            transform: translateX(200%);
+          }
+          100% {
+            transform: translateX(-100%);
+          }
         }
       `}</style>
     </div>

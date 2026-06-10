@@ -2,6 +2,12 @@ import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { WithdrawnStudentsClient } from "./WithdrawnStudentsClient";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Withdrawn Students | Wisdom Finance",
+  description: "View and manage records of students who have withdrawn from the institution.",
+};
 
 export default async function WithdrawnStudentsPage() {
   const session = await auth();

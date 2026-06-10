@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { auth } from "@/auth";
 import {
   ArrowRight,
@@ -23,8 +24,14 @@ export default async function Home() {
       <nav className="fixed top-0 z-50 w-full border-b border-border/50 bg-background/90 backdrop-blur-md">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
           <div className="flex items-center gap-2 sm:gap-3">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center bg-primary text-primary-foreground font-black tracking-tighter">
-              W
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg overflow-hidden border border-zinc-100 bg-white p-0.5">
+              <Image
+                src="/icon.png"
+                alt="Logo"
+                width={32}
+                height={32}
+                className="object-contain"
+              />
             </div>
             <span className="font-bold tracking-tight text-foreground uppercase hidden min-[375px]:flex items-baseline text-sm sm:text-lg">
               Wisdom

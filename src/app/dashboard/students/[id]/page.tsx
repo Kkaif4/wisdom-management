@@ -3,6 +3,19 @@ import { redirect, notFound } from "next/navigation";
 import { StatementClient } from "@/app/dashboard/students/[id]/StatementClient";
 import { StudentService } from "@/modules/students/student.service";
 import { EnrollmentService } from "@/modules/enrollment/enrollment.service";
+import type { Metadata } from "next";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  return {
+    title: `Student Profile & Statement | Wisdom Finance`,
+    description: `Detailed fee ledger, statement, transaction history, and academic records for student ID ${id}.`,
+  };
+}
 
 export default async function StudentStatementPage({
   params,

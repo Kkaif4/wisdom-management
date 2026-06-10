@@ -3,6 +3,12 @@ import { AuthenticationError, ForbiddenError } from "@/modules/auth/types/auth.t
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { DashboardClient } from "./DashboardClient";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Dashboard | Wisdom Finance",
+  description: "Real-time summary of school cash balance, bank balance, outstanding dues, fees collection, and expense indicators.",
+};
 
 export default async function DashboardPage() {
   let user;
