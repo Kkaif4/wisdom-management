@@ -25,6 +25,7 @@ import { ExcelService } from "@/modules/document/services/excel.service";
 import { PrintService } from "@/modules/document/services/print.service";
 import { PrintWrapper } from "@/modules/document/components/PrintWrapper";
 import { StudentStatementTemplate } from "@/modules/document/templates/student-statement.template";
+import { TransferCertificateTemplate } from "@/modules/document/templates/transfer-certificate.template";
 import { showToast } from "@/components/shared/Toast";
 import { PermissionGate } from "@/components/auth/PermissionGate";
 
@@ -85,6 +86,7 @@ interface StatementData {
   student: Student;
   enrollments: EnrollmentEntry[];
   totalOutstanding: number;
+  organizationName?: string;
 }
 
 const fmt = (val: number) =>
@@ -97,11 +99,12 @@ const fmt = (val: number) =>
 
 export function StatementClient({ data }: { data: StatementData }) {
   const router = useRouter();
-  const { student: initialStudent, enrollments, totalOutstanding } = data;
+  const { student: initialStudent, enrollments, totalOutstanding, organizationName } = data;
 
   const [student, setStudent] = useState<Student>(initialStudent);
   const [activeTab, setActiveTab] = useState<"profile" | "ledger">("ledger");
   const [isPrinting, setIsPrinting] = useState(false);
+  const [isPrintingTC, setIsPrintingTC] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(
     enrollments.find((e) => e.status === "ACTIVE")?.id ||
       enrollments[0]?.id ||
@@ -222,6 +225,15 @@ export function StatementClient({ data }: { data: StatementData }) {
       elementId: "student-ledger-print",
       onAfterPrint: () => setIsPrinting(false),
       onError: () => setIsPrinting(false),
+    });
+  };
+
+  const handlePrintTC = async () => {
+    setIsPrintingTC(true);
+    await PrintService.print({
+      elementId: "student-tc-print",
+      onAfterPrint: () => setIsPrintingTC(false),
+      onError: () => setIsPrintingTC(false),
     });
   };
 
@@ -660,6 +672,13 @@ export function StatementClient({ data }: { data: StatementData }) {
               >
                 <Printer className="h-4 w-4" />
                 Print Ledger
+              </button>
+              <button
+                onClick={handlePrintTC}
+                className="flex items-center justify-center gap-2 flex-1 sm:flex-none px-4 py-2.5 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-sm font-bold shadow-lg shadow-amber-900/20 hover:scale-[1.02] transition-all active:scale-95"
+              >
+                <Printer className="h-4 w-4" />
+                Generate TC
               </button>
             </div>
           </div>
@@ -1463,7 +1482,46 @@ export function StatementClient({ data }: { data: StatementData }) {
                   status: r.status,
                 })),
               })),
-              organizationName: "Wisdom Academy",
+              organizationName: organizationName || "Wisdom Academy",
+            }}
+          />
+        </PrintWrapper>
+      )}
+
+      {isPrintingTC && (
+        <PrintWrapper id="student-tc-print">
+          <TransferCertificateTemplate
+            mode="print"
+            data={{
+              student: {
+                grNo: student.grNo,
+                name: student.name,
+                rollNumber: student.rollNumber,
+                dateOfBirth: student.dateOfBirth,
+                gender: student.gender,
+                placeOfBirth: student.placeOfBirth,
+                aadharNo: student.aadharNo,
+                lastSchoolAttended: student.lastSchoolAttended,
+                religion: student.religion,
+                caste: student.caste,
+                subCaste: student.subCaste,
+                nationality: student.nationality,
+                fatherName: student.fatherName,
+                fatherQualification: student.fatherQualification,
+                fatherOccupation: student.fatherOccupation,
+                motherName: student.motherName,
+                motherQualification: student.motherQualification,
+                motherOccupation: student.motherOccupation,
+                receivedApplicationOf: student.receivedApplicationOf,
+                contactNumber: student.contactNumber,
+                telNo: student.telNo,
+                email: student.email,
+                address: student.address,
+                status: student.status,
+              },
+              organizationName: organizationName || "Wisdom Academy",
+              className: enrollments.find((e) => e.status === "ACTIVE")?.className || enrollments[0]?.className || undefined,
+              divisionName: enrollments.find((e) => e.status === "ACTIVE")?.divisionName || enrollments[0]?.divisionName || undefined,
             }}
           />
         </PrintWrapper>

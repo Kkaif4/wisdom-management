@@ -87,9 +87,6 @@ export const ReceiptPDF: React.FC<ReceiptPDFProps> = ({ receipt }) => {
           <div className="w-32 border-b border-gray-400 mb-2"></div>
           <p className="text-xs text-gray-400 uppercase">Student/Parent Sign</p>
         </div>
-        <div className="text-center text-xs text-gray-400 italic">
-          <p>This is a computer-generated receipt.</p>
-        </div>
         <div className="text-center">
           <div className="w-32 border-b border-gray-400 mb-2"></div>
           <p className="text-xs text-gray-400 uppercase">

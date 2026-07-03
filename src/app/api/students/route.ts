@@ -1,6 +1,7 @@
 import { auth } from "@/auth";
 import { StudentService } from "@/modules/students/student.service";
 import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
 import { PermissionService } from "@/modules/auth/services/permission.service";
 import { ErrorUtils } from "@/modules/auth/utils/error.utils";
 import { SessionUser } from "@/modules/auth/types/auth.types";
@@ -107,6 +108,23 @@ export const POST = auth(async (req) => {
           { status: 400 },
         );
       }
+    }
+
+    // Check if grNo already exists in this organization
+    const existingStudent = await prisma.student.findUnique({
+      where: {
+        grNo_organizationId: {
+          grNo,
+          organizationId,
+        },
+      },
+    });
+
+    if (existingStudent) {
+      return NextResponse.json(
+        { error: `G.R. Number "${grNo}" already exists in this organization.` },
+        { status: 400 },
+      );
     }
 
     const student = await StudentService.createStudent({

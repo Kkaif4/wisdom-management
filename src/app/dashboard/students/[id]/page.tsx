@@ -3,6 +3,7 @@ import { redirect, notFound } from "next/navigation";
 import { StatementClient } from "@/app/dashboard/students/[id]/StatementClient";
 import { StudentService } from "@/modules/students/student.service";
 import { EnrollmentService } from "@/modules/enrollment/enrollment.service";
+import { prisma } from "@/lib/prisma";
 import type { Metadata } from "next";
 
 export async function generateMetadata({
@@ -29,12 +30,18 @@ export default async function StudentStatementPage({
   const orgId = session.user.organizationId;
 
   try {
-    const [student, enrollments] = await Promise.all([
+    const [student, enrollments, org] = await Promise.all([
       StudentService.getStudentById(id, orgId),
       EnrollmentService.getStudentLedger(id, orgId),
+      prisma.organization.findUnique({
+        where: { id: orgId },
+        select: { name: true },
+      }),
     ]);
 
     if (!student) notFound();
+
+    const organizationName = org?.name || "Wisdom Academy";
 
     // Compute total outstanding across all enrollments
     const totalOutstanding = enrollments.reduce((sum, e) => {
@@ -94,6 +101,7 @@ export default async function StudentStatementPage({
         })),
       })),
       totalOutstanding,
+      organizationName,
     };
 
     return <StatementClient data={serializedData} />;

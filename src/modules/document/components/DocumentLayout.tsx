@@ -49,12 +49,18 @@ export const DocumentLayout: React.FC<DocumentLayoutProps> = ({
             <h1 className="text-2xl font-black uppercase tracking-tighter italic text-gray-900">
               {branding?.name || "Wisdom Academy of Excellence"}
             </h1>
-            <div className="text-[9px] font-bold mt-1 uppercase tracking-wider text-gray-600">
-              {branding?.address || "Regd Office: Academic Block B, Global Education Hub, New Delhi - 110001"}
-            </div>
-            <div className="text-[8px] font-mono font-medium mt-0.5 text-gray-500">
-              Contact: {branding?.phone || "011-45001234"} | Email: {branding?.email || "accounts@wisdom.edu"}
-            </div>
+            {branding?.address && (
+              <div className="text-[9px] font-bold mt-1 uppercase tracking-wider text-gray-600">
+                {branding.address}
+              </div>
+            )}
+            {(branding?.phone || branding?.email) && (
+              <div className="text-[8px] font-mono font-medium mt-0.5 text-gray-500">
+                {branding.phone ? `Contact: ${branding.phone}` : ""}
+                {branding.phone && branding.email ? " | " : ""}
+                {branding.email ? `Email: ${branding.email}` : ""}
+              </div>
+            )}
           </div>
         )}
 

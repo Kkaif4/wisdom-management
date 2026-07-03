@@ -56,6 +56,7 @@ interface ReceiptsClientProps {
     query: string;
   };
   error?: string;
+  organizationName?: string;
 }
 
 const fmt = (val: number) =>
@@ -72,6 +73,7 @@ export function ReceiptsClient({
   totalPages,
   filters,
   error,
+  organizationName,
 }: ReceiptsClientProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -456,7 +458,7 @@ export function ReceiptsClient({
                 rollNumber: printingReceipt.rollNumber,
                 studentClass: `${printingReceipt.studentClass}${printingReceipt.divisionName ? " - " + printingReceipt.divisionName : ""}`,
                 sessionName: printingReceipt.sessionName,
-                organizationName: "Wisdom Management",
+                organizationName: organizationName || "Wisdom Academy of Excellence",
               }}
             />
           </DocumentErrorBoundary>

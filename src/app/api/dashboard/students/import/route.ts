@@ -41,6 +41,46 @@ interface ImportRow {
   address?: string;
 }
 
+function parseDateString(dateStr: string | undefined | null): { isValid: boolean; date: Date | null } {
+  if (!dateStr) return { isValid: true, date: null };
+  const cleanStr = dateStr.trim();
+  if (!cleanStr) return { isValid: true, date: null };
+
+  // Try matching DD-MM-YYYY or DD/MM/YYYY
+  const dmyMatch = cleanStr.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/);
+  if (dmyMatch) {
+    const day = parseInt(dmyMatch[1], 10);
+    const month = parseInt(dmyMatch[2], 10) - 1;
+    const year = parseInt(dmyMatch[3], 10);
+    const d = new Date(year, month, day);
+    if (d.getDate() === day && d.getMonth() === month && d.getFullYear() === year) {
+      return { isValid: true, date: d };
+    }
+    return { isValid: false, date: null };
+  }
+
+  // Try matching YYYY-MM-DD or YYYY/MM/DD
+  const ymdMatch = cleanStr.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/);
+  if (ymdMatch) {
+    const year = parseInt(ymdMatch[1], 10);
+    const month = parseInt(ymdMatch[2], 10) - 1;
+    const day = parseInt(ymdMatch[3], 10);
+    const d = new Date(year, month, day);
+    if (d.getDate() === day && d.getMonth() === month && d.getFullYear() === year) {
+      return { isValid: true, date: d };
+    }
+    return { isValid: false, date: null };
+  }
+
+  // Fallback to standard JS Date parsing
+  const d = new Date(cleanStr);
+  if (!isNaN(d.getTime())) {
+    return { isValid: true, date: d };
+  }
+
+  return { isValid: false, date: null };
+}
+
 export async function POST(req: Request) {
   try {
     const session = await auth();
@@ -116,6 +156,19 @@ export async function POST(req: Request) {
         }
       }
 
+      let parsedDob: Date | null = null;
+      if (row.dateOfBirth) {
+        const dobRes = parseDateString(row.dateOfBirth);
+        if (!dobRes.isValid) {
+          skipped.push({
+            name,
+            reason: `Invalid Date of Birth: "${row.dateOfBirth}". Expected DD-MM-YYYY or YYYY-MM-DD.`,
+          });
+          continue;
+        }
+        parsedDob = dobRes.date;
+      }
+
       // Resolve class
       let cls = classMap.get(className?.toLowerCase() || "");
       if (!cls && className) {
@@ -189,7 +242,7 @@ export async function POST(req: Request) {
               grNo: admNo,
               name,
               rollNumber: row.rollNumber ? row.rollNumber.toString() : null,
-              dateOfBirth: row.dateOfBirth ? new Date(row.dateOfBirth) : null,
+              dateOfBirth: parsedDob,
               gender: row.gender || null,
               placeOfBirth: row.placeOfBirth || null,
               aadharNo: aadhar || null,

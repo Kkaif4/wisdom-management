@@ -26,6 +26,7 @@ interface DashboardStats {
   totalFeesAssigned: number;
   totalFeesCollected: number;
   totalExpenses: number;
+  discount: number;
 }
 
 interface Transaction {
@@ -55,7 +56,8 @@ const fmt = (val: number) =>
 export function DashboardClient({ stats, transactions }: DashboardClientProps) {
   const router = useRouter();
   const [showReceiptModal, setShowReceiptModal] = useState(false);
-  const outstanding = stats.totalFeesAssigned - stats.totalFeesCollected;
+  const netTarget = stats.totalFeesAssigned - stats.discount;
+  const outstanding = Math.max(0, netTarget - stats.totalFeesCollected);
   const totalFunds = stats.cashBalance + stats.bankBalance;
 
   return (
@@ -143,14 +145,12 @@ export function DashboardClient({ stats, transactions }: DashboardClientProps) {
             <div
               className="bg-primary h-full transition-all duration-1000"
               style={{
-                width: `${(stats.totalFeesCollected / stats.totalFeesAssigned) * 100}%`,
+                width: `${netTarget > 0 ? (stats.totalFeesCollected / netTarget) * 100 : 0}%`,
               }}
             />
           </div>
           <p className="text-[10px] font-bold text-muted-foreground mt-2 uppercase tracking-tighter">
-            {Math.round(
-              (stats.totalFeesCollected / stats.totalFeesAssigned) * 100,
-            )}
+            {netTarget > 0 ? Math.round((stats.totalFeesCollected / netTarget) * 100) : 0}
             % of target realized
           </p>
         </div>

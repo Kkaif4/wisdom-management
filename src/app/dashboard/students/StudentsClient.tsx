@@ -4,16 +4,15 @@ import React, { useState, useEffect, useTransition } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import {
-  Search,
-  GraduationCap,
-  ChevronRight,
-  UserPlus,
+  Eye,
   Upload,
+  Search,
   Loader2,
+  Percent,
+  UserPlus,
   AlertCircle,
   ArrowUpCircle,
-  Eye,
-  Percent,
+  GraduationCap,
 } from "lucide-react";
 import { AddStudentDialog } from "@/components/forms/AddStudentDialog";
 import { BulkImportDialog } from "@/components/forms/BulkImportDialog";

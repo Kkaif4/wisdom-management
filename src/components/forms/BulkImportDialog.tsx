@@ -121,6 +121,46 @@ function downloadTemplate() {
   URL.revokeObjectURL(url);
 }
 
+function parseDateString(dateStr: string | undefined | null): { isValid: boolean; date: Date | null } {
+  if (!dateStr) return { isValid: true, date: null };
+  const cleanStr = dateStr.trim();
+  if (!cleanStr) return { isValid: true, date: null };
+
+  // Try matching DD-MM-YYYY or DD/MM/YYYY
+  const dmyMatch = cleanStr.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/);
+  if (dmyMatch) {
+    const day = parseInt(dmyMatch[1], 10);
+    const month = parseInt(dmyMatch[2], 10) - 1;
+    const year = parseInt(dmyMatch[3], 10);
+    const d = new Date(year, month, day);
+    if (d.getDate() === day && d.getMonth() === month && d.getFullYear() === year) {
+      return { isValid: true, date: d };
+    }
+    return { isValid: false, date: null };
+  }
+
+  // Try matching YYYY-MM-DD or YYYY/MM/DD
+  const ymdMatch = cleanStr.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/);
+  if (ymdMatch) {
+    const year = parseInt(ymdMatch[1], 10);
+    const month = parseInt(ymdMatch[2], 10) - 1;
+    const day = parseInt(ymdMatch[3], 10);
+    const d = new Date(year, month, day);
+    if (d.getDate() === day && d.getMonth() === month && d.getFullYear() === year) {
+      return { isValid: true, date: d };
+    }
+    return { isValid: false, date: null };
+  }
+
+  // Fallback to standard JS Date parsing
+  const d = new Date(cleanStr);
+  if (!isNaN(d.getTime())) {
+    return { isValid: true, date: d };
+  }
+
+  return { isValid: false, date: null };
+}
+
 // --------------- Component ---------------
 interface BulkImportDialogProps {
   onClose: () => void;
@@ -309,6 +349,19 @@ export function BulkImportDialog({
           }
         }
 
+        let formattedDob: string | undefined = undefined;
+        if (dateOfBirth) {
+          const dobRes = parseDateString(dateOfBirth);
+          if (!dobRes.isValid) {
+            skipped.push({
+              name,
+              reason: `Invalid Date of Birth: "${dateOfBirth}". Expected format: DD-MM-YYYY or YYYY-MM-DD.`,
+            });
+            return;
+          }
+          formattedDob = dobRes.date ? dobRes.date.toISOString() : undefined;
+        }
+
         seenNames.add(admLower);
         validRows.push({
           name,
@@ -319,7 +372,7 @@ export function BulkImportDialog({
           totalFeesAssigned,
           discount,
           totalPaid,
-          dateOfBirth,
+          dateOfBirth: formattedDob,
           gender,
           placeOfBirth,
           aadharNo,

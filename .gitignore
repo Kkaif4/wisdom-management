@@ -25,3 +25,10 @@ npm-debug.log*
 
 .agent/
 prisma/generated/
+
+# Playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+/playwright/.auth/

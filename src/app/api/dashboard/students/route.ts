@@ -67,6 +67,23 @@ export async function POST(req: Request) {
 
     const orgId = session.user.organizationId;
 
+    // Check if grNo already exists in this organization
+    const existingStudent = await prisma.student.findUnique({
+      where: {
+        grNo_organizationId: {
+          grNo,
+          organizationId: orgId,
+        },
+      },
+    });
+
+    if (existingStudent) {
+      return NextResponse.json(
+        { error: `G.R. Number "${grNo}" already exists in this organization.` },
+        { status: 400 },
+      );
+    }
+
     // Find active session
     const activeSession = await prisma.academicSession.findFirst({
       where: { organizationId: orgId, status: SessionStatus.ACTIVE },

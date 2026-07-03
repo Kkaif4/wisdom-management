@@ -40,8 +40,8 @@ export default async function ReceiptsPage({
   }
 
   try {
-    // Fetch Current Page of Receipts + Total Count
-    const [receipts, total] = await Promise.all([
+    // Fetch Current Page of Receipts + Total Count + Org Name
+    const [receipts, total, org] = await Promise.all([
       prisma.receipt.findMany({
         where,
         include: {
@@ -67,7 +67,13 @@ export default async function ReceiptsPage({
         take: limit,
       }),
       prisma.receipt.count({ where }),
+      prisma.organization.findUnique({
+        where: { id: orgId },
+        select: { name: true },
+      }),
     ]);
+
+    const organizationName = org?.name || "Wisdom Academy of Excellence";
 
     const serializedReceipts = receipts.map((r) => ({
       id: r.id,
@@ -94,6 +100,7 @@ export default async function ReceiptsPage({
         currentPage={page}
         totalPages={Math.ceil(total / limit)}
         filters={{ query: queryParam || "" }}
+        organizationName={organizationName}
       />
     );
   } catch (err: any) {
@@ -109,6 +116,7 @@ export default async function ReceiptsPage({
         totalPages={0}
         error="Failed to load receipt data. Please refresh."
         filters={{ query: queryParam || "" }}
+        organizationName="Wisdom Academy of Excellence"
       />
     );
   }

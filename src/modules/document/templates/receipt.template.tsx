@@ -107,22 +107,17 @@ export const ReceiptTemplate: React.FC<TemplateProps<ReceiptData>> = ({
                 <th className="border border-black p-1.5 text-left text-[9px] font-black uppercase">
                   Particulars / Purpose of Payment
                 </th>
-                <th className="border border-black p-1.5 text-right w-32 text-[9px] font-black uppercase">
-                  Amount
+                <th className="border border-black p-1.5 text-right w-40 text-[9px] font-black uppercase">
+                  Amount Paid
                 </th>
               </tr>
             </thead>
             <tbody>
-              <tr className="h-20">
+              <tr className="h-24">
                 <td className="border border-black p-2 align-top italic font-bold">
                   {data.category}
-                  {data.remarks && (
-                    <p className="text-[9px] text-gray-400 mt-1 font-medium non-italic">
-                      Note: {data.remarks}
-                    </p>
-                  )}
                 </td>
-                <td className="border border-black p-2 text-right align-bottom font-black font-mono text-lg text-gray-900">
+                <td className="border border-black p-2 text-right align-bottom font-black font-mono text-lg pr-4 text-gray-900">
                   {formatCurrency(numAmount)}
                 </td>
               </tr>
@@ -149,9 +144,11 @@ export const ReceiptTemplate: React.FC<TemplateProps<ReceiptData>> = ({
             <p className="font-bold text-gray-700">
               Mode: <span className="font-black uppercase text-gray-900">{data.paymentMode}</span>
             </p>
-            <p className="text-[8px] text-gray-400">
-              * This is a computer generated valid financial record.
-            </p>
+            {data.remarks && (
+              <p className="text-gray-700">
+                Remarks: <span className="italic">{data.remarks}</span>
+              </p>
+            )}
           </div>
 
           <div className="text-right">

@@ -340,7 +340,7 @@ async function main() {
     update: {},
     create: {
       id: "seed-org-wisdom-1",
-      name: "Wisdom School Alpha",
+      name: "Wisdom English School",
       openingCashBalance: 0,
       openingBankBalance: 0,
       currentCashBalance: 0,
@@ -354,7 +354,7 @@ async function main() {
     update: {},
     create: {
       id: "seed-org-wisdom-2",
-      name: "Wisdom School Beta",
+      name: "Wisdom Pre Primary",
       openingCashBalance: 0,
       openingBankBalance: 0,
       currentCashBalance: 0,
@@ -369,14 +369,14 @@ async function main() {
   console.log("Creating Users...");
 
   await prisma.user.upsert({
-    where: { email: "admin1@wisdom.com" },
+    where: { email: "mumtaj@wisdom.com" },
     update: {
       roleId: orgAdminRole.id,
       organizationId: org1.id,
     },
     create: {
-      name: "Wisdom Admin 1",
-      email: "admin1@wisdom.com",
+      name: "Mumtaj Shaikh",
+      email: "mumtaj@wisdom.com",
       passwordHash,
       roleId: orgAdminRole.id,
       organizationId: org1.id,
@@ -384,14 +384,14 @@ async function main() {
   });
 
   await prisma.user.upsert({
-    where: { email: "admin2@wisdom.com" },
+    where: { email: "zahura@wisdom.com" },
     update: {
       roleId: orgAdminRole.id,
       organizationId: org2.id,
     },
     create: {
-      name: "Wisdom Admin 2",
-      email: "admin2@wisdom.com",
+      name: "Zahura Shaikh",
+      email: "zahura@wisdom.com",
       passwordHash,
       roleId: orgAdminRole.id,
       organizationId: org2.id,

@@ -1,6 +1,7 @@
 import { auth } from "@/auth";
 import { StudentService } from "@/modules/students/student.service";
 import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
 
 /**
  * GET /api/students/[id]
@@ -42,6 +43,23 @@ export const PATCH = auth(async (req, { params }) => {
     const { id } = await params!;
     const body = await req.json();
     const orgId = req.auth.user.organizationId;
+
+    if (body.grNo) {
+      const existingStudent = await prisma.student.findFirst({
+        where: {
+          grNo: body.grNo,
+          organizationId: orgId,
+          id: { not: id },
+        },
+      });
+
+      if (existingStudent) {
+        return NextResponse.json(
+          { error: `G.R. Number "${body.grNo}" already exists in this organization.` },
+          { status: 400 },
+        );
+      }
+    }
 
     const student = await StudentService.updateStudent(id, orgId, {
       grNo: body.grNo,
