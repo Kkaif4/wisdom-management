@@ -2,6 +2,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { SessionStatus, EnrollmentStatus } from "@/prisma/generated";
 import { NextResponse } from "next/server";
+import { OrganizationService } from "@/modules/organizations/organization.service";
 
 /**
  * POST /api/dashboard/students
@@ -146,6 +147,8 @@ export async function POST(req: Request) {
           academicSession: true,
         },
       });
+
+      await OrganizationService.adjustStudentCount(tx, orgId, 1);
 
       return { ...student, enrollment };
     });

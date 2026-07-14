@@ -171,15 +171,6 @@ export const TransferCertificateTemplate: React.FC<{
                     Official Student Academic Record System
                   </p>
                 </div>
-
-                <div className="w-16 h-14 text-right flex flex-col justify-center text-xs">
-                  <div className="text-slate-500 font-bold uppercase tracking-wider text-[7px] mb-0.5">
-                    Status
-                  </div>
-                  <div className="font-black text-emerald-700 bg-emerald-50 rounded border border-emerald-250 px-1 py-0.5 text-center uppercase tracking-wide text-[8px]">
-                    {student.status}
-                  </div>
-                </div>
               </div>
 
               {/* Document Header Identifier */}

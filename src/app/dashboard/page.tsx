@@ -31,6 +31,7 @@ export default async function DashboardPage() {
           name: true,
           currentCashBalance: true,
           currentBankBalance: true,
+          totalStudentCount: true,
         },
       }),
       prisma.studentEnrollment.aggregate({
@@ -48,6 +49,10 @@ export default async function DashboardPage() {
       }),
     ]);
 
+  const studentCount = org?.totalStudentCount ?? await prisma.student.count({
+    where: { organizationId: orgId, status: "ACTIVE" },
+  });
+
   const stats = {
     orgName: org?.name ?? "Organization",
     cashBalance: Number(org?.currentCashBalance ?? 0),
@@ -56,6 +61,7 @@ export default async function DashboardPage() {
     totalFeesCollected: Number(studentStats._sum.totalPaid ?? 0),
     discount: Number(studentStats._sum.discount ?? 0),
     totalExpenses: Number(expenseStats._sum.amount ?? 0),
+    studentCount,
   };
 
   const transactions = recentTransactions.map((tx) => ({

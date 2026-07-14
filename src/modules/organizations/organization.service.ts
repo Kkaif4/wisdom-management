@@ -138,5 +138,47 @@ export class OrganizationService {
       data: updateData,
     });
   }
+
+  /**
+   * Adjusts the total student count for an organization.
+   * If totalStudentCount is null, it initializes it by counting all ACTIVE students.
+   */
+  static async adjustStudentCount(tx: any, orgId: string, amount: number) {
+    const org = await tx.organization.findUnique({
+      where: { id: orgId },
+      select: { totalStudentCount: true },
+    });
+
+    if (!org) return;
+
+    if (org.totalStudentCount === null) {
+      const activeCount = await tx.student.count({
+        where: { organizationId: orgId, status: "ACTIVE" },
+      });
+      // Set to activeCount + amount (since this new student/withdraw is being registered)
+      // Wait, if we are in the middle of a transaction where the new student is already in the database,
+      // activeCount will already include this student (since the query runs inside the transaction).
+      // Let's verify: when we create a student, we do `const student = await tx.student.create(...)` then we call `adjustStudentCount`.
+      // So the new student is already in the database.
+      // What about withdrawal? When we call `tx.student.update(..., { status: WITHDRAWN })`, that student's status is already NOT "ACTIVE".
+      // So activeCount already excludes that student.
+      // Thus, activeCount is already the up-to-date count including/excluding this student!
+      // Therefore, if it is null, we can just save `activeCount` directly without adding `amount`!
+      // This is extremely elegant and self-correcting!
+      await tx.organization.update({
+        where: { id: orgId },
+        data: { totalStudentCount: activeCount },
+      });
+    } else {
+      await tx.organization.update({
+        where: { id: orgId },
+        data: {
+          totalStudentCount: {
+            [amount >= 0 ? "increment" : "decrement"]: Math.abs(amount),
+          },
+        },
+      });
+    }
+  }
 }
 

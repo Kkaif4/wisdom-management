@@ -72,6 +72,7 @@ model Organization {
   currentBankBalance     Decimal  @db.Decimal(14, 2)
   receiptCounter         Int      @default(0)
   isFirstTransactionDone Boolean  @default(false)
+  totalStudentCount      Int?
 
   createdAt              DateTime @default(now())
   updatedAt              DateTime @updatedAt

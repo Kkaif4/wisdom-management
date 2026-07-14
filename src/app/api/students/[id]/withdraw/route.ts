@@ -4,6 +4,7 @@ import { StudentService } from "@/modules/students/student.service";
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { StudentStatus } from "@/prisma/generated";
+import { OrganizationService } from "@/modules/organizations/organization.service";
 
 /**
  * POST /api/students/[id]/withdraw
@@ -35,6 +36,7 @@ export const POST = auth(async (req, { params }) => {
         where: { id, organizationId: orgId },
         data: { status: StudentStatus.WITHDRAWN },
       });
+      await OrganizationService.adjustStudentCount(prisma, orgId, -1);
     }
 
     const updatedStudent = await StudentService.getStudentById(id, orgId);

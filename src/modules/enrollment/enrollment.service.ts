@@ -5,6 +5,7 @@ import {
 } from "@/prisma/generated";
 import { prisma } from "@/lib/prisma";
 import { EnrollmentRepository } from "./enrollment.repository";
+import { OrganizationService } from "../organizations/organization.service";
 import {
   SessionService,
   ClassService,
@@ -245,6 +246,8 @@ export class EnrollmentService {
       where: { id: enrollment.studentId },
       data: { status: StudentStatus.WITHDRAWN },
     });
+
+    await OrganizationService.adjustStudentCount(prisma, input.organizationId, -1);
 
     return this.getEnrollmentById(input.enrollmentId, input.organizationId);
   }

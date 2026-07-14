@@ -27,6 +27,7 @@ interface DashboardStats {
   totalFeesCollected: number;
   totalExpenses: number;
   discount: number;
+  studentCount: number;
 }
 
 interface Transaction {
@@ -88,6 +89,12 @@ export function DashboardClient({ stats, transactions }: DashboardClientProps) {
               Total Liquidity
             </p>
             <p className="text-xl font-black text-primary">{fmt(totalFunds)}</p>
+          </div>
+          <div className="glass px-4 py-2 rounded-xl border border-border/50 bg-card/50">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+              Total Students
+            </p>
+            <p className="text-xl font-black text-foreground">{stats.studentCount}</p>
           </div>
         </div>
       </div>

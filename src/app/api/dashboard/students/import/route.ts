@@ -2,6 +2,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { SessionStatus, EnrollmentStatus } from "@/prisma/generated";
 import { NextResponse } from "next/server";
+import { OrganizationService } from "@/modules/organizations/organization.service";
 
 interface ImportRow {
   name: string;
@@ -279,6 +280,8 @@ export async function POST(req: Request) {
               organizationId: orgId,
             },
           });
+
+          await OrganizationService.adjustStudentCount(tx, orgId, 1);
         });
 
         existingAdmNos.add(admNo.toLowerCase());
