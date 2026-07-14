@@ -27,7 +27,7 @@ interface DashboardStats {
   totalFeesCollected: number;
   totalExpenses: number;
   discount: number;
-  studentCount: number;
+  studentCount?: number | null;
 }
 
 interface Transaction {
@@ -94,7 +94,7 @@ export function DashboardClient({ stats, transactions }: DashboardClientProps) {
             <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
               Total Students
             </p>
-            <p className="text-xl font-black text-foreground">{stats.studentCount}</p>
+            <p className="text-xl font-black text-foreground">{stats.studentCount ?? 0}</p>
           </div>
         </div>
       </div>
