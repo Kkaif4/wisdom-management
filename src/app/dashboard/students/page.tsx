@@ -40,6 +40,16 @@ export default async function StudentsPage({
   const divisionId = getSingle(searchParams.divisionId);
   const status = (getSingle(searchParams.status) as any) || "ACTIVE";
 
+  const allowedSortFields = ["name", "grNo"];
+  const allowedSortOrders = ["asc", "desc"];
+
+  const sortBy = allowedSortFields.includes(getSingle(searchParams.sortBy) || "")
+    ? getSingle(searchParams.sortBy)!
+    : "name";
+  const sortOrder = allowedSortOrders.includes(getSingle(searchParams.sortOrder) || "")
+    ? getSingle(searchParams.sortOrder)!
+    : "asc";
+
   const page = parseInt(pageParam || "1");
   const limit = 15;
   const skip = (page - 1) * limit;
@@ -88,7 +98,7 @@ export default async function StudentsPage({
             orderBy: { updatedAt: "desc" },
           },
         },
-        orderBy: { name: "asc" },
+        orderBy: { [sortBy]: sortOrder },
         skip,
         take: limit,
       }),

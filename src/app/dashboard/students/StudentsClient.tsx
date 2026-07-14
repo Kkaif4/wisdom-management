@@ -93,6 +93,8 @@ export function StudentsClient({
   const currentSessionId = searchParams.get("sessionId") || "";
   const currentClassId = searchParams.get("classId") || "";
   const currentDivisionId = searchParams.get("divisionId") || "";
+  const currentSortBy = searchParams.get("sortBy") || "name";
+  const currentSortOrder = searchParams.get("sortOrder") || "asc";
 
   useEffect(() => {
     const handler = setTimeout(() => {
@@ -236,7 +238,7 @@ export function StudentsClient({
       )}
 
       {/* Filters Section */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         <div className="relative">
           {isPending ? (
             <Loader2 className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-primary animate-spin" />
@@ -290,6 +292,26 @@ export function StudentsClient({
               {d.name}
             </option>
           ))}
+        </select>
+
+        <select
+          value={`${currentSortBy}-${currentSortOrder}`}
+          onChange={(e) => {
+            const [sortBy, sortOrder] = e.target.value.split("-");
+            const params = new URLSearchParams(searchParams.toString());
+            params.set("sortBy", sortBy);
+            params.set("sortOrder", sortOrder);
+            params.set("p", "1");
+            startTransition(() => {
+              router.push(`${pathname}?${params.toString()}`);
+            });
+          }}
+          className="bg-card/50 border border-border/50 rounded-2xl px-4 py-3 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer"
+        >
+          <option value="name-asc">Sort: Name (A-Z)</option>
+          <option value="name-desc">Sort: Name (Z-A)</option>
+          <option value="grNo-asc">Sort: GR No (Ascending)</option>
+          <option value="grNo-desc">Sort: GR No (Descending)</option>
         </select>
       </div>
 

@@ -115,8 +115,8 @@ export const TransferCertificateTemplate: React.FC<{
           .cert-font-title { font-family: 'Cinzel', serif; }
           .cert-font-serif { font-family: 'Playfair Display', serif; }
           .cert-font-handwritten { font-family: 'Great Vibes', cursive; }
-          .cert-border-double { border: 4px double #1e3a8a; padding: 12px; height: 100%; position: relative; }
-          .cert-border-outer { border: 2px solid #1e3a8a; padding: 6px; height: 100%; }
+          .cert-border-double { border: 4px double #1e3a8a; padding: 10px; height: 100%; position: relative; }
+          .cert-border-outer { border: 2px solid #1e3a8a; padding: 4px; height: 100%; }
           .cert-watermark {
             position: absolute; top: 50%; left: 50%;
             transform: translate(-50%, -50%) rotate(-30deg);
@@ -137,10 +137,13 @@ export const TransferCertificateTemplate: React.FC<{
               height: 297mm !important;
               min-height: 297mm !important;
               max-height: 297mm !important;
-              padding: 10mm !important;
+              padding: 6mm !important;
               margin: 0 !important;
               box-sizing: border-box !important;
               background: white !important;
+            }
+            #student-tc-print div.px-10.py-10 {
+              padding: 4mm 6mm !important;
             }
           }
         ` }} />
@@ -153,42 +156,42 @@ export const TransferCertificateTemplate: React.FC<{
 
             {/* Header Block */}
             <div className="relative z-10">
-              <div className="flex items-center justify-between border-b-2 pb-4 border-blue-900">
-                <div className="w-16 h-16 flex-shrink-0 flex items-center justify-center border rounded-full bg-slate-50 border-slate-350 shadow-sm">
-                  <svg className="w-11 h-11 text-blue-900" fill="currentColor" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+              <div className="flex items-center justify-between border-b-2 pb-3 border-blue-900">
+                <div className="w-14 h-14 flex-shrink-0 flex items-center justify-center border rounded-full bg-slate-50 border-slate-350 shadow-sm">
+                  <svg className="w-10 h-10 text-blue-900" fill="currentColor" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296 3.745 3.745 0 01-3.296 1.043A3.745 3.745 0 0110 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 01-3.296-1.043 3.745 3.745 0 01-1.043-3.296A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 011.043-3.296 3.746 3.746 0 013.296-1.043A3.746 3.746 0 0114 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 013.296 1.043 3.746 3.746 0 011.043 3.296A3.745 3.745 0 0121 12z" />
                   </svg>
                 </div>
 
                 <div className="text-center flex-1 px-4">
-                  <h2 className="cert-font-title text-xl font-extrabold tracking-wide text-blue-900 uppercase">
+                  <h2 className="cert-font-title text-lg font-extrabold tracking-wide text-blue-900 uppercase">
                     {organizationName}
                   </h2>
-                  <p className="text-[10px] text-slate-600 mt-0.5 font-medium">
+                  <p className="text-[9px] text-slate-600 mt-0.5 font-medium">
                     Official Student Academic Record System
                   </p>
                 </div>
 
-                <div className="w-16 h-16 text-right flex flex-col justify-center text-xs">
-                  <div className="text-slate-500 font-bold uppercase tracking-wider text-[8px] mb-1">
+                <div className="w-16 h-14 text-right flex flex-col justify-center text-xs">
+                  <div className="text-slate-500 font-bold uppercase tracking-wider text-[7px] mb-0.5">
                     Status
                   </div>
-                  <div className="font-black text-emerald-700 bg-emerald-50 rounded border border-emerald-250 px-1 py-0.5 text-center uppercase tracking-wide text-[9px]">
+                  <div className="font-black text-emerald-700 bg-emerald-50 rounded border border-emerald-250 px-1 py-0.5 text-center uppercase tracking-wide text-[8px]">
                     {student.status}
                   </div>
                 </div>
               </div>
 
               {/* Document Header Identifier */}
-              <div className="text-center my-4 relative">
+              <div className="text-center my-2 relative">
                 <span className="absolute left-0 right-0 top-1/2 border-t-2 border-amber-600 opacity-20 -z-10"></span>
-                <h3 className="cert-font-title text-base font-bold tracking-widest text-amber-800 bg-white px-6 inline-block uppercase">
+                <h3 className="cert-font-title text-sm font-bold tracking-widest text-amber-800 bg-white px-5 inline-block uppercase">
                   School Leaving Certificate
                 </h3>
               </div>
 
               {/* Registration Block */}
-              <div className="grid grid-cols-3 gap-2 text-[11px] font-semibold mb-4 pb-2.5 border-b border-dashed border-slate-300">
+              <div className="grid grid-cols-3 gap-2 text-[10px] font-semibold mb-2 pb-1.5 border-b border-dashed border-slate-300">
                 <div className="text-left flex items-center gap-1">
                   <span className="text-slate-500">Certificate No:</span>
                   <span className="font-mono text-slate-800 tracking-wider">{tcNumber}</span>
@@ -206,62 +209,62 @@ export const TransferCertificateTemplate: React.FC<{
               </div>
 
               {/* Certificate Core Body */}
-              <div className="text-[11px] text-slate-855 space-y-2.5 leading-relaxed relative z-10">
+              <div className="text-[11px] text-slate-855 space-y-1.5 leading-normal relative z-10">
 
                 <div className="grid grid-cols-12 gap-1 items-end pb-0.5 border-b border-dotted border-slate-300">
-                  <span className="col-span-4 text-slate-500 uppercase tracking-wider text-[9px] font-bold">1. Name of Pupil:</span>
-                  <div className="col-span-8 font-bold text-slate-900 text-xs cert-font-serif tracking-wide border-b-2 border-slate-900 px-1 flex justify-between uppercase">
+                  <span className="col-span-4 text-slate-500 uppercase tracking-wider text-[8px] font-bold">1. Name of Pupil:</span>
+                  <div className="col-span-8 font-bold text-slate-900 text-xs cert-font-serif tracking-wide border-b border-slate-900 px-1 flex justify-between uppercase">
                     <span>{student.name}</span>
                     {student.rollNumber && (
-                      <span className="text-[10px] font-normal text-slate-400 italic">Roll No: {student.rollNumber}</span>
+                      <span className="text-[9px] font-normal text-slate-400 italic">Roll No: {student.rollNumber}</span>
                     )}
                   </div>
                 </div>
 
                 <div className="grid grid-cols-12 gap-1 items-end pb-0.5 border-b border-dotted border-slate-300">
-                  <span className="col-span-4 text-slate-500 uppercase tracking-wider text-[9px] font-bold">2. Father's / Guardian's Name:</span>
-                  <div className="col-span-8 font-semibold text-slate-900 border-b-2 border-slate-900 px-1 uppercase">
+                  <span className="col-span-4 text-slate-500 uppercase tracking-wider text-[8px] font-bold">2. Father's / Guardian's Name:</span>
+                  <div className="col-span-8 font-semibold text-slate-900 border-b border-slate-900 px-1 uppercase">
                     {student.fatherName || "---"}
                   </div>
                 </div>
 
                 <div className="grid grid-cols-12 gap-1 items-end pb-0.5 border-b border-dotted border-slate-300">
-                  <span className="col-span-4 text-slate-500 uppercase tracking-wider text-[9px] font-bold">3. Father's Qualification / Occ.:</span>
-                  <div className="col-span-8 text-slate-700 border-b-2 border-slate-900 px-1 italic">
+                  <span className="col-span-4 text-slate-500 uppercase tracking-wider text-[8px] font-bold">3. Father's Qualification / Occ.:</span>
+                  <div className="col-span-8 text-slate-705 border-b border-slate-900 px-1 italic text-[10px]">
                     {fatherInfo || "---"}
                   </div>
                 </div>
 
                 <div className="grid grid-cols-12 gap-1 items-end pb-0.5 border-b border-dotted border-slate-300">
-                  <span className="col-span-4 text-slate-500 uppercase tracking-wider text-[9px] font-bold">4. Mother's Name:</span>
-                  <div className="col-span-8 font-semibold text-slate-900 border-b-2 border-slate-900 px-1 uppercase">
+                  <span className="col-span-4 text-slate-500 uppercase tracking-wider text-[8px] font-bold">4. Mother's Name:</span>
+                  <div className="col-span-8 font-semibold text-slate-900 border-b border-slate-900 px-1 uppercase">
                     {student.motherName || "---"}
                   </div>
                 </div>
 
                 <div className="grid grid-cols-12 gap-1 items-end pb-0.5 border-b border-dotted border-slate-300">
-                  <span className="col-span-4 text-slate-500 uppercase tracking-wider text-[9px] font-bold">5. Mother's Qualification / Occ.:</span>
-                  <div className="col-span-8 text-slate-700 border-b-2 border-slate-900 px-1 italic">
+                  <span className="col-span-4 text-slate-500 uppercase tracking-wider text-[8px] font-bold">5. Mother's Qualification / Occ.:</span>
+                  <div className="col-span-8 text-slate-705 border-b border-slate-900 px-1 italic text-[10px]">
                     {motherInfo || "---"}
                   </div>
                 </div>
 
                 <div className="grid grid-cols-12 gap-2 pb-0.5 border-b border-dotted border-slate-300">
                   <div className="col-span-4 flex items-end">
-                    <span className="text-slate-500 uppercase tracking-wider text-[9px] font-bold">6. Nationality:</span>
-                    <div className="flex-1 font-semibold text-slate-955 border-b-2 border-slate-900 px-1 text-center">
+                    <span className="text-slate-500 uppercase tracking-wider text-[8px] font-bold">6. Nationality:</span>
+                    <div className="flex-1 font-semibold text-slate-955 border-b border-slate-900 px-1 text-center">
                       {student.nationality || "Indian"}
                     </div>
                   </div>
                   <div className="col-span-4 flex items-end">
-                    <span className="text-slate-500 uppercase tracking-wider text-[9px] font-bold">7. Religion:</span>
-                    <div className="flex-1 font-semibold text-slate-955 border-b-2 border-slate-900 px-1 text-center">
+                    <span className="text-slate-500 uppercase tracking-wider text-[8px] font-bold">7. Religion:</span>
+                    <div className="flex-1 font-semibold text-slate-955 border-b border-slate-900 px-1 text-center">
                       {student.religion || "---"}
                     </div>
                   </div>
                   <div className="col-span-4 flex items-end">
-                    <span className="text-slate-500 uppercase tracking-wider text-[9px] font-bold">8. Aadhar No:</span>
-                    <div className="flex-1 font-mono font-semibold text-slate-955 border-b-2 border-slate-900 px-1 text-center">
+                    <span className="text-slate-500 uppercase tracking-wider text-[8px] font-bold">8. Aadhar No:</span>
+                    <div className="flex-1 font-mono font-semibold text-slate-955 border-b border-slate-900 px-1 text-center">
                       {student.aadharNo || "---"}
                     </div>
                   </div>
@@ -269,93 +272,93 @@ export const TransferCertificateTemplate: React.FC<{
 
                 <div className="grid grid-cols-12 gap-2 pb-0.5 border-b border-dotted border-slate-300">
                   <div className="col-span-6 flex items-end">
-                    <span className="text-slate-500 uppercase tracking-wider text-[9px] font-bold">9. Caste:</span>
-                    <div className="flex-1 font-semibold text-slate-955 border-b-2 border-slate-900 px-1 text-center">
+                    <span className="text-slate-500 uppercase tracking-wider text-[8px] font-bold">9. Caste:</span>
+                    <div className="flex-1 font-semibold text-slate-955 border-b border-slate-900 px-1 text-center">
                       {student.caste || "---"}
                     </div>
                   </div>
                   <div className="col-span-6 flex items-end">
-                    <span className="text-slate-500 uppercase tracking-wider text-[9px] font-bold">10. Sub-Caste:</span>
-                    <div className="flex-1 font-semibold text-slate-955 border-b-2 border-slate-900 px-1 text-center">
+                    <span className="text-slate-500 uppercase tracking-wider text-[8px] font-bold">10. Sub-Caste:</span>
+                    <div className="flex-1 font-semibold text-slate-955 border-b border-slate-900 px-1 text-center">
                       {student.subCaste || "---"}
                     </div>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-12 gap-1 items-end pb-0.5 border-b border-dotted border-slate-300">
-                  <span className="col-span-4 text-slate-500 uppercase tracking-wider text-[9px] font-bold">11. Place of Birth:</span>
-                  <div className="col-span-8 font-semibold text-slate-900 border-b-2 border-slate-900 px-1">
+                  <span className="col-span-4 text-slate-500 uppercase tracking-wider text-[8px] font-bold">11. Place of Birth:</span>
+                  <div className="col-span-8 font-semibold text-slate-900 border-b border-slate-900 px-1">
                     {student.placeOfBirth || "---"}
                   </div>
                 </div>
 
                 <div className="grid grid-cols-12 gap-1 items-end pb-0.5 border-b border-dotted border-slate-300">
-                  <span className="col-span-4 text-slate-500 uppercase tracking-wider text-[9px] font-bold">12. Date of Birth (Figures):</span>
-                  <div className="col-span-8 font-mono font-bold text-slate-955 border-b-2 border-slate-900 px-1 flex justify-between">
+                  <span className="col-span-4 text-slate-500 uppercase tracking-wider text-[8px] font-bold">12. Date of Birth (Figures):</span>
+                  <div className="col-span-8 font-mono font-bold text-slate-955 border-b border-slate-900 px-1 flex justify-between">
                     <span>{dobNumerical}</span>
-                    <span className="text-[10px] text-slate-500 font-normal">Gender: <span className="font-semibold text-slate-800">{student.gender || "---"}</span></span>
+                    <span className="text-[9px] text-slate-500 font-normal">Gender: <span className="font-semibold text-slate-800">{student.gender || "---"}</span></span>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-12 gap-1 items-end pb-0.5 border-b border-dotted border-slate-300">
-                  <span className="col-span-4 text-slate-500 uppercase tracking-wider text-[9px] font-bold">13. Date of Birth (Words):</span>
-                  <div className="col-span-8 font-semibold text-slate-900 border-b-2 border-slate-900 px-1 italic text-[10px]">
+                  <span className="col-span-4 text-slate-500 uppercase tracking-wider text-[8px] font-bold">13. Date of Birth (Words):</span>
+                  <div className="col-span-8 font-semibold text-slate-900 border-b border-slate-900 px-1 italic text-[9.5px]">
                     {dobWords}
                   </div>
                 </div>
 
                 <div className="grid grid-cols-12 gap-1 items-end pb-0.5 border-b border-dotted border-slate-300">
-                  <span className="col-span-4 text-slate-500 uppercase tracking-wider text-[9px] font-bold">14. Last School Attended:</span>
-                  <div className="col-span-8 text-slate-900 border-b-2 border-slate-900 px-1">
+                  <span className="col-span-4 text-slate-500 uppercase tracking-wider text-[8px] font-bold">14. Last School Attended:</span>
+                  <div className="col-span-8 text-slate-900 border-b border-slate-900 px-1">
                     {student.lastSchoolAttended || "---"}
                   </div>
                 </div>
 
                 <div className="grid grid-cols-12 gap-1 items-end pb-0.5 border-b border-dotted border-slate-300">
-                  <span className="col-span-4 text-slate-500 uppercase tracking-wider text-[9px] font-bold">15. Date of Admission & Class:</span>
-                  <div className="col-span-8 text-slate-900 border-b-2 border-slate-900 px-1 font-medium">
+                  <span className="col-span-4 text-slate-500 uppercase tracking-wider text-[8px] font-bold">15. Date of Admission & Class:</span>
+                  <div className="col-span-8 text-slate-900 border-b border-slate-900 px-1 font-medium">
                     {admissionInfoDisplay}
                   </div>
                 </div>
 
                 <div className="grid grid-cols-12 gap-1 items-end pb-0.5 border-b border-dotted border-slate-300">
-                  <span className="col-span-4 text-slate-500 uppercase tracking-wider text-[9px] font-bold">16. Class Last Studied:</span>
-                  <div className="col-span-8 text-slate-955 font-bold border-b-2 border-slate-900 px-1 uppercase">
+                  <span className="col-span-4 text-slate-500 uppercase tracking-wider text-[8px] font-bold">16. Class Last Studied:</span>
+                  <div className="col-span-8 text-slate-955 font-bold border-b border-slate-900 px-1 uppercase">
                     {currentClassDisplay}
                   </div>
                 </div>
 
                 <div className="grid grid-cols-12 gap-1 items-end pb-0.5 border-b border-dotted border-slate-300">
-                  <span className="col-span-4 text-slate-500 uppercase tracking-wider text-[9px] font-bold">17. Promotion Qualified:</span>
-                  <div className="col-span-8 text-slate-955 font-semibold border-b-2 border-slate-900 px-1">
+                  <span className="col-span-4 text-slate-500 uppercase tracking-wider text-[8px] font-bold">17. Promotion Qualified:</span>
+                  <div className="col-span-8 text-slate-955 font-semibold border-b border-slate-900 px-1">
                     {student.status === "WITHDRAWN" ? "Yes, Promoted" : "Study in Progress"}
                   </div>
                 </div>
 
                 <div className="grid grid-cols-12 gap-1 items-end pb-0.5 border-b border-dotted border-slate-300">
-                  <span className="col-span-4 text-slate-500 uppercase tracking-wider text-[9px] font-bold">18. General Conduct:</span>
-                  <div className="col-span-8 text-slate-900 border-b-2 border-slate-900 px-1">
+                  <span className="col-span-4 text-slate-500 uppercase tracking-wider text-[8px] font-bold">18. General Conduct:</span>
+                  <div className="col-span-8 text-slate-900 border-b border-slate-900 px-1">
                     Satisfactory
                   </div>
                 </div>
 
                 <div className="grid grid-cols-12 gap-1 items-end pb-0.5 border-b border-dotted border-slate-300">
-                  <span className="col-span-4 text-slate-500 uppercase tracking-wider text-[9px] font-bold">19. Reason for Leaving:</span>
-                  <div className="col-span-8 text-slate-900 border-b-2 border-slate-900 px-1">
+                  <span className="col-span-4 text-slate-500 uppercase tracking-wider text-[8px] font-bold">19. Reason for Leaving:</span>
+                  <div className="col-span-8 text-slate-900 border-b border-slate-900 px-1">
                     {student.status === "WITHDRAWN" ? "Withdrawal Application Issued" : "Course Continuation"}
                   </div>
                 </div>
 
                 <div className="grid grid-cols-12 gap-1 items-end pb-0.5 border-b border-dotted border-slate-300">
-                  <span className="col-span-4 text-slate-500 uppercase tracking-wider text-[9px] font-bold">20. Application Received On:</span>
-                  <div className="col-span-8 text-slate-900 border-b-2 border-slate-900 px-1 font-mono">
+                  <span className="col-span-4 text-slate-500 uppercase tracking-wider text-[8px] font-bold">20. Application Received On:</span>
+                  <div className="col-span-8 text-slate-900 border-b border-slate-900 px-1 font-mono">
                     {student.receivedApplicationOf ? formatDobNumerical(student.receivedApplicationOf) : "---"}
                   </div>
                 </div>
 
                 <div className="grid grid-cols-12 gap-1 items-end pb-0.5 border-b border-dotted border-slate-300">
-                  <span className="col-span-4 text-slate-500 uppercase tracking-wider text-[9px] font-bold">21. Permanent Address:</span>
-                  <div className="col-span-8 text-slate-700 border-b-2 border-slate-900 px-1 italic text-[10px]">
+                  <span className="col-span-4 text-slate-500 uppercase tracking-wider text-[8px] font-bold">21. Permanent Address:</span>
+                  <div className="col-span-8 text-slate-700 border-b border-slate-900 px-1 italic text-[9.5px]">
                     {student.address || "---"}
                   </div>
                 </div>
@@ -364,32 +367,32 @@ export const TransferCertificateTemplate: React.FC<{
             </div>
 
             {/* Certification and Signatures */}
-            <div className="relative z-10 pt-3 mt-3">
-              <p className="text-[9px] text-slate-500 leading-snug italic text-center mb-6">
+            <div className="relative z-10 pt-2 mt-2">
+              <p className="text-[8.5px] text-slate-500 leading-snug italic text-center mb-3">
                 Certified that the above declarations and statistics have been verified with official school records and found true.
               </p>
 
-              <div className="grid grid-cols-3 gap-4 text-center mt-4">
+              <div className="grid grid-cols-3 gap-4 text-center mt-2">
                 <div className="flex flex-col items-center">
-                  <div className="w-full max-w-[120px] border-b border-slate-800 h-6 flex items-end justify-center">
+                  <div className="w-full max-w-[120px] border-b border-slate-800 h-4 flex items-end justify-center">
                   </div>
-                  <span className="text-[9px] text-slate-500 font-bold uppercase tracking-wider mt-1">
+                  <span className="text-[8.5px] text-slate-500 font-bold uppercase tracking-wider mt-0.5">
                     Class Teacher
                   </span>
                 </div>
 
                 <div className="flex flex-col items-center justify-center -mt-2">
-                  <div className="w-12 h-12 border border-dashed rounded-full flex flex-col items-center justify-center border-slate-400 select-none opacity-30">
-                    <span className="text-[6px] font-extrabold uppercase tracking-widest text-slate-500 text-center leading-none">
+                  <div className="w-10 h-10 border border-dashed rounded-full flex flex-col items-center justify-center border-slate-400 select-none opacity-30">
+                    <span className="text-[5px] font-extrabold uppercase tracking-widest text-slate-500 text-center leading-none">
                       Office Seal
                     </span>
                   </div>
                 </div>
 
                 <div className="flex flex-col items-center">
-                  <div className="w-full max-w-[120px] border-b border-slate-800 h-6 flex items-end justify-center">
+                  <div className="w-full max-w-[120px] border-b border-slate-800 h-4 flex items-end justify-center">
                   </div>
-                  <span className="text-[9px] text-slate-500 font-bold uppercase tracking-wider mt-1">
+                  <span className="text-[8.5px] text-slate-500 font-bold uppercase tracking-wider mt-0.5">
                     Principal
                   </span>
                 </div>
