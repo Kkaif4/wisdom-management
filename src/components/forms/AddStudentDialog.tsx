@@ -77,6 +77,19 @@ export function AddStudentDialog({
       }
     }
 
+    // Validate and parse dateOfBirth format (dd/mm/yyyy)
+    let parsedDob = "";
+    if (formData.dateOfBirth) {
+      const dobStr = formData.dateOfBirth.trim();
+      if (!/^\d{2}\/\d{2}\/\d{4}$/.test(dobStr)) {
+        showToast("Date of Birth must be in dd/mm/yyyy format", "error");
+        setActiveTab("personal");
+        return;
+      }
+      const [day, month, year] = dobStr.split("/");
+      parsedDob = `${year}-${month}-${day}`;
+    }
+
     // Basic requirements check
     if (!formData.grNo || !formData.name || !formData.classId || !formData.divisionId) {
       showToast("G.R. No, Name, Class and Division are required", "error");
@@ -92,6 +105,7 @@ export function AddStudentDialog({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...formData,
+          dateOfBirth: parsedDob || null,
           totalFeesAssigned: formData.totalFeesAssigned
             ? Number(formData.totalFeesAssigned)
             : 0,
@@ -354,7 +368,8 @@ export function AddStudentDialog({
                       Date of Birth
                     </label>
                     <input
-                      type="date"
+                      type="text"
+                      placeholder="dd/mm/yyyy"
                       className="w-full bg-muted/20 border border-border/50 rounded-2xl px-5 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all font-medium"
                       value={formData.dateOfBirth}
                       onChange={(e) =>

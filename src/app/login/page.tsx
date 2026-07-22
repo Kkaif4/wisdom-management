@@ -7,6 +7,8 @@ import { loginAction } from "./actions";
 import { showToast } from "@/components/shared/Toast";
 import { Loader2, LayoutDashboard, Eye, EyeOff } from "lucide-react";
 import Image from "next/image";
+import { ContactTrigger } from "@/components/ContactTrigger";
+import { ContactModal } from "@/components/ContactModal";
 
 export default function LoginPage() {
   const { data: session, status } = useSession();
@@ -172,20 +174,19 @@ export default function LoginPage() {
               </button>
             </form>
 
-            {/* <div className="mt-8 text-center border-t border-zinc-100 pt-6">
-              <p className="text-sm text-zinc-500">
+            <div className="mt-8 text-center border-t border-zinc-100 pt-6">
+              <div className="text-sm text-zinc-500">
                 Don&apos;t have an organization account?{" "}
-                <a
-                  href="/register"
-                  className="font-bold text-black hover:underline underline-offset-4"
-                >
-                  Register Your School
-                </a>
-              </p>
-            </div> */}
+                <ContactTrigger
+                  label="Register Your School"
+                  className="font-bold text-black hover:underline underline-offset-4 cursor-pointer"
+                />
+              </div>
+            </div>
           </div>
         </div>
       </div>
+      <ContactModal />
     </>
   );
 }
