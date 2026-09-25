@@ -13,6 +13,7 @@ interface ImportRow {
   divisionName?: string;
   totalFeesAssigned?: number;
   previousFees?: number;
+  previousFee?: number;
   discount?: number;
   totalPaid?: number;
 
@@ -268,16 +269,20 @@ export async function POST(req: Request) {
             },
           });
 
+          const prevFees = Number(
+            row.previousFees ?? row.previousFee ?? (row as any).previous_fees ?? 0
+          );
+
           await tx.studentEnrollment.create({
             data: {
               studentId: student.id,
               classId: cls.id,
               divisionId: div.id,
               academicSessionId: activeSession.id,
-              totalFeesAssigned: row.totalFeesAssigned || 0,
-              previousFees: row.previousFees || 0,
-              discount: row.discount || 0,
-              totalPaid: row.totalPaid || 0,
+              totalFeesAssigned: Number(row.totalFeesAssigned || 0),
+              previousFees: isNaN(prevFees) ? 0 : prevFees,
+              discount: Number(row.discount || 0),
+              totalPaid: Number(row.totalPaid || 0),
               status: EnrollmentStatus.ACTIVE,
               organizationId: orgId,
             },

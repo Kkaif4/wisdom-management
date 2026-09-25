@@ -163,6 +163,25 @@ function parseDateString(dateStr: string | undefined | null): { isValid: boolean
   return { isValid: false, date: null };
 }
 
+function getColValue(row: Record<string, string>, aliases: string[]): string | undefined {
+  for (const alias of aliases) {
+    if (row[alias] !== undefined && row[alias] !== null && row[alias].trim() !== "") {
+      return row[alias];
+    }
+  }
+  // Case-insensitive / format-agnostic lookup
+  const normalizedAliases = aliases.map((a) => a.toLowerCase().replace(/[\s_.-]/g, ""));
+  for (const [key, value] of Object.entries(row)) {
+    const normKey = key.toLowerCase().replace(/[\s_.-]/g, "");
+    if (normalizedAliases.includes(normKey)) {
+      if (value !== undefined && value !== null && value.trim() !== "") {
+        return value;
+      }
+    }
+  }
+  return undefined;
+}
+
 // --------------- Component ---------------
 interface BulkImportDialogProps {
   onClose: () => void;
@@ -273,8 +292,17 @@ export function BulkImportDialog({
         const cls = row["Class Name"]?.trim();
         const div = row["Division"]?.trim() || "A";
         const rawFees = row["Total Fees"]?.trim();
-        const rawPreviousFees =
-          row["Previous Fees"]?.trim() || row["Previous Fee"]?.trim();
+        const rawPreviousFees = getColValue(row, [
+          "Previous Fees",
+          "Previous Fee",
+          "Previous Dues",
+          "Previous Due",
+          "Pending Fees",
+          "Pending Fee",
+          "Previous Balance",
+          "Carry Forward",
+          "Arrears",
+        ])?.trim();
         const rawPaid = row["Paid Fees"]?.trim() || "0";
         const discount = Number(row["Fee Discount"] || row["Discount"] || "0");
         const previousFees = rawPreviousFees ? Number(rawPreviousFees) : 0;
@@ -550,6 +578,9 @@ export function BulkImportDialog({
                 <p className="text-[10px] sm:text-xs font-medium text-muted-foreground">
                   Admission No, Student Name, Class Name, Division, Total Fees,
                   Paid Fees
+                </p>
+                <p className="text-[10px] sm:text-xs text-muted-foreground/70">
+                  Optional: Previous Fees, Fee Discount, Roll Number, Gender, Aadhar, DOB, etc.
                 </p>
               </div>
               <button
