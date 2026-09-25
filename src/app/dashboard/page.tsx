@@ -36,7 +36,12 @@ export default async function DashboardPage() {
       }),
       prisma.studentEnrollment.aggregate({
         where: { organizationId: orgId },
-        _sum: { totalFeesAssigned: true, totalPaid: true, discount: true },
+        _sum: {
+          totalFeesAssigned: true,
+          previousFees: true,
+          totalPaid: true,
+          discount: true,
+        },
       }),
       prisma.expense.aggregate({
         where: { organizationId: orgId },
@@ -57,7 +62,9 @@ export default async function DashboardPage() {
     orgName: org?.name ?? "Organization",
     cashBalance: Number(org?.currentCashBalance ?? 0),
     bankBalance: Number(org?.currentBankBalance ?? 0),
-    totalFeesAssigned: Number(studentStats._sum.totalFeesAssigned ?? 0),
+    totalFeesAssigned:
+      Number(studentStats._sum.totalFeesAssigned ?? 0) +
+      Number(studentStats._sum.previousFees ?? 0),
     totalFeesCollected: Number(studentStats._sum.totalPaid ?? 0),
     discount: Number(studentStats._sum.discount ?? 0),
     totalExpenses: Number(expenseStats._sum.amount ?? 0),

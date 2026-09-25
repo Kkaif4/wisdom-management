@@ -58,6 +58,7 @@ export const POST = auth(async (req) => {
       divisionId,
       academicSessionId,
       totalFeesAssigned,
+      previousFees,
       remarks,
     } = body;
 
@@ -77,6 +78,7 @@ export const POST = auth(async (req) => {
       divisionId,
       academicSessionId,
       totalFeesAssigned: new Prisma.Decimal(totalFeesAssigned || 0),
+      previousFees: previousFees !== undefined ? new Prisma.Decimal(previousFees) : undefined,
       organizationId: req.auth.user.organizationId,
       remarks,
     });

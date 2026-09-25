@@ -44,6 +44,7 @@ export async function POST(req: Request) {
       classId,
       divisionId,
       totalFeesAssigned,
+      previousFees,
       discount,
     } = body;
 
@@ -136,6 +137,7 @@ export async function POST(req: Request) {
           divisionId,
           academicSessionId: activeSession.id,
           totalFeesAssigned: totalFeesAssigned || 0,
+          previousFees: previousFees || 0,
           discount: discount || 0,
           totalPaid: 0,
           status: EnrollmentStatus.ACTIVE,

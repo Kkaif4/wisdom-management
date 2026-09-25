@@ -34,11 +34,15 @@ export const PUT = auth(async (req, { params }) => {
 
     const updateData: {
       totalFeesAssigned?: Prisma.Decimal;
+      previousFees?: Prisma.Decimal;
       discount?: Prisma.Decimal;
       remarks?: string;
     } = {};
     if (body.totalFeesAssigned !== undefined) {
       updateData.totalFeesAssigned = new Prisma.Decimal(body.totalFeesAssigned);
+    }
+    if (body.previousFees !== undefined) {
+      updateData.previousFees = new Prisma.Decimal(body.previousFees);
     }
     if (body.discount !== undefined) {
       updateData.discount = new Prisma.Decimal(body.discount);

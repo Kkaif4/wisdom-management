@@ -127,6 +127,9 @@ export default async function StudentsPage({
         totalFeesAssigned: activeEnrollment
           ? Number(activeEnrollment.totalFeesAssigned)
           : 0,
+        previousFees: activeEnrollment
+          ? Number(activeEnrollment.previousFees)
+          : 0,
         discount: activeEnrollment ? Number(activeEnrollment.discount) : 0,
         totalPaid: activeEnrollment ? Number(activeEnrollment.totalPaid) : 0,
         enrollmentId: activeEnrollment?.id || null,

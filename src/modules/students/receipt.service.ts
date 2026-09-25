@@ -76,9 +76,12 @@ export class ReceiptService {
           shouldAffectTuition = incomeCategory?.affectsTuition ?? false;
         } else {
           // Fallback for legacy: check category string
-          shouldAffectTuition = ["Tuition Fee", "Student Dues"].includes(
-            category,
-          );
+          shouldAffectTuition = [
+            "Tuition Fee",
+            "Student Dues",
+            "Previous Fee",
+            "Previous Tuition Fee",
+          ].includes(category);
         }
 
         if (shouldAffectTuition) {
@@ -169,9 +172,12 @@ export class ReceiptService {
           shouldAffectTuition = incomeCategory?.affectsTuition ?? false;
         } else {
           // Fallback for legacy: check category string
-          shouldAffectTuition = ["Tuition Fee", "Student Dues"].includes(
-            receipt.category,
-          );
+          shouldAffectTuition = [
+            "Tuition Fee",
+            "Student Dues",
+            "Previous Fee",
+            "Previous Tuition Fee",
+          ].includes(receipt.category);
         }
 
         if (shouldAffectTuition) {

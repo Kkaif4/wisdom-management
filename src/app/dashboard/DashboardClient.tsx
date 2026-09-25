@@ -18,6 +18,7 @@ import {
 import { useRouter } from "next/navigation";
 import { PermissionGate } from "@/components/auth/PermissionGate";
 import { ReceiptEntryModal } from "@/components/forms/ReceiptEntryModal";
+import { ExpenseEntryModal } from "@/components/forms/ExpenseEntryModal";
 
 interface DashboardStats {
   orgName: string;
@@ -57,6 +58,7 @@ const fmt = (val: number) =>
 export function DashboardClient({ stats, transactions }: DashboardClientProps) {
   const router = useRouter();
   const [showReceiptModal, setShowReceiptModal] = useState(false);
+  const [showExpenseModal, setShowExpenseModal] = useState(false);
   const netTarget = stats.totalFeesAssigned - stats.discount;
   const outstanding = Math.max(0, netTarget - stats.totalFeesCollected);
   const totalFunds = stats.cashBalance + stats.bankBalance;
@@ -74,7 +76,7 @@ export function DashboardClient({ stats, transactions }: DashboardClientProps) {
             Live Financial Overview
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
           <PermissionGate permission="CREATE_RECEIPT">
             <button
               onClick={() => setShowReceiptModal(true)}
@@ -82,6 +84,15 @@ export function DashboardClient({ stats, transactions }: DashboardClientProps) {
             >
               <Plus className="h-4 w-4" />
               New Collection
+            </button>
+          </PermissionGate>
+          <PermissionGate permission="CREATE_EXPENSE">
+            <button
+              onClick={() => setShowExpenseModal(true)}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-rose-600 text-white font-bold text-sm shadow-lg shadow-rose-600/20 transition-all hover:scale-[1.02] active:scale-95"
+            >
+              <Plus className="h-4 w-4" />
+              New Expense
             </button>
           </PermissionGate>
           <div className="glass px-4 py-2 rounded-xl border border-primary/20 bg-primary/5">
@@ -372,6 +383,13 @@ export function DashboardClient({ stats, transactions }: DashboardClientProps) {
       {showReceiptModal && (
         <ReceiptEntryModal
           onClose={() => setShowReceiptModal(false)}
+          onSuccess={() => router.refresh()}
+        />
+      )}
+
+      {showExpenseModal && (
+        <ExpenseEntryModal
+          onClose={() => setShowExpenseModal(false)}
           onSuccess={() => router.refresh()}
         />
       )}

@@ -76,7 +76,10 @@ export async function GET(req: NextRequest) {
     const netCashFlow = totalFeesCollected.minus(totalExpenses);
 
     const outstandingDues = enrollmentsWithDues.reduce((sum, e) => {
-      const remaining = e.totalFeesAssigned.minus(e.discount).minus(e.totalPaid);
+      const remaining = e.totalFeesAssigned
+        .plus(e.previousFees)
+        .minus(e.discount)
+        .minus(e.totalPaid);
       return remaining.gt(0) ? sum.plus(remaining) : sum;
     }, new Prisma.Decimal(0));
 
@@ -128,14 +131,24 @@ export async function GET(req: NextRequest) {
 
     // Student Summary (from enrollments)
     const studentSummary = enrollmentsWithDues
-      .filter((e) => e.totalFeesAssigned.minus(e.discount).gt(e.totalPaid))
+      .filter((e) =>
+        e.totalFeesAssigned
+          .plus(e.previousFees)
+          .minus(e.discount)
+          .gt(e.totalPaid),
+      )
       .map((e) => ({
         name: e.student.name,
         class: e.class.name,
         totalFeesAssigned: e.totalFeesAssigned.toNumber(),
+        previousFees: e.previousFees.toNumber(),
         discount: e.discount.toNumber(),
         totalPaid: e.totalPaid.toNumber(),
-        remaining: e.totalFeesAssigned.minus(e.discount).minus(e.totalPaid).toNumber(),
+        remaining: e.totalFeesAssigned
+          .plus(e.previousFees)
+          .minus(e.discount)
+          .minus(e.totalPaid)
+          .toNumber(),
       }))
       .sort((a, b) => b.remaining - a.remaining);
 

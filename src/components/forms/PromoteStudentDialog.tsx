@@ -312,6 +312,11 @@ export function PromoteStudentDialog({
                   </div>
                 </div>
               </div>
+
+              <div className="p-3.5 rounded-2xl bg-primary/5 border border-primary/20 text-xs text-muted-foreground flex items-center gap-2.5">
+                <span className="font-bold text-primary shrink-0">ℹ Carry Forward:</span>
+                <span>Any unpaid fee balance from the current session will automatically carry forward as <strong>Previous Fees</strong> into the new session.</span>
+              </div>
             </div>
           )}
         </div>

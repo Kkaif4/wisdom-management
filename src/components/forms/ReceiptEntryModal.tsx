@@ -28,8 +28,17 @@ interface Enrollment {
   divisionName: string;
   status: string;
   totalFeesAssigned: number;
+  previousFees: number;
+  discount: number;
   totalPaid: number;
   remaining: number;
+  receipts?: Array<{
+    id: string;
+    receiptNumber: string;
+    amount: number;
+    category: string;
+    status: string;
+  }>;
 }
 
 interface Student {
@@ -43,20 +52,36 @@ interface Student {
 interface ReceiptEntryModalProps {
   onSuccess: (receipt: any) => void;
   onClose: () => void;
+  initialStudentId?: string;
+  initialEnrollmentId?: string;
+  initialStudent?: {
+    id: string;
+    name: string;
+    grNo?: string;
+    className?: string;
+  } | null;
 }
 
 export function ReceiptEntryModal({
   onSuccess,
   onClose,
+  initialStudentId,
+  initialEnrollmentId,
+  initialStudent,
 }: ReceiptEntryModalProps) {
   const [loading, setLoading] = useState(false);
-  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+  const [selectedStudent, setSelectedStudent] = useState<Student | null>(
+    initialStudent || null,
+  );
   const [categories, setCategories] = useState<IncomeCategory[]>([]);
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
-  const [selectedEnrollmentId, setSelectedEnrollmentId] = useState("");
+  const [selectedEnrollmentId, setSelectedEnrollmentId] = useState(
+    initialEnrollmentId || "",
+  );
   const [loadingEnrollments, setLoadingEnrollments] = useState(false);
+  const [isPreviousFee, setIsPreviousFee] = useState(false);
   const [formData, setFormData] = useState({
-    studentId: "",
+    studentId: initialStudentId || "",
     amount: "",
     paymentMode: "CASH",
     incomeCategoryId: "",
@@ -66,6 +91,15 @@ export function ReceiptEntryModal({
 
   const formRef = React.useRef<HTMLFormElement>(null);
 
+  // Filter out Previous Fee from general Income Purpose dropdown
+  const visibleCategories = categories.filter(
+    (c) => c.code !== "PREVIOUS_FEE" && c.name.toLowerCase() !== "previous fee",
+  );
+
+  const prevFeeCategory = categories.find(
+    (c) => c.code === "PREVIOUS_FEE" || c.name.toLowerCase() === "previous fee",
+  );
+
   // Fetch income categories from DB
   useEffect(() => {
     fetch("/api/income-categories")
@@ -73,9 +107,12 @@ export function ReceiptEntryModal({
       .then((data) => {
         if (Array.isArray(data)) {
           setCategories(data);
-          // Default to first category
-          if (data.length > 0 && !formData.incomeCategoryId) {
-            setFormData((prev) => ({ ...prev, incomeCategoryId: data[0].id }));
+          const visible = data.filter(
+            (c) => c.code !== "PREVIOUS_FEE" && c.name.toLowerCase() !== "previous fee",
+          );
+          // Default to first regular category
+          if (visible.length > 0 && !formData.incomeCategoryId) {
+            setFormData((prev) => ({ ...prev, incomeCategoryId: visible[0].id }));
           }
         }
       })
@@ -98,12 +135,17 @@ export function ReceiptEntryModal({
     if (!formData.studentId) {
       setEnrollments([]);
       setSelectedEnrollmentId("");
+      setSelectedStudent(null);
+      setIsPreviousFee(false);
       return;
     }
     setLoadingEnrollments(true);
     fetch(`/api/students/${formData.studentId}/statement`)
       .then((res) => res.json())
       .then((data) => {
+        if (data?.student) {
+          setSelectedStudent(data.student);
+        }
         if (data?.enrollments && Array.isArray(data.enrollments)) {
           const enrs: Enrollment[] = data.enrollments.map((e: any) => ({
             id: e.id,
@@ -112,17 +154,24 @@ export function ReceiptEntryModal({
             divisionName: e.divisionName || "",
             status: e.status,
             totalFeesAssigned: Number(e.totalFeesAssigned),
+            previousFees: Number(e.previousFees || 0),
+            discount: Number(e.discount || 0),
             totalPaid: Number(e.totalPaid),
             remaining: Number(e.remaining),
+            receipts: e.receipts || [],
           }));
           setEnrollments(enrs);
           const active = enrs.find((e) => e.status === "ACTIVE");
-          setSelectedEnrollmentId(active?.id || enrs[0]?.id || "");
+          const targetEnrId =
+            initialEnrollmentId && enrs.some((e) => e.id === initialEnrollmentId)
+              ? initialEnrollmentId
+              : active?.id || enrs[0]?.id || "";
+          setSelectedEnrollmentId(targetEnrId);
         }
       })
       .catch(() => showToast("Failed to load enrollments", "error"))
       .finally(() => setLoadingEnrollments(false));
-  }, [formData.studentId]);
+  }, [formData.studentId, initialEnrollmentId]);
 
   const selectedCategory = categories.find(
     (c) => c.id === formData.incomeCategoryId,
@@ -130,9 +179,35 @@ export function ReceiptEntryModal({
   const selectedEnrollment = enrollments.find(
     (e) => e.id === selectedEnrollmentId,
   );
-  const pendingAmount = selectedEnrollment
-    ? selectedEnrollment.remaining
-    : null;
+
+  const totalPreviousFees = selectedEnrollment?.previousFees || 0;
+  const paidPreviousFees =
+    selectedEnrollment?.receipts
+      ?.filter(
+        (r) =>
+          r.status !== "CANCELLED" &&
+          (r.category === "Previous Fee" ||
+            r.category === "Previous Tuition Fee"),
+      )
+      .reduce((sum, r) => sum + Number(r.amount), 0) || 0;
+
+  const pendingPreviousFees = Math.max(
+    0,
+    Math.min(
+      totalPreviousFees - paidPreviousFees,
+      selectedEnrollment?.remaining || 0,
+    ),
+  );
+
+  const activeCategory = isPreviousFee ? prevFeeCategory : selectedCategory;
+
+  const pendingAmount = isPreviousFee
+    ? pendingPreviousFees > 0
+      ? pendingPreviousFees
+      : (selectedEnrollment?.remaining ?? null)
+    : selectedEnrollment
+      ? selectedEnrollment.remaining
+      : null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -143,11 +218,11 @@ export function ReceiptEntryModal({
 
     if (
       pendingAmount !== null &&
-      selectedCategory?.affectsTuition &&
+      (isPreviousFee || activeCategory?.affectsTuition) &&
       Number(formData.amount) > pendingAmount
     ) {
       showToast(
-        `Amount cannot exceed pending fees (₹${pendingAmount.toLocaleString()})`,
+        `Amount cannot exceed pending ${isPreviousFee ? "previous " : ""}fees (₹${pendingAmount.toLocaleString("en-IN")})`,
         "error",
       );
       return;
@@ -165,8 +240,12 @@ export function ReceiptEntryModal({
           paymentMode: formData.paymentMode,
           date: formData.date,
           remarks: formData.remarks,
-          incomeCategoryId: formData.incomeCategoryId,
-          category: selectedCategory?.name || "Other",
+          incomeCategoryId: isPreviousFee
+            ? prevFeeCategory?.id || formData.incomeCategoryId
+            : formData.incomeCategoryId,
+          category: isPreviousFee
+            ? "Previous Fee"
+            : selectedCategory?.name || "Other",
         }),
       });
 
@@ -218,26 +297,50 @@ export function ReceiptEntryModal({
           <div className="p-4 sm:p-6 md:p-8 space-y-6 overflow-y-auto flex-1 custom-scrollbar">
             {/* Income Purpose */}
             <div className="space-y-1.5">
-              <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
-                Income Purpose
-              </label>
-              <select
-                value={formData.incomeCategoryId}
-                onChange={(e) =>
-                  setFormData({ ...formData, incomeCategoryId: e.target.value })
-                }
-                className="w-full bg-muted/20 border border-border/50 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all font-bold appearance-none"
-              >
-                {categories.length === 0 ? (
-                  <option value="">Loading categories...</option>
-                ) : (
-                  categories.map((cat) => (
-                    <option key={cat.id} value={cat.id}>
-                      {cat.name}
-                    </option>
-                  ))
+              <div className="flex items-center justify-between ml-1">
+                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                  Income Purpose
+                </label>
+                {isPreviousFee && (
+                  <span className="text-[10px] font-bold text-amber-700 dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full">
+                    Previous Fee Selected
+                  </span>
                 )}
-              </select>
+              </div>
+              {isPreviousFee ? (
+                <div className="w-full bg-amber-500/10 border border-amber-500/30 rounded-2xl px-4 py-3 text-sm flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-amber-900 dark:text-amber-200">
+                      Previous Fee (Student Session Carry-Forward)
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsPreviousFee(false)}
+                    className="text-xs font-bold text-amber-700 dark:text-amber-400 hover:underline"
+                  >
+                    Change to Regular Fee
+                  </button>
+                </div>
+              ) : (
+                <select
+                  value={formData.incomeCategoryId}
+                  onChange={(e) =>
+                    setFormData({ ...formData, incomeCategoryId: e.target.value })
+                  }
+                  className="w-full bg-muted/20 border border-border/50 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all font-bold appearance-none"
+                >
+                  {visibleCategories.length === 0 ? (
+                    <option value="">Loading categories...</option>
+                  ) : (
+                    visibleCategories.map((cat) => (
+                      <option key={cat.id} value={cat.id}>
+                        {cat.name}
+                      </option>
+                    ))
+                  )}
+                </select>
+              )}
             </div>
 
             {/* Student Search (Mandatory) */}
@@ -247,9 +350,12 @@ export function ReceiptEntryModal({
               </label>
               <StudentSearchSelect
                 value={formData.studentId}
+                selectedStudent={selectedStudent}
                 onChange={(id, student) => {
                   setFormData({ ...formData, studentId: id });
+                  setIsPreviousFee(false);
                   if (student) setSelectedStudent(student);
+                  else setSelectedStudent(null);
                 }}
               />
             </div>
@@ -262,7 +368,10 @@ export function ReceiptEntryModal({
                 </label>
                 <select
                   value={selectedEnrollmentId}
-                  onChange={(e) => setSelectedEnrollmentId(e.target.value)}
+                  onChange={(e) => {
+                    setSelectedEnrollmentId(e.target.value);
+                    setIsPreviousFee(false);
+                  }}
                   className="w-full bg-muted/20 border border-border/50 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all font-bold appearance-none"
                 >
                   {enrollments.map((enr) => (
@@ -278,13 +387,88 @@ export function ReceiptEntryModal({
               </div>
             )}
 
+            {/* Previous Fee Session Area when Student is Selected */}
+            {selectedStudent && selectedEnrollment && (
+              <div
+                className={`rounded-2xl border p-4 transition-all ${
+                  isPreviousFee
+                    ? "bg-amber-500/15 border-amber-500/40 ring-1 ring-amber-500/30"
+                    : totalPreviousFees > 0
+                      ? "bg-amber-500/5 border-amber-500/20"
+                      : "bg-muted/10 border-border/40"
+                }`}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-black uppercase tracking-widest text-amber-700 dark:text-amber-400">
+                        Previous Pending Fee
+                      </span>
+                      {totalPreviousFees > 0 && (
+                        <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-900 dark:text-amber-300">
+                          Carry Forward
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-lg font-mono font-black text-foreground">
+                        ₹{pendingPreviousFees.toLocaleString("en-IN")}
+                      </span>
+                      {totalPreviousFees > 0 && (
+                        <span className="text-xs text-muted-foreground font-medium">
+                          due (assigned: ₹{totalPreviousFees.toLocaleString("en-IN")})
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const next = !isPreviousFee;
+                      setIsPreviousFee(next);
+                      if (next && pendingPreviousFees > 0) {
+                        setFormData((prev) => ({
+                          ...prev,
+                          amount: String(pendingPreviousFees),
+                        }));
+                      }
+                    }}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 ${
+                      isPreviousFee
+                        ? "bg-amber-600 text-white shadow-amber-600/30"
+                        : "bg-background border border-amber-500/30 text-amber-800 dark:text-amber-300 hover:bg-amber-500/10"
+                    }`}
+                  >
+                    {isPreviousFee ? "✓ Paying Previous Fee" : "Pay Previous Fee"}
+                  </button>
+                </div>
+                {isPreviousFee ? (
+                  <p className="mt-2 text-[11px] font-medium text-amber-800 dark:text-amber-300">
+                    Applying receipt directly towards Previous Fee carry-forward balance.
+                  </p>
+                ) : (
+                  totalPreviousFees > 0 && pendingPreviousFees === 0 && (
+                    <p className="mt-2 text-[11px] font-medium text-emerald-600">
+                      Previous fees for this enrollment period have been cleared.
+                    </p>
+                  )
+                )}
+              </div>
+            )}
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Amount */}
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
                   <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
-                    Payment Amount
+                    {isPreviousFee ? "Previous Fee Amount" : "Payment Amount"}
                   </label>
+                  {isPreviousFee && pendingPreviousFees > 0 && (
+                    <span className="text-[10px] font-bold text-amber-700 dark:text-amber-400">
+                      Due: ₹{pendingPreviousFees.toLocaleString("en-IN")}
+                    </span>
+                  )}
                 </div>
                 <div className="relative">
                   <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground font-bold text-sm">
@@ -296,7 +480,7 @@ export function ReceiptEntryModal({
                     step="0.01"
                     min="0.01"
                     max={
-                      pendingAmount !== null && selectedCategory?.affectsTuition
+                      pendingAmount !== null && (isPreviousFee || activeCategory?.affectsTuition)
                         ? pendingAmount > 0
                           ? pendingAmount
                           : undefined

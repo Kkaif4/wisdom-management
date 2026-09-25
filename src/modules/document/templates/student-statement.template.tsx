@@ -22,6 +22,7 @@ interface StudentStatementData {
     sessionName: string;
     className: string;
     totalFees: number;
+    previousFees?: number;
     discount?: number;
     paid: number;
     remaining: number;
@@ -152,7 +153,12 @@ export const StudentStatementTemplate: React.FC<
                     {en.sessionName} — {en.className}
                   </td>
                   <td className="border border-black p-2 text-right font-mono">
-                    {formatCurrency(en.totalFees)}
+                    <div>{formatCurrency(en.totalFees)}</div>
+                    {en.previousFees && en.previousFees > 0 ? (
+                      <div className="text-[9px] text-amber-800 font-bold">
+                        +{formatCurrency(en.previousFees)} prev
+                      </div>
+                    ) : null}
                   </td>
                   <td className="border border-black p-2 text-right font-mono text-amber-700">
                     {formatCurrency(en.discount || 0)}

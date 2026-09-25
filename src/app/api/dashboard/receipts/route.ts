@@ -48,9 +48,12 @@ export async function POST(req: Request) {
       affectsTuition = incomeCategory.affectsTuition;
     } else {
       // Legacy fallback — string-based check
-      affectsTuition = ["Tuition Fee", "Student Dues"].includes(
-        resolvedCategory,
-      );
+      affectsTuition = [
+        "Tuition Fee",
+        "Student Dues",
+        "Previous Fee",
+        "Previous Tuition Fee",
+      ].includes(resolvedCategory);
     }
 
     // ── Validation ────────────────────────────────────────────────────

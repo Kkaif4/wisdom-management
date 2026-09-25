@@ -20,6 +20,8 @@ export const POST = auth(async (req) => {
       targetDivisionId,
       targetSessionId,
       newFeesAssigned,
+      previousFees,
+      newDiscount,
     } = body;
 
     if (!studentId || !targetClassId || !targetDivisionId || !targetSessionId) {
@@ -38,6 +40,10 @@ export const POST = auth(async (req) => {
       targetDivisionId,
       targetSessionId,
       newFeesAssigned: new Prisma.Decimal(newFeesAssigned || 0),
+      previousFees:
+        previousFees !== undefined ? new Prisma.Decimal(previousFees) : undefined,
+      newDiscount:
+        newDiscount !== undefined ? new Prisma.Decimal(newDiscount) : undefined,
       organizationId: req.auth.user.organizationId,
     });
 

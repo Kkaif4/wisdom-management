@@ -13,10 +13,12 @@ import {
   AlertCircle,
   ArrowUpCircle,
   GraduationCap,
+  Receipt as ReceiptIcon,
 } from "lucide-react";
 import { AddStudentDialog } from "@/components/forms/AddStudentDialog";
 import { BulkImportDialog } from "@/components/forms/BulkImportDialog";
 import { PromoteStudentDialog } from "@/components/forms/PromoteStudentDialog";
+import { ReceiptEntryModal } from "@/components/forms/ReceiptEntryModal";
 import { Pagination } from "@/components/shared/Pagination";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { showToast } from "@/components/shared/Toast";
@@ -31,6 +33,7 @@ interface Student {
   divisionName: string;
   sessionName: string;
   totalFeesAssigned: number;
+  previousFees?: number;
   discount: number;
   totalPaid: number;
   enrollmentId: string | null;
@@ -85,6 +88,7 @@ export function StudentsClient({
   const [showImport, setShowImport] = useState(false);
   const [showPromote, setShowPromote] = useState(false);
   const [withdrawTarget, setWithdrawTarget] = useState<Student | null>(null);
+  const [selectedStudentForReceipt, setSelectedStudentForReceipt] = useState<Student | null>(null);
 
   // Selection state
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -359,8 +363,9 @@ export function StudentsClient({
                 </tr>
               ) : (
                 students.map((s) => {
-                  const remaining =
-                    s.totalFeesAssigned - s.totalPaid - s.discount;
+                  const prev = s.previousFees || 0;
+                  const totalFee = s.totalFeesAssigned + prev;
+                  const remaining = totalFee - s.totalPaid - s.discount;
                   const isSelected = selectedIds.includes(s.id);
                   return (
                     <tr
@@ -405,6 +410,11 @@ export function StudentsClient({
                       </td>
                       <td className="px-6 py-4 text-right font-mono font-bold text-sm text-muted-foreground/60">
                         {fmt(s.totalFeesAssigned)}
+                        {prev > 0 && (
+                          <p className="text-[10px] text-amber-600 dark:text-amber-400 font-bold">
+                            +{fmt(prev)} prev
+                          </p>
+                        )}
                       </td>
                       <td className="px-6 py-4 text-right font-mono font-bold text-sm text-emerald-600/80">
                         {fmt(s.totalPaid)}
@@ -416,6 +426,15 @@ export function StudentsClient({
                       </td>
                       <td className="px-6 py-4 text-right">
                         <div className="flex items-center justify-end gap-1">
+                          <PermissionGate permission="CREATE_RECEIPT">
+                            <button
+                              onClick={() => setSelectedStudentForReceipt(s)}
+                              className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-widest text-emerald-600 hover:bg-emerald-500/10 px-2.5 py-1.5 rounded-lg transition-all"
+                              title="Collect Fee / Create Receipt"
+                            >
+                              <ReceiptIcon className="h-3.5 w-3.5" /> Receipt
+                            </button>
+                          </PermissionGate>
                           <PermissionGate permission="VIEW_STUDENT_DETAILS">
                             <Link
                               href={`/dashboard/students/${s.id}`}
@@ -476,6 +495,23 @@ export function StudentsClient({
           confirmText="Withdraw Student"
           onConfirm={handleWithdraw}
           onCancel={() => setWithdrawTarget(null)}
+        />
+      )}
+
+      {selectedStudentForReceipt && (
+        <ReceiptEntryModal
+          initialStudentId={selectedStudentForReceipt.id}
+          initialStudent={{
+            id: selectedStudentForReceipt.id,
+            name: selectedStudentForReceipt.name,
+            grNo: selectedStudentForReceipt.grNo,
+            className: selectedStudentForReceipt.className,
+          }}
+          onClose={() => setSelectedStudentForReceipt(null)}
+          onSuccess={() => {
+            setSelectedStudentForReceipt(null);
+            router.refresh();
+          }}
         />
       )}
     </div>

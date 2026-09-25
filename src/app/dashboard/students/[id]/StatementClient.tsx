@@ -20,6 +20,7 @@ import {
   Briefcase,
   BookOpen,
   Percent,
+  Receipt as ReceiptIcon,
 } from "lucide-react";
 import { ExcelService } from "@/modules/document/services/excel.service";
 import { PrintService } from "@/modules/document/services/print.service";
@@ -28,6 +29,7 @@ import { StudentStatementTemplate } from "@/modules/document/templates/student-s
 import { TransferCertificateTemplate } from "@/modules/document/templates/transfer-certificate.template";
 import { showToast } from "@/components/shared/Toast";
 import { PermissionGate } from "@/components/auth/PermissionGate";
+import { ReceiptEntryModal } from "@/components/forms/ReceiptEntryModal";
 
 interface Receipt {
   id: string;
@@ -47,6 +49,7 @@ interface EnrollmentEntry {
   sessionName: string;
   status: string;
   totalFeesAssigned: number;
+  previousFees: number;
   discount: number;
   totalPaid: number;
   remaining: number;
@@ -107,18 +110,19 @@ export function StatementClient({ data }: { data: StatementData }) {
   const [isPrintingTC, setIsPrintingTC] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(
     enrollments.find((e) => e.status === "ACTIVE")?.id ||
-      enrollments[0]?.id ||
-      null,
+    enrollments[0]?.id ||
+    null,
   );
 
   // Modals state
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isWithdrawOpen, setIsWithdrawOpen] = useState(false);
+  const [showReceiptModal, setShowReceiptModal] = useState(false);
 
   // Discount form state
   const [isDiscountOpen, setIsDiscountOpen] = useState(false);
   const [selectedEnrollment, setSelectedEnrollment] = useState<EnrollmentEntry | null>(null);
-  const [discountForm, setDiscountForm] = useState({ discount: 0, remarks: "" });
+  const [discountForm, setDiscountForm] = useState({ discount: 0, previousFees: 0, remarks: "" });
   const [isSavingDiscount, setIsSavingDiscount] = useState(false);
 
   // Edit form state
@@ -318,6 +322,11 @@ export function StatementClient({ data }: { data: StatementData }) {
       return;
     }
 
+    if (discountForm.previousFees < 0) {
+      showToast("Previous fees cannot be negative", "error");
+      return;
+    }
+
     if (discountForm.discount > selectedEnrollment.totalFeesAssigned) {
       showToast("Discount cannot exceed total assigned fees", "error");
       return;
@@ -330,20 +339,21 @@ export function StatementClient({ data }: { data: StatementData }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           discount: discountForm.discount,
+          previousFees: discountForm.previousFees,
           remarks: discountForm.remarks,
         }),
       });
 
       if (!res.ok) {
         const errData = await res.json();
-        throw new Error(errData.error || "Failed to update discount");
+        throw new Error(errData.error || "Failed to update enrollment fees");
       }
 
-      showToast("Student discount updated successfully", "success");
+      showToast("Enrollment fees and discount updated successfully", "success");
       setIsDiscountOpen(false);
       router.refresh();
     } catch (error: any) {
-      showToast(error.message || "Failed to update discount", "error");
+      showToast(error.message || "Failed to update enrollment fees", "error");
     } finally {
       setIsSavingDiscount(false);
     }
@@ -369,7 +379,7 @@ export function StatementClient({ data }: { data: StatementData }) {
             <div className="h-16 w-16 rounded-2xl bg-gradient-to-tr from-primary to-indigo-600 flex items-center justify-center text-white text-2xl font-black shadow-lg shadow-primary/20">
               {student.name.charAt(0)}
             </div>
-             <div>
+            <div>
               <div className="flex items-center gap-3 flex-wrap">
                 <h1 className="text-2xl font-black tracking-tight text-foreground">
                   {student.name}
@@ -409,6 +419,15 @@ export function StatementClient({ data }: { data: StatementData }) {
           </div>
 
           <div className="flex items-center gap-3 flex-wrap">
+            <PermissionGate permission="CREATE_RECEIPT">
+              <button
+                onClick={() => setShowReceiptModal(true)}
+                className="flex items-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground rounded-xl text-sm font-bold shadow-lg shadow-primary/20 hover:scale-[1.02] transition-all active:scale-95"
+              >
+                <ReceiptIcon className="h-4 w-4" />
+                New Receipt
+              </button>
+            </PermissionGate>
             <button
               onClick={() => setIsEditOpen(true)}
               className="flex items-center gap-2 px-4 py-2.5 bg-card border border-border/60 hover:border-border rounded-xl text-sm font-bold text-foreground/80 hover:bg-muted/30 transition-all active:scale-95 shadow-sm"
@@ -433,21 +452,19 @@ export function StatementClient({ data }: { data: StatementData }) {
       <div className="flex border-b border-border/60 gap-4">
         <button
           onClick={() => setActiveTab("profile")}
-          className={`pb-3 text-sm font-bold transition-all relative ${
-            activeTab === "profile"
-              ? "text-primary border-b-2 border-primary"
-              : "text-muted-foreground hover:text-foreground"
-          }`}
+          className={`pb-3 text-sm font-bold transition-all relative ${activeTab === "profile"
+            ? "text-primary border-b-2 border-primary"
+            : "text-muted-foreground hover:text-foreground"
+            }`}
         >
           Overview & Profile
         </button>
         <button
           onClick={() => setActiveTab("ledger")}
-          className={`pb-3 text-sm font-bold transition-all relative ${
-            activeTab === "ledger"
-              ? "text-primary border-b-2 border-primary"
-              : "text-muted-foreground hover:text-foreground"
-          }`}
+          className={`pb-3 text-sm font-bold transition-all relative ${activeTab === "ledger"
+            ? "text-primary border-b-2 border-primary"
+            : "text-muted-foreground hover:text-foreground"
+            }`}
         >
           Financial Ledger
         </button>
@@ -479,13 +496,13 @@ export function StatementClient({ data }: { data: StatementData }) {
                   <p className="text-sm font-semibold text-foreground/90 mt-0.5">
                     {student.dateOfBirth
                       ? new Date(student.dateOfBirth).toLocaleDateString(
-                          "en-IN",
-                          {
-                            day: "2-digit",
-                            month: "long",
-                            year: "numeric",
-                          },
-                        )
+                        "en-IN",
+                        {
+                          day: "2-digit",
+                          month: "long",
+                          year: "numeric",
+                        },
+                      )
                       : "—"}
                   </p>
                 </div>
@@ -658,7 +675,7 @@ export function StatementClient({ data }: { data: StatementData }) {
                 {fmt(totalOutstanding)}
               </p>
             </div>
-            <div className="flex items-center gap-3 w-full sm:w-auto">
+            <div className="flex items-center gap-3 w-full sm:w-auto flex-wrap">
               <button
                 onClick={handleExportExcel}
                 className="flex items-center justify-center gap-2 flex-1 sm:flex-none px-4 py-2.5 bg-card border border-border/50 rounded-xl text-sm font-bold text-foreground/70 hover:bg-muted/50 transition-all active:scale-95"
@@ -730,6 +747,16 @@ export function StatementClient({ data }: { data: StatementData }) {
                           {fmt(e.totalFeesAssigned)}
                         </p>
                       </div>
+                      {e.previousFees > 0 && (
+                        <div>
+                          <p className="text-[10px] text-amber-600 font-bold uppercase">
+                            Prev Fee
+                          </p>
+                          <p className="text-sm font-mono font-bold text-amber-600/90">
+                            +{fmt(e.previousFees)}
+                          </p>
+                        </div>
+                      )}
                       {e.discount > 0 && (
                         <div>
                           <p className="text-[10px] text-muted-foreground font-bold uppercase">
@@ -845,6 +872,7 @@ export function StatementClient({ data }: { data: StatementData }) {
                               setSelectedEnrollment(e);
                               setDiscountForm({
                                 discount: e.discount,
+                                previousFees: e.previousFees || 0,
                                 remarks: e.remarks || "",
                               });
                               setIsDiscountOpen(true);
@@ -852,7 +880,7 @@ export function StatementClient({ data }: { data: StatementData }) {
                             className="inline-flex items-center justify-center gap-1.5 px-4 py-2 bg-amber-500/10 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20 active:scale-95 rounded-xl text-xs font-bold transition-all w-full sm:w-auto"
                           >
                             <Edit className="h-3.5 w-3.5" />
-                            Manage Discount
+                            Manage Discount & Previous Fees
                           </button>
                         </PermissionGate>
                       </div>
@@ -1357,7 +1385,7 @@ export function StatementClient({ data }: { data: StatementData }) {
             <div className="px-6 py-4 border-b border-border/60 flex items-center justify-between bg-amber-50/5">
               <h2 className="text-lg font-bold flex items-center gap-2 text-amber-600">
                 <Edit className="h-5 w-5" />
-                Manage Student Discount
+                Manage Discount & Previous Fees
               </h2>
               <button
                 onClick={() => setIsDiscountOpen(false)}
@@ -1382,6 +1410,34 @@ export function StatementClient({ data }: { data: StatementData }) {
                   <span className="text-foreground/80">Total Assigned Fees:</span>
                   <span className="font-mono text-foreground font-black">{fmt(selectedEnrollment.totalFeesAssigned)}</span>
                 </div>
+                {selectedEnrollment.previousFees > 0 && (
+                  <div className="flex justify-between items-center text-sm font-semibold">
+                    <span className="text-amber-700 dark:text-amber-400">Current Previous Fees:</span>
+                    <span className="font-mono text-amber-700 dark:text-amber-400 font-black">{fmt(selectedEnrollment.previousFees)}</span>
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-muted-foreground uppercase mb-1">
+                  Previous Pending Fee (Carry Forward)
+                </label>
+                <input
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  value={discountForm.previousFees}
+                  onChange={(e) =>
+                    setDiscountForm({
+                      ...discountForm,
+                      previousFees: Number(e.target.value),
+                    })
+                  }
+                  className="w-full px-3 py-2 bg-card border border-border/60 rounded-lg text-sm font-mono font-bold text-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
+                />
+                <p className="text-[10px] text-muted-foreground mt-1">
+                  Historical dues carried forward from past academic sessions.
+                </p>
               </div>
 
               <div>
@@ -1406,11 +1462,11 @@ export function StatementClient({ data }: { data: StatementData }) {
 
               <div>
                 <label className="block text-xs font-bold text-muted-foreground uppercase mb-1">
-                  Discount Remarks / Reason
+                  Remarks / Reason
                 </label>
                 <textarea
                   rows={2}
-                  placeholder="Enter reason for applying discount (e.g. Merit Scholarship, Sibling discount, etc.)"
+                  placeholder="Enter reason for adjustments (e.g. Carry forward adjustment, Merit Scholarship, etc.)"
                   value={discountForm.remarks}
                   onChange={(e) =>
                     setDiscountForm({ ...discountForm, remarks: e.target.value })
@@ -1461,7 +1517,7 @@ export function StatementClient({ data }: { data: StatementData }) {
               },
               summary: {
                 totalAssigned: enrollments.reduce(
-                  (sum, e) => sum + e.totalFeesAssigned,
+                  (sum, e) => sum + e.totalFeesAssigned + (e.previousFees || 0),
                   0,
                 ),
                 totalPaid: enrollments.reduce((sum, e) => sum + e.totalPaid, 0),
@@ -1471,6 +1527,7 @@ export function StatementClient({ data }: { data: StatementData }) {
                 sessionName: e.sessionName,
                 className: e.className,
                 totalFees: e.totalFeesAssigned,
+                previousFees: e.previousFees || 0,
                 discount: e.discount,
                 paid: e.totalPaid,
                 remaining: e.remaining,
@@ -1525,6 +1582,25 @@ export function StatementClient({ data }: { data: StatementData }) {
             }}
           />
         </PrintWrapper>
+      )}
+
+      {showReceiptModal && (
+        <ReceiptEntryModal
+          initialStudentId={student.id}
+          initialStudent={{
+            id: student.id,
+            name: student.name,
+            grNo: student.grNo,
+            className:
+              activeEnrollment?.className || enrollments[0]?.className || "",
+          }}
+          initialEnrollmentId={activeEnrollment?.id}
+          onClose={() => setShowReceiptModal(false)}
+          onSuccess={() => {
+            setShowReceiptModal(false);
+            router.refresh();
+          }}
+        />
       )}
     </div>
   );

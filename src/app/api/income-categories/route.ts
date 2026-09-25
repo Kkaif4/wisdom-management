@@ -8,13 +8,39 @@ export const GET = auth(async (req) => {
   }
 
   try {
-    const categories = await prisma.incomeCategory.findMany({
+    let categories = await prisma.incomeCategory.findMany({
       where: {
         organizationId: req.auth.user.organizationId,
         isActive: true,
       },
       orderBy: { displayOrder: "asc" },
     });
+
+    const hasPreviousFee = categories.some((c) => c.code === "PREVIOUS_FEE");
+    if (!hasPreviousFee) {
+      try {
+        const prevFeeCat = await prisma.incomeCategory.upsert({
+          where: {
+            code_organizationId: {
+              code: "PREVIOUS_FEE",
+              organizationId: req.auth.user.organizationId,
+            },
+          },
+          update: {},
+          create: {
+            name: "Previous Fee",
+            code: "PREVIOUS_FEE",
+            affectsTuition: true,
+            displayOrder: 2,
+            organizationId: req.auth.user.organizationId,
+          },
+        });
+        categories.push(prevFeeCat);
+        categories.sort((a, b) => a.displayOrder - b.displayOrder);
+      } catch {
+        // In case of race conditions, ignore
+      }
+    }
 
     return NextResponse.json(categories);
   } catch (error: any) {

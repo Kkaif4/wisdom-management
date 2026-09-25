@@ -2,6 +2,7 @@ import {
   EnrollmentStatus,
   SessionStatus,
   StudentStatus,
+  Prisma,
 } from "@/prisma/generated";
 import { prisma } from "@/lib/prisma";
 import { EnrollmentRepository } from "./enrollment.repository";
@@ -107,6 +108,10 @@ export class EnrollmentService {
       await EnrollmentRepository.updateFees(id, data.totalFeesAssigned);
     }
 
+    if (data.previousFees !== undefined) {
+      await EnrollmentRepository.updatePreviousFees(id, data.previousFees);
+    }
+
     if (data.discount !== undefined) {
       await EnrollmentRepository.updateDiscount(id, data.discount);
     }
@@ -116,6 +121,7 @@ export class EnrollmentService {
 
   /**
    * Promotes a student: closes current enrollment (PROMOTED), creates new one.
+   * Carries forward any pending tuition fee balance as previousFees.
    * This is an INSERT operation — old data is never mutated.
    */
   static async promoteStudent(input: PromoteStudentInput) {
@@ -167,6 +173,17 @@ export class EnrollmentService {
         },
       });
 
+      // Calculate carry-forward previous pending fee if not explicitly passed
+      let previousFees = input.previousFees;
+      if (previousFees === undefined) {
+        const currentDue =
+          Number(currentEnrollment.totalFeesAssigned) +
+          Number(currentEnrollment.previousFees || 0) -
+          Number(currentEnrollment.discount) -
+          Number(currentEnrollment.totalPaid);
+        previousFees = new Prisma.Decimal(Math.max(0, currentDue));
+      }
+
       // Create new enrollment
       const newEnrollment = await tx.studentEnrollment.create({
         data: {
@@ -175,6 +192,7 @@ export class EnrollmentService {
           divisionId: input.targetDivisionId,
           academicSessionId: input.targetSessionId,
           totalFeesAssigned: input.newFeesAssigned,
+          previousFees: previousFees || new Prisma.Decimal(0),
           discount: input.newDiscount || 0,
           totalPaid: 0,
           status: EnrollmentStatus.ACTIVE,
@@ -208,6 +226,7 @@ export class EnrollmentService {
           targetDivisionId: input.targetDivisionId,
           targetSessionId: input.targetSessionId,
           newFeesAssigned: input.newFeesAssigned,
+          previousFees: input.previousFees,
           newDiscount: input.newDiscount,
           organizationId: input.organizationId,
         });

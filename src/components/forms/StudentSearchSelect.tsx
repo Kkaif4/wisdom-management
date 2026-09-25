@@ -8,7 +8,7 @@ import { AddStudentDialog } from "./AddStudentDialog";
 interface Student {
   id: string;
   name: string;
-  grNo: string;
+  grNo?: string;
   className?: string;
   totalFeesAssigned?: number;
   totalPaid?: number;
@@ -17,11 +17,18 @@ interface Student {
 interface StudentSearchSelectProps {
   value: string;
   onChange: (value: string, student?: Student) => void;
+  selectedStudent?: {
+    id: string;
+    name: string;
+    grNo?: string;
+    className?: string;
+  } | null;
 }
 
 export function StudentSearchSelect({
   value,
   onChange,
+  selectedStudent: selectedStudentProp,
 }: StudentSearchSelectProps) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -61,7 +68,41 @@ export function StudentSearchSelect({
     }
   }, [open]);
 
-  const selectedStudent = students.find((s) => s.id === value);
+  // Resolve active student from prop, local array, or fetched
+  const activeStudent =
+    (selectedStudentProp && selectedStudentProp.id === value
+      ? selectedStudentProp
+      : null) ||
+    students.find((s) => s.id === value) ||
+    null;
+
+  // Auto-fetch student details if value is provided but not in state or prop
+  React.useEffect(() => {
+    if (value && !activeStudent) {
+      let isMounted = true;
+      fetch(`/api/students/${value}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (isMounted && data && data.id) {
+            setStudents((prev) => {
+              if (prev.some((s) => s.id === data.id)) return prev;
+              return [data, ...prev];
+            });
+          }
+        })
+        .catch(() => {});
+      return () => {
+        isMounted = false;
+      };
+    }
+  }, [value, activeStudent]);
+
+  const displayStudents = React.useMemo(() => {
+    if (activeStudent && !students.some((s) => s.id === activeStudent.id)) {
+      return [activeStudent as Student, ...students];
+    }
+    return students;
+  }, [activeStudent, students]);
 
   return (
     <>
@@ -73,13 +114,13 @@ export function StudentSearchSelect({
         >
           <span
             className={
-              selectedStudent
+              activeStudent
                 ? "text-foreground font-bold"
                 : "text-muted-foreground font-medium"
             }
           >
-            {selectedStudent
-              ? `${selectedStudent.name} (${selectedStudent.grNo})`
+            {activeStudent
+              ? `${activeStudent.name}${activeStudent.grNo ? ` (${activeStudent.grNo})` : ""}`
               : "Search or select student..."}
           </span>
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -103,8 +144,8 @@ export function StudentSearchSelect({
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
                       e.preventDefault();
-                      if (students.length > 0) {
-                        onChange(students[0].id, students[0]);
+                      if (displayStudents.length > 0) {
+                        onChange(displayStudents[0].id, displayStudents[0]);
                         setOpen(false);
                       }
                     }
@@ -114,13 +155,13 @@ export function StudentSearchSelect({
             </div>
 
             <div className="max-h-[280px] overflow-y-auto p-1.5 scrollbar-hide">
-              {loading && students.length === 0 ? (
+              {loading && displayStudents.length === 0 ? (
                 <div className="py-8 text-center">
                   <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest animate-pulse">
                     Searching...
                   </p>
                 </div>
-              ) : students.length === 0 ? (
+              ) : displayStudents.length === 0 ? (
                 <div className="py-8 text-center">
                   <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
                     No student found
@@ -128,7 +169,7 @@ export function StudentSearchSelect({
                 </div>
               ) : (
                 <div className="space-y-0.5">
-                  {students.map((s) => (
+                  {displayStudents.map((s) => (
                     <button
                       key={s.id}
                       type="button"

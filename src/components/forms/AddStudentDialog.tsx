@@ -31,6 +31,7 @@ export function AddStudentDialog({
     classId: "",
     divisionId: "",
     totalFeesAssigned: "",
+    previousFees: "",
     discount: "",
     gender: "",
     dateOfBirth: "",
@@ -108,6 +109,9 @@ export function AddStudentDialog({
           dateOfBirth: parsedDob || null,
           totalFeesAssigned: formData.totalFeesAssigned
             ? Number(formData.totalFeesAssigned)
+            : 0,
+          previousFees: formData.previousFees
+            ? Number(formData.previousFees)
             : 0,
           discount: formData.discount
             ? Number(formData.discount)
@@ -293,8 +297,8 @@ export function AddStudentDialog({
                   </div>
                 </div>
 
-                {/* Annual Fees & Discount */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Annual Fees, Previous Fee & Discount */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
                       Annual Fees
@@ -312,6 +316,28 @@ export function AddStudentDialog({
                           setFormData({
                             ...formData,
                             totalFeesAssigned: e.target.value,
+                          })
+                        }
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
+                      Previous Fee (Pending)
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground font-bold text-sm">
+                        ₹
+                      </span>
+                      <input
+                        type="number"
+                        placeholder="0"
+                        className="w-full bg-muted/20 border border-border/50 rounded-2xl pl-8 pr-5 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all font-medium"
+                        value={formData.previousFees}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            previousFees: e.target.value,
                           })
                         }
                       />

@@ -22,6 +22,7 @@ interface ParsedRow {
   className: string;
   divisionName: string;
   totalFeesAssigned: number;
+  previousFees?: number;
   discount: number;
   totalPaid: number;
 
@@ -76,6 +77,7 @@ const REQUIRED_COLUMNS = [
 
 const OPTIONAL_COLUMNS = [
   "Fee Discount",
+  "Previous Fees",
   "Roll Number",
   "Gender",
   "Date of Birth",
@@ -104,8 +106,8 @@ const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
 function generateTemplateCsv() {
   const header = [...REQUIRED_COLUMNS, ...OPTIONAL_COLUMNS].join(",");
   const rows = [
-    "GR-2026-001,Rahul Sharma,Class 5,A,30000,10000,2000,15,Male,2015-05-15,Mumbai,123456789012,Hindu,General,None,Indian,Vijay Sharma,Graduate,Business,Rita Sharma,Graduate,Homemaker,9876543210,022-123456,rahul@mail.com,123 Main St Mumbai,Online",
-    "GR-2026-002,Aman Patel,Class 6,B,35000,5000,0,10,Male,2014-08-20,Surat,987654321098,Hindu,OBC,None,Indian,Kiran Patel,Graduate,Service,Sonal Patel,Undergraduate,Homemaker,8765432109,,aman@mail.com,456 Park St Surat,Referral",
+    "GR-2026-001,Rahul Sharma,Class 5,A,30000,10000,2000,0,15,Male,2015-05-15,Mumbai,123456789012,Hindu,General,None,Indian,Vijay Sharma,Graduate,Business,Rita Sharma,Graduate,Homemaker,9876543210,022-123456,rahul@mail.com,123 Main St Mumbai,Online",
+    "GR-2026-002,Aman Patel,Class 6,B,35000,5000,0,3000,10,Male,2014-08-20,Surat,987654321098,Hindu,OBC,None,Indian,Kiran Patel,Graduate,Service,Sonal Patel,Undergraduate,Homemaker,8765432109,,aman@mail.com,456 Park St Surat,Referral",
   ].join("\n");
   return `${header}\n${rows}`;
 }
@@ -271,8 +273,11 @@ export function BulkImportDialog({
         const cls = row["Class Name"]?.trim();
         const div = row["Division"]?.trim() || "A";
         const rawFees = row["Total Fees"]?.trim();
+        const rawPreviousFees =
+          row["Previous Fees"]?.trim() || row["Previous Fee"]?.trim();
         const rawPaid = row["Paid Fees"]?.trim() || "0";
         const discount = Number(row["Fee Discount"] || row["Discount"] || "0");
+        const previousFees = rawPreviousFees ? Number(rawPreviousFees) : 0;
 
         // Optional/Demographics
         const rollNumber = row["Roll Number"]?.trim();
@@ -325,16 +330,21 @@ export function BulkImportDialog({
           return;
         }
 
+        if (isNaN(previousFees) || previousFees < 0) {
+          skipped.push({ name, reason: "Invalid previous fees" });
+          return;
+        }
+
         const totalPaid = Number(rawPaid);
         if (isNaN(totalPaid) || totalPaid < 0) {
           skipped.push({ name, reason: "Invalid paid fees" });
           return;
         }
 
-        if (totalPaid > totalFeesAssigned - discount) {
+        if (totalPaid > totalFeesAssigned + previousFees - discount) {
           skipped.push({
             name,
-            reason: "Paid fees exceed net fees (Total - Discount)",
+            reason: "Paid fees exceed net fees (Total + Previous Fees - Discount)",
           });
           return;
         }
@@ -370,6 +380,7 @@ export function BulkImportDialog({
           className: cls,
           divisionName: div,
           totalFeesAssigned,
+          previousFees,
           discount,
           totalPaid,
           dateOfBirth: formattedDob,

@@ -319,6 +319,7 @@ model StudentEnrollment {
 
   // Financial fields (belong HERE, not on Student)
   totalFeesAssigned   Decimal          @default(0) @db.Decimal(14, 2)
+  previousFees        Decimal          @default(0) @db.Decimal(14, 2)
   discount            Decimal          @default(0) @db.Decimal(14, 2)
   totalPaid           Decimal          @default(0) @db.Decimal(14, 2)
 

@@ -12,6 +12,7 @@ interface ImportRow {
   className: string;
   divisionName?: string;
   totalFeesAssigned?: number;
+  previousFees?: number;
   discount?: number;
   totalPaid?: number;
 
@@ -274,6 +275,7 @@ export async function POST(req: Request) {
               divisionId: div.id,
               academicSessionId: activeSession.id,
               totalFeesAssigned: row.totalFeesAssigned || 0,
+              previousFees: row.previousFees || 0,
               discount: row.discount || 0,
               totalPaid: row.totalPaid || 0,
               status: EnrollmentStatus.ACTIVE,
