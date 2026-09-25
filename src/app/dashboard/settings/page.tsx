@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { showToast } from "@/components/shared/Toast";
-import { Building, Loader2 } from "lucide-react";
+import { Building, Loader2, Trash2, AlertTriangle } from "lucide-react";
 
 interface Organization {
   id: string;
@@ -21,6 +21,8 @@ export default function SettingsPage() {
   const [openingBank, setOpeningBank] = useState("0");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [resetting, setResetting] = useState(false);
+  const [resetConfirm, setResetConfirm] = useState("");
 
   useEffect(() => {
     fetchOrgDetails();
@@ -152,6 +154,58 @@ export default function SettingsPage() {
           </button>
         </div>
       </form>
+
+      {/* Developer Tools */}
+      <div className="border border-rose-200 dark:border-rose-900/50 rounded-2xl p-6 space-y-4 bg-rose-50/50 dark:bg-rose-950/10">
+        <h3 className="text-sm font-black uppercase tracking-widest text-rose-600 flex items-center gap-2">
+          <AlertTriangle className="h-4 w-4" />
+          Developer Tools
+        </h3>
+        <p className="text-xs text-rose-700 dark:text-rose-400 font-medium">
+          Danger zone. This will permanently delete all students, enrollments, receipts, expenses, and transaction history for this organization. Balances will reset to opening values.
+        </p>
+        <div className="space-y-3">
+          <div>
+            <label className="block text-xs font-bold text-rose-700 mb-1 uppercase tracking-widest">
+              Type <span className="font-mono bg-rose-100 dark:bg-rose-900/40 px-1.5 py-0.5 rounded">DELETE</span> to confirm
+            </label>
+            <input
+              type="text"
+              value={resetConfirm}
+              onChange={(e) => setResetConfirm(e.target.value)}
+              placeholder="DELETE"
+              className="w-full px-4 py-2.5 bg-white dark:bg-zinc-900 border border-rose-300 dark:border-rose-800 rounded-xl text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-rose-500 focus:border-rose-500"
+            />
+          </div>
+          <button
+            type="button"
+            disabled={resetting || resetConfirm !== "DELETE"}
+            onClick={async () => {
+              if (resetConfirm !== "DELETE") return;
+              setResetting(true);
+              try {
+                const res = await fetch("/api/debug/reset-org-data", { method: "DELETE" });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error);
+                showToast("All organization data wiped successfully.", "success");
+                setResetConfirm("");
+              } catch (err: any) {
+                showToast(err.message || "Failed to reset data", "error");
+              } finally {
+                setResetting(false);
+              }
+            }}
+            className="flex items-center gap-2 px-5 py-2.5 bg-rose-600 text-white rounded-xl text-sm font-bold hover:bg-rose-700 active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            {resetting ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Trash2 className="h-4 w-4" />
+            )}
+            {resetting ? "Wiping Data…" : "Wipe All Organization Data"}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

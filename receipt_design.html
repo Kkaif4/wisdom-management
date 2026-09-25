@@ -1,0 +1,785 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Wisdom Management - Billing System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&family=JetBrains+Mono:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        font-family: "Inter", sans-serif;
+        background-color: #f3f4f6;
+      }
+      .mono {
+        font-family: "JetBrains Mono", monospace;
+      }
+
+      /* Institutional Grid Style */
+      .excel-grid {
+        border-collapse: collapse;
+        width: 100%;
+        border: 1.2pt solid #000;
+      }
+      .excel-grid th,
+      .excel-grid td {
+        border: 1px solid #000;
+        padding: 6px 8px;
+        text-align: left;
+        font-size: 0.75rem;
+        vertical-align: top;
+      }
+      .excel-grid th {
+        background-color: #f8fafc;
+        font-weight: 800;
+        text-transform: uppercase;
+        text-align: center;
+      }
+
+      @media print {
+        body {
+          background: white;
+        }
+        .no-print {
+          display: none !important;
+        }
+        #invoice-preview {
+          position: absolute;
+          left: 0;
+          top: 0;
+          width: 100%;
+          margin: 0;
+          padding: 0;
+          border: none;
+          box-shadow: none;
+        }
+      }
+
+      .input-field {
+        border: 1px solid #d1d5db;
+        border-radius: 0.25rem;
+        padding: 0.4rem;
+        width: 100%;
+        font-size: 0.8rem;
+      }
+      .input-field:focus {
+        outline: none;
+        border-color: #1e40af;
+        ring: 2px solid #bfdbfe;
+      }
+      .section-label {
+        display: block;
+        font-size: 0.6rem;
+        font-weight: 900;
+        color: #475569;
+        text-transform: uppercase;
+        margin-bottom: 0.25rem;
+        margin-top: 1rem;
+        letter-spacing: 0.05em;
+      }
+    </style>
+  </head>
+  <body class="text-slate-900 h-screen flex overflow-hidden">
+    <!-- Sidebar -->
+    <aside
+      class="w-[400px] bg-white border-r border-slate-200 flex flex-col h-full shadow-xl z-20 overflow-y-auto no-print"
+    >
+      <div class="p-6 border-b border-slate-100 bg-slate-50">
+        <h1 class="text-xl font-black tracking-tight text-blue-900">
+          WISDOM MANAGEMENT
+        </h1>
+        <p
+          class="text-[9px] text-slate-500 font-bold uppercase tracking-widest"
+        >
+          Financial Reporting System
+        </p>
+      </div>
+
+      <div class="p-4 space-y-4">
+        <!-- Template Toggle -->
+        <div>
+          <label class="section-label">Document Template</label>
+          <div class="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded">
+            <button
+              onclick="setTemplate('receipt')"
+              id="btn-receipt"
+              class="py-2 text-[10px] font-black rounded shadow-sm bg-white text-blue-800"
+            >
+              COLLECTION RECEIPT
+            </button>
+            <button
+              onclick="setTemplate('ledger')"
+              id="btn-ledger"
+              class="py-2 text-[10px] font-black rounded text-slate-500"
+            >
+              STUDENT LEDGER
+            </button>
+          </div>
+        </div>
+
+        <!-- Shared Student Info -->
+        <div>
+          <label class="section-label">Student Identification</label>
+          <div class="space-y-2">
+            <input
+              type="text"
+              placeholder="Student Full Name"
+              class="input-field font-bold"
+              oninput="updateData('studentName', this.value)"
+            />
+            <div class="grid grid-cols-2 gap-2">
+              <input
+                type="text"
+                placeholder="Admission No"
+                class="input-field mono"
+                oninput="updateData('admissionNo', this.value)"
+              />
+              <input
+                type="text"
+                placeholder="Roll Number"
+                class="input-field mono"
+                oninput="updateData('rollNo', this.value)"
+              />
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <input
+                type="text"
+                placeholder="Class & Section"
+                class="input-field"
+                oninput="updateData('studentClass', this.value)"
+              />
+              <input
+                type="text"
+                placeholder="Academic Session"
+                class="input-field"
+                oninput="updateData('session', this.value)"
+              />
+            </div>
+            <input
+              type="text"
+              placeholder="Father's Name"
+              class="input-field"
+              oninput="updateData('fatherName', this.value)"
+            />
+          </div>
+        </div>
+
+        <!-- Receipt Specific -->
+        <div id="receipt-controls" class="space-y-2 border-t pt-2">
+          <label class="section-label">Receipt Financials</label>
+          <div class="grid grid-cols-2 gap-2">
+            <input
+              type="date"
+              id="receiptDate"
+              class="input-field mono"
+              onchange="updateData('receiptDate', this.value)"
+            />
+            <input
+              type="text"
+              placeholder="Receipt #"
+              class="input-field mono"
+              oninput="updateData('receiptNo', this.value)"
+            />
+          </div>
+          <input
+            type="text"
+            placeholder="Purpose (e.g. Tuition Fee June)"
+            class="input-field"
+            oninput="updateData('purpose', this.value)"
+          />
+          <div class="grid grid-cols-2 gap-2">
+            <input
+              type="number"
+              placeholder="Amount Paid"
+              class="input-field mono font-bold"
+              oninput="updateData('amountPaid', this.value)"
+            />
+            <select
+              class="input-field text-[10px]"
+              onchange="updateData('payMode', this.value)"
+            >
+              <option value="Cash">CASH</option>
+              <option value="Bank/Online">BANK/ONLINE</option>
+              <option value="Cheque">CHEQUE</option>
+            </select>
+          </div>
+          <input
+            type="text"
+            placeholder="Remarks/Notes"
+            class="input-field text-xs"
+            oninput="updateData('remarks', this.value)"
+          />
+        </div>
+
+        <!-- Ledger Specific -->
+        <div id="ledger-controls" class="space-y-2 border-t pt-2 hidden">
+          <label class="section-label">Ledger Summary</label>
+          <div class="grid grid-cols-3 gap-1">
+            <input
+              type="number"
+              placeholder="Total Assigned"
+              class="input-field mono text-[10px]"
+              oninput="updateData('totalAssigned', this.value)"
+            />
+            <input
+              type="number"
+              placeholder="Total Paid"
+              class="input-field mono text-[10px]"
+              oninput="updateData('totalPaid', this.value)"
+            />
+            <input
+              type="number"
+              placeholder="Outstanding"
+              class="input-field mono text-[10px]"
+              oninput="updateData('totalOutstanding', this.value)"
+            />
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <input
+              type="date"
+              placeholder="Start Date"
+              class="input-field mono"
+              onchange="updateData('reportStart', this.value)"
+            />
+            <input
+              type="date"
+              placeholder="End Date"
+              class="input-field mono"
+              onchange="updateData('reportEnd', this.value)"
+            />
+          </div>
+        </div>
+
+        <div class="pt-6 pb-10">
+          <button
+            onclick="window.print()"
+            class="w-full bg-blue-800 text-white font-black py-3 rounded shadow hover:bg-black transition-all flex items-center justify-center gap-2"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-4 w-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"
+              />
+            </svg>
+            PRINT DOCUMENT
+          </button>
+          <button
+            onclick="downloadPDF()"
+            class="w-full mt-2 bg-slate-900 text-white font-bold py-2 rounded text-[10px] tracking-widest uppercase hover:bg-black transition-all"
+          >
+            DOWNLOAD PDF
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Preview Area -->
+    <main
+      class="flex-1 bg-slate-300 overflow-y-auto p-8 flex justify-center items-start"
+    >
+      <div
+        id="invoice-preview"
+        class="bg-white w-[210mm] min-h-[297mm] shadow-2xl p-[12mm] flex flex-col text-black border border-slate-400 print:border-none print:shadow-none"
+      >
+        <!-- Organization Header (Shared) -->
+        <div class="text-center mb-6 pb-4 border-b-2 border-black">
+          <h1 class="text-3xl font-black uppercase tracking-tighter italic">
+            WISDOM ACADEMY OF EXCELLENCE
+          </h1>
+          <p class="text-[10px] font-bold mt-1">
+            Regd Office: Academic Block B, Global Education Hub, New Delhi -
+            110001
+          </p>
+          <p class="text-[9px] mono font-medium">
+            Contact: 011-45001234 | Email: accounts@wisdom.edu | Web:
+            www.wisdom.edu
+          </p>
+        </div>
+
+        <!-- TEMPLATE 1: COLLECTION RECEIPT -->
+        <div id="view-receipt" class="space-y-4">
+          <div
+            class="flex justify-between items-center border border-black p-2 bg-slate-50"
+          >
+            <span class="text-xs font-black uppercase tracking-widest"
+              >Collection Receipt</span
+            >
+            <span class="text-xs font-black mono" id="p-receipt-id">#---</span>
+          </div>
+
+          <table class="excel-grid">
+            <tr>
+              <td class="w-1/3 bg-slate-50 font-bold uppercase text-[9px]">
+                Student Name
+              </td>
+              <td class="font-black text-sm" id="p-name">Select Student</td>
+              <td class="w-1/4 bg-slate-50 font-bold uppercase text-[9px]">
+                Date
+              </td>
+              <td class="mono font-bold" id="p-date">---</td>
+            </tr>
+            <tr>
+              <td class="bg-slate-50 font-bold uppercase text-[9px]">
+                Admission No
+              </td>
+              <td class="mono" id="p-adm">---</td>
+              <td class="bg-slate-50 font-bold uppercase text-[9px]">
+                Session
+              </td>
+              <td id="p-session">---</td>
+            </tr>
+            <tr>
+              <td class="bg-slate-50 font-bold uppercase text-[9px]">
+                Father's Name
+              </td>
+              <td id="p-father">---</td>
+              <td class="bg-slate-50 font-bold uppercase text-[9px]">
+                Class & Sec
+              </td>
+              <td id="p-class">---</td>
+            </tr>
+          </table>
+
+          <div class="mt-4">
+            <table class="excel-grid">
+              <thead>
+                <tr>
+                  <th>Particulars / Purpose of Payment</th>
+                  <th class="w-40 text-right">Amount Paid</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="h-24">
+                  <td class="italic font-bold" id="p-purpose">---</td>
+                  <td
+                    class="text-right font-black text-lg pr-4 align-bottom"
+                    id="p-amt"
+                  >
+                    ₹0.00
+                  </td>
+                </tr>
+                <tr>
+                  <td colspan="2" class="bg-slate-50 py-3">
+                    <span
+                      class="text-[9px] font-black uppercase text-slate-500 block mb-1"
+                      >Amount in Words:</span
+                    >
+                    <span class="font-bold italic text-[11px]" id="p-words"
+                      >Zero Rupees Only</span
+                    >
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4 mt-4">
+            <div class="border border-black p-2 text-[10px] space-y-1">
+              <p class="font-black underline uppercase">Payment Details:</p>
+              <p>Mode: <span class="font-black" id="p-mode">---</span></p>
+              <p>Remarks: <span class="italic" id="p-remarks">---</span></p>
+            </div>
+            <div class="flex flex-col items-center justify-end pb-2">
+              <div class="w-48 border-b border-black border-dashed mb-1"></div>
+              <p class="text-[9px] font-black uppercase tracking-widest">
+                Authorized Signatory
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- TEMPLATE 2: STUDENT LEDGER -->
+        <div id="view-ledger" class="hidden space-y-6">
+          <div
+            class="flex justify-between items-center border border-black p-2 bg-slate-100"
+          >
+            <span class="text-xs font-black uppercase tracking-widest"
+              >Student Ledger Statement</span
+            >
+            <span class="text-[10px] font-bold mono" id="p-ledger-period"
+              >Period: ---</span
+            >
+          </div>
+
+          <!-- Ledger Summary Blocks -->
+          <div
+            class="grid grid-cols-3 border border-black divide-x divide-black"
+          >
+            <div class="p-3 text-center">
+              <p class="text-[9px] font-black uppercase text-slate-500 mb-1">
+                Total Fees Assigned
+              </p>
+              <p class="text-lg font-black mono" id="p-sum-assigned">₹0.00</p>
+            </div>
+            <div class="p-3 text-center bg-slate-50">
+              <p class="text-[9px] font-black uppercase text-slate-500 mb-1">
+                Total Amount Paid
+              </p>
+              <p class="text-lg font-black mono text-blue-800" id="p-sum-paid">
+                ₹0.00
+              </p>
+            </div>
+            <div class="p-3 text-center">
+              <p class="text-[9px] font-black uppercase text-slate-500 mb-1">
+                Outstanding Balance
+              </p>
+              <p class="text-lg font-black mono text-red-600" id="p-sum-bal">
+                ₹0.00
+              </p>
+            </div>
+          </div>
+
+          <!-- Section Breakdown -->
+          <div>
+            <h3
+              class="text-[10px] font-black uppercase underline mb-2 tracking-widest"
+            >
+              1. Session Breakdown (History)
+            </h3>
+            <table class="excel-grid">
+              <thead>
+                <tr>
+                  <th>Academic Session</th>
+                  <th class="text-right">Total Fees</th>
+                  <th class="text-right">Paid Amount</th>
+                  <th class="text-right">Remaining Dues</th>
+                </tr>
+              </thead>
+              <tbody id="ledger-session-body">
+                <!-- Default sample row -->
+                <tr>
+                  <td class="font-bold">Session 2024-25 (Current)</td>
+                  <td class="text-right mono">---</td>
+                  <td class="text-right mono">---</td>
+                  <td class="text-right mono font-black">---</td>
+                </tr>
+                <tr class="h-8">
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Transaction Logs -->
+          <div>
+            <h3
+              class="text-[10px] font-black uppercase underline mb-2 tracking-widest"
+            >
+              2. Recent Transaction Logs
+            </h3>
+            <table class="excel-grid">
+              <thead>
+                <tr>
+                  <th class="w-24">Date</th>
+                  <th class="w-32">Receipt #</th>
+                  <th>Payment Mode</th>
+                  <th class="w-32 text-right">Amount</th>
+                </tr>
+              </thead>
+              <tbody id="ledger-logs-body">
+                <tr class="h-8">
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                </tr>
+                <tr class="h-8">
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                </tr>
+                <tr class="h-8">
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                </tr>
+                <tr class="h-8">
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Footer Footer -->
+        <div
+          class="mt-auto border-t border-black pt-4 flex justify-between items-end"
+        >
+          <div class="text-[7px] text-slate-400 font-bold uppercase">
+            * This document is a valid financial record of the Wisdom Management
+            System.
+          </div>
+          <div class="text-center">
+            <p class="text-[9px] font-black uppercase tracking-tighter">
+              Computer Generated System Document
+            </p>
+            <p class="text-[7px] opacity-50">
+              Date Printed: <span class="p-print-date">---</span>
+            </p>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <script>
+      let state = {
+        template: "receipt",
+        studentName: "",
+        admissionNo: "",
+        rollNo: "",
+        studentClass: "",
+        session: "",
+        fatherName: "",
+
+        // Receipt Fields
+        receiptDate: new Date().toISOString().split("T")[0],
+        receiptNo: "",
+        purpose: "",
+        amountPaid: 0,
+        payMode: "Cash",
+        remarks: "",
+
+        // Ledger Fields
+        totalAssigned: 0,
+        totalPaid: 0,
+        totalOutstanding: 0,
+        reportStart: "",
+        reportEnd: "",
+      };
+
+      function setTemplate(t) {
+        state.template = t;
+        document.getElementById("btn-receipt").className =
+          t === "receipt"
+            ? "py-2 text-[10px] font-black rounded shadow-sm bg-white text-blue-800"
+            : "py-2 text-[10px] font-black rounded text-slate-500";
+        document.getElementById("btn-ledger").className =
+          t === "ledger"
+            ? "py-2 text-[10px] font-black rounded shadow-sm bg-white text-blue-800"
+            : "py-2 text-[10px] font-black rounded text-slate-500";
+
+        document.getElementById("receipt-controls").style.display =
+          t === "receipt" ? "block" : "none";
+        document.getElementById("ledger-controls").style.display =
+          t === "ledger" ? "block" : "none";
+
+        document.getElementById("view-receipt").style.display =
+          t === "receipt" ? "block" : "none";
+        document.getElementById("view-ledger").style.display =
+          t === "ledger" ? "block" : "none";
+
+        updatePreview();
+      }
+
+      function updateData(field, value) {
+        if (
+          [
+            "amountPaid",
+            "totalAssigned",
+            "totalPaid",
+            "totalOutstanding",
+          ].includes(field)
+        ) {
+          value = parseFloat(value) || 0;
+        }
+        state[field] = value;
+        updatePreview();
+      }
+
+      function updatePreview() {
+        // Shared Headers
+        const pNames = document.querySelectorAll("#p-name, #p-ledger-name");
+        pNames.forEach((el) => {
+          if (el) el.textContent = state.studentName || "Select Student";
+        });
+
+        const pAdm = document.getElementById("p-adm");
+        if (pAdm) pAdm.textContent = state.admissionNo || "---";
+
+        const pSession = document.getElementById("p-session");
+        if (pSession) pSession.textContent = state.session || "---";
+
+        const pFather = document.getElementById("p-father");
+        if (pFather) pFather.textContent = state.fatherName || "---";
+
+        const pClass = document.getElementById("p-class");
+        if (pClass) pClass.textContent = state.studentClass || "---";
+
+        // Receipt Specifics
+        if (state.template === "receipt") {
+          const pReceiptId = document.getElementById("p-receipt-id");
+          if (pReceiptId)
+            pReceiptId.textContent = "#" + (state.receiptNo || "---");
+
+          const pDate = document.getElementById("p-date");
+          if (pDate) pDate.textContent = state.receiptDate;
+
+          const pPurpose = document.getElementById("p-purpose");
+          if (pPurpose) pPurpose.textContent = state.purpose || "FEE PAYMENT";
+
+          const pAmt = document.getElementById("p-amt");
+          if (pAmt)
+            pAmt.textContent =
+              "₹" +
+              state.amountPaid.toLocaleString("en-IN", {
+                minimumFractionDigits: 2,
+              });
+
+          const pWords = document.getElementById("p-words");
+          if (pWords)
+            pWords.textContent =
+              numberToWords(state.amountPaid) + " Rupees Only";
+
+          const pMode = document.getElementById("p-mode");
+          if (pMode) pMode.textContent = state.payMode;
+
+          const pRemarks = document.getElementById("p-remarks");
+          if (pRemarks)
+            pRemarks.textContent = state.remarks || "No additional remarks";
+        }
+
+        // Ledger Specifics
+        if (state.template === "ledger") {
+          const pSumAssigned = document.getElementById("p-sum-assigned");
+          if (pSumAssigned)
+            pSumAssigned.textContent =
+              "₹" + state.totalAssigned.toLocaleString("en-IN");
+
+          const pSumPaid = document.getElementById("p-sum-paid");
+          if (pSumPaid)
+            pSumPaid.textContent =
+              "₹" + state.totalPaid.toLocaleString("en-IN");
+
+          const pSumBal = document.getElementById("p-sum-bal");
+          if (pSumBal)
+            pSumBal.textContent =
+              "₹" + state.totalOutstanding.toLocaleString("en-IN");
+
+          const pLedgerPeriod = document.getElementById("p-ledger-period");
+          if (pLedgerPeriod)
+            pLedgerPeriod.textContent = `Period: ${state.reportStart || "..."} to ${state.reportEnd || "..."}`; 
+
+          // Auto-fill Current Session row in ledger for preview effect
+          const sessionBody = document.getElementById("ledger-session-body");
+          if (sessionBody) {
+            sessionBody.innerHTML = `
+                    <tr>
+                        <td class="font-bold">Current Session (${state.session || "2024-25"})</td>
+                        <td class="text-right mono">₹${state.totalAssigned.toLocaleString("en-IN")}</td>
+                        <td class="text-right mono">₹${state.totalPaid.toLocaleString("en-IN")}</td>
+                        <td class="text-right mono font-black">₹${state.totalOutstanding.toLocaleString("en-IN")}</td>
+                    </tr>
+                    <tr class="h-8"><td></td><td></td><td></td><td></td></tr>
+                `;
+          }
+        }
+
+        const printDates = document.querySelectorAll(".p-print-date");
+        printDates.forEach(
+          (el) => (el.textContent = new Date().toLocaleString()),
+        );
+      }
+
+      function numberToWords(num) {
+        if (num === 0) return "Zero";
+        const a = [
+          "",
+          "one ",
+          "two ",
+          "three ",
+          "four ",
+          "five ",
+          "six ",
+          "seven ",
+          "eight ",
+          "nine ",
+          "ten ",
+          "eleven ",
+          "twelve ",
+          "thirteen ",
+          "fourteen ",
+          "fifteen ",
+          "sixteen ",
+          "seventeen ",
+          "eighteen ",
+          "nineteen ",
+        ];
+        const b = [
+          "",
+          "",
+          "twenty",
+          "thirty",
+          "forty",
+          "fifty",
+          "sixty",
+          "seventy",
+          "eighty",
+          "ninety",
+        ];
+        const n = ("0000000" + Math.floor(num))
+          .slice(-7)
+          .match(/^(\d{2})(\d{2})(\d{2})(\d{1})$/);
+        if (!n) return "";
+        let str = "";
+        str +=
+          n[1] != 0
+            ? (a[Number(n[1])] || b[n[1][0]] + " " + a[n[1][1]]) + "lakh "
+            : "";
+        str +=
+          n[2] != 0
+            ? (a[Number(n[2])] || b[n[2][0]] + " " + a[n[2][1]]) + "thousand "
+            : "";
+        str +=
+          n[3] != 0
+            ? (a[Number(n[3])] || b[n[3][0]] + " " + a[n[3][1]]) + "hundred "
+            : "";
+        str +=
+          n[4] != 0
+            ? (str != "" ? "and " : "") +
+              (a[Number(n[4])] || b[n[4][0]] + " " + a[n[4][1]])
+            : "";
+        return str;
+      }
+
+      async function downloadPDF() {
+        const element = document.getElementById("invoice-preview");
+        const canvas = await html2canvas(element, { scale: 3, useCORS: true });
+        const imgData = canvas.toDataURL("image/png");
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF("p", "mm", "a4");
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const imgProps = pdf.getImageProperties(imgData);
+        const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+        pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+        pdf.save(`${state.template}_${state.studentName || "doc"}.pdf`);
+      }
+
+      // Init
+      window.onload = function () {
+        document.getElementById("receiptDate").valueAsDate = new Date();
+        updatePreview();
+      };
+    </script>
+  </body>
+</html>

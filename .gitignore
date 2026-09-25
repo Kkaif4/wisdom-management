@@ -32,3 +32,4 @@ prisma/generated/
 /blob-report/
 /playwright/.cache/
 /playwright/.auth/
+/html*

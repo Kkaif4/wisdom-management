@@ -1,0 +1,1034 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>School Transfer Certificate Generator</title>
+    <!-- Tailwind CSS for Dashboard Layout -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        /* Custom font styles for certificate aesthetics */
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;800&family=Great+Vibes&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Roboto:wght@300;400;500;700&display=swap');
+
+        :root {
+            --primary-color: #1e3a8a;
+            /* Default Navy */
+            --primary-dark: #172554;
+            --accent-gold: #b45309;
+        }
+
+        .cert-font-title {
+            font-family: 'Cinzel', serif;
+        }
+
+        .cert-font-serif {
+            font-family: 'Playfair Display', serif;
+        }
+
+        .cert-font-handwritten {
+            font-family: 'Great Vibes', cursive;
+        }
+
+        .cert-font-sans {
+            font-family: 'Roboto', sans-serif;
+        }
+
+        /* Print styling rules: Force A4 dimensions and perfect sizing */
+        @media print {
+            body {
+                background: none !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+
+            .no-print {
+                display: none !important;
+            }
+
+            .print-container {
+                width: 100% !important;
+                max-width: 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                box-shadow: none !important;
+                background: white !important;
+            }
+
+            .cert-card {
+                border: none !important;
+                box-shadow: none !important;
+                margin: 0 !important;
+                padding: 10mm !important;
+                width: 210mm !important;
+                height: 297mm !important;
+                /* A4 size constraint */
+                box-sizing: border-box !important;
+                page-break-after: avoid !important;
+                page-break-inside: avoid !important;
+            }
+        }
+
+        /* Non-print styled scrollbars */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        /* Standard certificate decorative double border */
+        .cert-border-double {
+            border: 4px double var(--primary-color);
+            padding: 12px;
+            height: 100%;
+            position: relative;
+        }
+
+        .cert-border-outer {
+            border: 2px solid var(--primary-color);
+            padding: 6px;
+            height: 100%;
+        }
+
+        /* Watermark Effect */
+        .cert-watermark {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-30deg);
+            opacity: 0.05;
+            font-size: 5rem;
+            font-weight: 900;
+            letter-spacing: 0.5rem;
+            pointer-events: none;
+            user-select: none;
+            z-index: 0;
+            white-space: nowrap;
+        }
+    </style>
+</head>
+
+<body class="bg-slate-900 text-slate-100 min-h-screen cert-font-sans antialiased overflow-x-hidden">
+
+    <!-- Header Banner (Dashboard Only) -->
+    <header
+        class="no-print bg-slate-950 border-b border-slate-800 py-4 px-6 sticky top-0 z-50 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+            <div class="p-2.5 bg-blue-600 rounded-lg text-white shadow-lg shadow-blue-900/30">
+                <i data-lucide="graduation-cap" class="w-6 h-6"></i>
+            </div>
+            <div>
+                <h1 class="font-bold text-lg text-white tracking-wide">Prisma Student ERP</h1>
+                <p class="text-xs text-slate-400">Transfer Certificate (TC) Engine v2.5</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-3 self-end md:self-auto">
+            <button onclick="toggleViewMode()" id="viewModeBtn"
+                class="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white rounded-lg text-sm font-medium transition duration-200 border border-slate-700">
+                <i data-lucide="code-2" class="w-4 h-4"></i>
+                <span>Show Template Syntax</span>
+            </button>
+            <button onclick="window.print()"
+                class="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-sm font-semibold transition duration-200 shadow-md shadow-emerald-900/20">
+                <i data-lucide="printer" class="w-4 h-4"></i>
+                <span>Print/Save PDF</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <main class="max-w-[1600px] mx-auto p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <!-- Config sidebar (No Print) -->
+        <section
+            class="no-print lg:col-span-4 bg-slate-950/60 backdrop-blur-md rounded-2xl border border-slate-800/80 p-6 flex flex-col gap-6 max-h-[calc(100vh-130px)] overflow-y-auto">
+            <div>
+                <h2 class="text-sm font-bold tracking-wider text-slate-400 uppercase flex items-center gap-2">
+                    <i data-lucide="sliders" class="w-4 h-4 text-blue-500"></i> Design & Branding
+                </h2>
+                <div class="mt-4 grid grid-cols-1 gap-4">
+                    <!-- Color Themes -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-2">Primary Accent Color</label>
+                        <div class="flex items-center gap-2">
+                            <button onclick="changeColorTheme('#1e3a8a')"
+                                class="w-8 h-8 rounded-full bg-blue-900 border-2 border-white cursor-pointer transition focus:scale-110"
+                                title="Navy Blue"></button>
+                            <button onclick="changeColorTheme('#7f1d1d')"
+                                class="w-8 h-8 rounded-full bg-red-900 border-2 border-transparent hover:border-slate-500 cursor-pointer transition focus:scale-110"
+                                title="Maroon"></button>
+                            <button onclick="changeColorTheme('#064e3b')"
+                                class="w-8 h-8 rounded-full bg-emerald-900 border-2 border-transparent hover:border-slate-500 cursor-pointer transition focus:scale-110"
+                                title="Forest Green"></button>
+                            <button onclick="changeColorTheme('#111827')"
+                                class="w-8 h-8 rounded-full bg-slate-900 border-2 border-transparent hover:border-slate-500 cursor-pointer transition focus:scale-110"
+                                title="Coal Grey"></button>
+                            <button onclick="changeColorTheme('#4c1d95')"
+                                class="w-8 h-8 rounded-full bg-purple-900 border-2 border-transparent hover:border-slate-500 cursor-pointer transition focus:scale-110"
+                                title="Imperial Violet"></button>
+                        </div>
+                    </div>
+
+                    <!-- Border Style Selection -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1.5" for="borderStyleSelect">Border
+                            Style</label>
+                        <select id="borderStyleSelect" onchange="changeBorderStyle(this.value)"
+                            class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-blue-500">
+                            <option value="double">Classic Double Border</option>
+                            <option value="solid">Thin Solid Border</option>
+                            <option value="thick-thin">Ornate Royal Border</option>
+                            <option value="none">No Border</option>
+                        </select>
+                    </div>
+
+                    <!-- Certificate Watermark Text -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1.5"
+                            for="watermarkTextInput">Watermark Background Text</label>
+                        <input type="text" id="watermarkTextInput" value="OFFICIAL COPY"
+                            oninput="updateWatermark(this.value)"
+                            class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-blue-500">
+                    </div>
+                </div>
+            </div>
+
+            <hr class="border-slate-800">
+
+            <!-- Dynamic Mock Data Controls -->
+            <div>
+                <h2 class="text-sm font-bold tracking-wider text-slate-400 uppercase flex items-center gap-2 mb-4">
+                    <i data-lucide="edit-3" class="w-4 h-4 text-emerald-500"></i> Student Record Editor
+                </h2>
+
+                <!-- Accordion Controls -->
+                <div class="flex flex-col gap-3">
+                    <!-- Accordion item 1: School Identity -->
+                    <details class="bg-slate-900/80 rounded-xl border border-slate-800 group overflow-hidden" open>
+                        <summary
+                            class="list-none flex items-center justify-between p-3.5 cursor-pointer select-none font-semibold text-sm text-slate-200 group-open:bg-slate-800/50">
+                            <span class="flex items-center gap-2"><i data-lucide="building-2"
+                                    class="w-4 h-4 text-blue-400"></i> School Details</span>
+                            <i data-lucide="chevron-down"
+                                class="w-4 h-4 transition duration-200 group-open:rotate-180"></i>
+                        </summary>
+                        <div class="p-4 grid grid-cols-1 gap-3.5 text-xs">
+                            <div>
+                                <label class="block text-slate-400 mb-1">School Name</label>
+                                <input type="text" data-field="org-name" value="St. Xavier International Academy"
+                                    oninput="updateLiveField(this)"
+                                    class="w-full bg-slate-950 border border-slate-700 rounded px-2.5 py-1.5 text-slate-100">
+                            </div>
+                            <div>
+                                <label class="block text-slate-400 mb-1">Affiliation / Reg No</label>
+                                <input type="text" data-field="org-reg" value="AFF-908231-CBSE"
+                                    oninput="updateLiveField(this)"
+                                    class="w-full bg-slate-950 border border-slate-700 rounded px-2.5 py-1.5 text-slate-100">
+                            </div>
+                            <div>
+                                <label class="block text-slate-400 mb-1">Address line</label>
+                                <input type="text" data-field="org-address" value="Sector 42, Oxford Road, London, UK"
+                                    oninput="updateLiveField(this)"
+                                    class="w-full bg-slate-950 border border-slate-700 rounded px-2.5 py-1.5 text-slate-100">
+                            </div>
+                            <div>
+                                <label class="block text-slate-400 mb-1">Contact / Email</label>
+                                <input type="text" data-field="org-contact"
+                                    value="+44 20 7946 0192 | admin@stxavier.edu" oninput="updateLiveField(this)"
+                                    class="w-full bg-slate-950 border border-slate-700 rounded px-2.5 py-1.5 text-slate-100">
+                            </div>
+                        </div>
+                    </details>
+
+                    <!-- Accordion item 2: Student Identity & G.R. -->
+                    <details class="bg-slate-900/80 rounded-xl border border-slate-800 group overflow-hidden">
+                        <summary
+                            class="list-none flex items-center justify-between p-3.5 cursor-pointer select-none font-semibold text-sm text-slate-200 group-open:bg-slate-800/50">
+                            <span class="flex items-center gap-2"><i data-lucide="user"
+                                    class="w-4 h-4 text-teal-400"></i> Student Identity</span>
+                            <i data-lucide="chevron-down"
+                                class="w-4 h-4 transition duration-200 group-open:rotate-180"></i>
+                        </summary>
+                        <div class="p-4 grid grid-cols-2 gap-3.5 text-xs">
+                            <div class="col-span-2">
+                                <label class="block text-slate-400 mb-1">Student Full Name</label>
+                                <input type="text" data-field="student-name" value="Eleanor Vance Vance"
+                                    oninput="updateLiveField(this)"
+                                    class="w-full bg-slate-950 border border-slate-700 rounded px-2.5 py-1.5 text-slate-100">
+                            </div>
+                            <div>
+                                <label class="block text-slate-400 mb-1">G.R. Number</label>
+                                <input type="text" data-field="student-gr" value="GR-10492"
+                                    oninput="updateLiveField(this)"
+                                    class="w-full bg-slate-950 border border-slate-700 rounded px-2.5 py-1.5 text-slate-100">
+                            </div>
+                            <div>
+                                <label class="block text-slate-400 mb-1">Roll Number</label>
+                                <input type="text" data-field="student-roll" value="Roll No. 34"
+                                    oninput="updateLiveField(this)"
+                                    class="w-full bg-slate-950 border border-slate-700 rounded px-2.5 py-1.5 text-slate-100">
+                            </div>
+                            <div>
+                                <label class="block text-slate-400 mb-1">Aadhar Number</label>
+                                <input type="text" data-field="student-aadhar" value="9876-5432-1098"
+                                    oninput="updateLiveField(this)"
+                                    class="w-full bg-slate-950 border border-slate-700 rounded px-2.5 py-1.5 text-slate-100">
+                            </div>
+                            <div>
+                                <label class="block text-slate-400 mb-1">Gender</label>
+                                <input type="text" data-field="student-gender" value="Female"
+                                    oninput="updateLiveField(this)"
+                                    class="w-full bg-slate-950 border border-slate-700 rounded px-2.5 py-1.5 text-slate-100">
+                            </div>
+                            <div>
+                                <label class="block text-slate-400 mb-1">Nationality</label>
+                                <input type="text" data-field="student-nationality" value="British"
+                                    oninput="updateLiveField(this)"
+                                    class="w-full bg-slate-950 border border-slate-700 rounded px-2.5 py-1.5 text-slate-100">
+                            </div>
+                            <div>
+                                <label class="block text-slate-400 mb-1">Religion</label>
+                                <input type="text" data-field="student-religion" value="Christianity"
+                                    oninput="updateLiveField(this)"
+                                    class="w-full bg-slate-950 border border-slate-700 rounded px-2.5 py-1.5 text-slate-100">
+                            </div>
+                            <div>
+                                <label class="block text-slate-400 mb-1">Caste</label>
+                                <input type="text" data-field="student-caste" value="General"
+                                    oninput="updateLiveField(this)"
+                                    class="w-full bg-slate-950 border border-slate-700 rounded px-2.5 py-1.5 text-slate-100">
+                            </div>
+                            <div>
+                                <label class="block text-slate-400 mb-1">Sub-Caste</label>
+                                <input type="text" data-field="student-subcaste" value="N/A"
+                                    oninput="updateLiveField(this)"
+                                    class="w-full bg-slate-950 border border-slate-700 rounded px-2.5 py-1.5 text-slate-100">
+                            </div>
+                            <div class="col-span-2">
+                                <label class="block text-slate-400 mb-1">Date of Birth</label>
+                                <input type="date" data-field="student-dob" value="2012-05-14"
+                                    oninput="formatAndSetDOB(this.value)"
+                                    class="w-full bg-slate-950 border border-slate-700 rounded px-2.5 py-1.5 text-slate-100">
+                            </div>
+                            <div class="col-span-2">
+                                <label class="block text-slate-400 mb-1">Place of Birth</label>
+                                <input type="text" data-field="student-pob" value="Westminster, London"
+                                    oninput="updateLiveField(this)"
+                                    class="w-full bg-slate-950 border border-slate-700 rounded px-2.5 py-1.5 text-slate-100">
+                            </div>
+                        </div>
+                    </details>
+
+                    <!-- Accordion item 3: Parent Info -->
+                    <details class="bg-slate-900/80 rounded-xl border border-slate-800 group overflow-hidden">
+                        <summary
+                            class="list-none flex items-center justify-between p-3.5 cursor-pointer select-none font-semibold text-sm text-slate-200 group-open:bg-slate-800/50">
+                            <span class="flex items-center gap-2"><i data-lucide="users"
+                                    class="w-4 h-4 text-purple-400"></i> Parent / Guardian</span>
+                            <i data-lucide="chevron-down"
+                                class="w-4 h-4 transition duration-200 group-open:rotate-180"></i>
+                        </summary>
+                        <div class="p-4 grid grid-cols-1 gap-3.5 text-xs">
+                            <div>
+                                <label class="block text-slate-400 mb-1">Father's Name</label>
+                                <input type="text" data-field="parent-father" value="Richard Samuel Vance"
+                                    oninput="updateLiveField(this)"
+                                    class="w-full bg-slate-950 border border-slate-700 rounded px-2.5 py-1.5 text-slate-100">
+                            </div>
+                            <div>
+                                <label class="block text-slate-400 mb-1">Father's Qualification & Occ.</label>
+                                <input type="text" data-field="parent-fatherinfo"
+                                    value="M.D. Pediatrics, Chief Consultant Physician" oninput="updateLiveField(this)"
+                                    class="w-full bg-slate-950 border border-slate-700 rounded px-2.5 py-1.5 text-slate-100">
+                            </div>
+                            <div>
+                                <label class="block text-slate-400 mb-1">Mother's Name</label>
+                                <input type="text" data-field="parent-mother" value="Lillian Grace Vance"
+                                    oninput="updateLiveField(this)"
+                                    class="w-full bg-slate-950 border border-slate-700 rounded px-2.5 py-1.5 text-slate-100">
+                            </div>
+                            <div>
+                                <label class="block text-slate-400 mb-1">Mother's Qualification & Occ.</label>
+                                <input type="text" data-field="parent-motherinfo"
+                                    value="M.Sc. Education, Senior Lecturer" oninput="updateLiveField(this)"
+                                    class="w-full bg-slate-950 border border-slate-700 rounded px-2.5 py-1.5 text-slate-100">
+                            </div>
+                        </div>
+                    </details>
+
+                    <!-- Accordion item 4: Enrollment History -->
+                    <details class="bg-slate-900/80 rounded-xl border border-slate-800 group overflow-hidden">
+                        <summary
+                            class="list-none flex items-center justify-between p-3.5 cursor-pointer select-none font-semibold text-sm text-slate-200 group-open:bg-slate-800/50">
+                            <span class="flex items-center gap-2"><i data-lucide="history"
+                                    class="w-4 h-4 text-amber-400"></i> History & Leaving</span>
+                            <i data-lucide="chevron-down"
+                                class="w-4 h-4 transition duration-200 group-open:rotate-180"></i>
+                        </summary>
+                        <div class="p-4 grid grid-cols-1 gap-3.5 text-xs">
+                            <div>
+                                <label class="block text-slate-400 mb-1">Last School Attended</label>
+                                <input type="text" data-field="student-lastschool" value="St. Paul Primary School"
+                                    oninput="updateLiveField(this)"
+                                    class="w-full bg-slate-950 border border-slate-700 rounded px-2.5 py-1.5 text-slate-100">
+                            </div>
+                            <div>
+                                <label class="block text-slate-400 mb-1">Date of Admission & Class</label>
+                                <input type="text" data-field="enroll-adm" value="03-Sep-2018 in Grade V (Fifth)"
+                                    oninput="updateLiveField(this)"
+                                    class="w-full bg-slate-950 border border-slate-700 rounded px-2.5 py-1.5 text-slate-100">
+                            </div>
+                            <div>
+                                <label class="block text-slate-400 mb-1">Class Last Studied (in figures & words)</label>
+                                <input type="text" data-field="enroll-class" value="Class VIII (Eighth)"
+                                    oninput="updateLiveField(this)"
+                                    class="w-full bg-slate-950 border border-slate-700 rounded px-2.5 py-1.5 text-slate-100">
+                            </div>
+                            <div>
+                                <label class="block text-slate-400 mb-1">Whether Qualified for Promotion</label>
+                                <input type="text" data-field="leave-promotion"
+                                    value="Yes, Promoted to Class IX (Ninth)" oninput="updateLiveField(this)"
+                                    class="w-full bg-slate-950 border border-slate-700 rounded px-2.5 py-1.5 text-slate-100">
+                            </div>
+                            <div>
+                                <label class="block text-slate-400 mb-1">General Conduct</label>
+                                <input type="text" data-field="leave-conduct" value="Exemplary & Cooperative"
+                                    oninput="updateLiveField(this)"
+                                    class="w-full bg-slate-950 border border-slate-700 rounded px-2.5 py-1.5 text-slate-100">
+                            </div>
+                            <div>
+                                <label class="block text-slate-400 mb-1">Reason for Leaving</label>
+                                <input type="text" data-field="leave-reason"
+                                    value="Father Relocated / Transferred to Edinburgh Office"
+                                    oninput="updateLiveField(this)"
+                                    class="w-full bg-slate-950 border border-slate-700 rounded px-2.5 py-1.5 text-slate-100">
+                            </div>
+                            <div>
+                                <label class="block text-slate-400 mb-1">Date of Application Recieved</label>
+                                <input type="text" data-field="student-recieved" value="18-Jun-2026"
+                                    oninput="updateLiveField(this)"
+                                    class="w-full bg-slate-950 border border-slate-700 rounded px-2.5 py-1.5 text-slate-100">
+                            </div>
+                            <div>
+                                <label class="block text-slate-400 mb-1">Contact / Address Information</label>
+                                <textarea rows="2" data-field="student-address" oninput="updateLiveField(this)"
+                                    class="w-full bg-slate-950 border border-slate-700 rounded px-2.5 py-1.5 text-slate-100">74 Eaton Place, Belgravia, London</textarea>
+                            </div>
+                        </div>
+                    </details>
+                </div>
+            </div>
+        </section>
+        <!-- Certificate Render Board -->
+        <section class="lg:col-span-8 flex justify-center items-start overflow-x-auto min-h-screen">
+            <!-- High Quality Certificate Form Element -->
+            <div class="print-container bg-white text-slate-900 shadow-2xl rounded-lg border border-slate-200 transition duration-300 p-8 flex justify-center"
+                style="width: 210mm; min-height: 297mm; max-height: 297mm; overflow: hidden; position: relative;">
+
+                <div class="cert-card w-full h-full flex flex-col justify-between" id="certFrame">
+                    <div class="cert-border-outer">
+                        <div id="certInnerBorder" class="cert-border-double flex flex-col justify-between">
+
+                            <!-- Watermark Background -->
+                            <div id="certWatermark" class="cert-watermark">OFFICIAL COPY</div>
+
+                            <!-- Top Certificate Header -->
+                            <div class="relative z-10">
+                                <!-- School Logo Header Block -->
+                                <div class="flex items-center justify-between border-b-2 pb-4"
+                                    style="border-color: var(--primary-color)">
+                                    <div
+                                        class="w-20 h-20 flex-shrink-0 flex items-center justify-center border rounded-full bg-slate-50 border-slate-300 shadow-sm">
+                                        <!-- Dynamic SVG School Shield Badge -->
+                                        <svg class="w-14 h-14 text-blue-900" id="headerLogoSvg" fill="currentColor"
+                                            viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                                            <path stroke-linecap="round" stroke-linejoin="round"
+                                                d="M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296 3.745 3.745 0 01-3.296 1.043A3.745 3.745 0 0110 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 01-3.296-1.043 3.745 3.745 0 01-1.043-3.296A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 011.043-3.296 3.746 3.746 0 013.296-1.043A3.746 3.746 0 0114 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 013.296 1.043 3.746 3.746 0 011.043 3.296A3.745 3.745 0 0121 12z" />
+                                        </svg>
+                                    </div>
+
+                                    <div class="text-center flex-1 px-4">
+                                        <h2 id="view-org-name"
+                                            class="cert-font-title text-2xl font-extrabold tracking-wide text-blue-900 uppercase">
+                                            St. Xavier International Academy</h2>
+                                        <p id="view-org-address" class="text-xs text-slate-600 mt-0.5 font-medium">
+                                            Sector 42, Oxford Road, London, UK</p>
+                                        <p id="view-org-contact"
+                                            class="text-[10px] text-slate-500 font-semibold tracking-wider uppercase mt-0.5">
+                                            +44 20 7946 0192 | admin@stxavier.edu</p>
+                                        <p id="view-org-reg"
+                                            class="text-[11px] font-bold text-amber-800 mt-1 uppercase tracking-widest bg-amber-50 px-3 py-0.5 rounded-full inline-block">
+                                            Affiliation / Reg No: AFF-908231-CBSE</p>
+                                    </div>
+
+                                    <div class="w-20 h-20 text-right flex flex-col justify-center text-xs">
+                                        <div class="text-slate-500 font-bold uppercase tracking-wider text-[9px] mb-1">
+                                            Status Code</div>
+                                        <div class="font-black text-emerald-700 bg-emerald-50 rounded border border-emerald-200 px-1 py-1 text-center uppercase tracking-wide"
+                                            id="view-student-status">ACTIVE</div>
+                                    </div>
+                                </div>
+
+                                <!-- Document Header Identifier -->
+                                <div class="text-center my-4 relative">
+                                    <span
+                                        class="absolute left-0 right-0 top-1/2 border-t-2 border-amber-600 opacity-20 -z-10"></span>
+                                    <h3
+                                        class="cert-font-title text-xl font-bold tracking-widest text-amber-800 bg-white px-6 inline-block uppercase">
+                                        School Leaving / Transfer Certificate</h3>
+                                </div>
+
+                                <!-- Registration Block / Date Info -->
+                                <div
+                                    class="grid grid-cols-3 gap-2 text-xs font-semibold mb-5 pb-3 border-b border-dashed border-slate-300">
+                                    <div class="text-left flex items-center gap-1">
+                                        <span class="text-slate-500">Certificate No:</span>
+                                        <span class="font-mono text-slate-800 tracking-wider">TC/2026/00492</span>
+                                    </div>
+                                    <div class="text-center flex justify-center items-center gap-1">
+                                        <span class="text-slate-500">G.R. No:</span>
+                                        <span class="font-bold text-slate-900 px-2 py-0.5 bg-slate-100 rounded"
+                                            id="view-student-gr">GR-10492</span>
+                                    </div>
+                                    <div class="text-right flex justify-end items-center gap-1">
+                                        <span class="text-slate-500">Issue Date:</span>
+                                        <span class="font-mono text-slate-800">20-Jun-2026</span>
+                                    </div>
+                                </div>
+
+                                <!-- Standard Academic Certificate Core Body Grid -->
+                                <div class="text-xs text-slate-800 space-y-2.5 leading-relaxed relative z-10">
+
+                                    <div
+                                        class="grid grid-cols-12 gap-1 items-end pb-1 border-b border-dotted border-slate-300">
+                                        <span
+                                            class="col-span-4 text-slate-500 uppercase tracking-wider text-[10px] font-bold">1.
+                                            Name of Pupil:</span>
+                                        <div class="col-span-8 font-bold text-slate-900 text-sm cert-font-serif tracking-wide border-b-2 border-slate-900 px-2 flex justify-between"
+                                            id="view-student-name">
+                                            <span>Eleanor Vance Vance</span>
+                                            <span class="text-xs font-normal text-slate-400 italic"
+                                                id="view-student-roll">Roll No. 34</span>
+                                        </div>
+                                    </div>
+
+                                    <div
+                                        class="grid grid-cols-12 gap-1 items-end pb-1 border-b border-dotted border-slate-300">
+                                        <span
+                                            class="col-span-4 text-slate-500 uppercase tracking-wider text-[10px] font-bold">2.
+                                            Father's / Guardian's Name:</span>
+                                        <div class="col-span-8 font-semibold text-slate-900 border-b-2 border-slate-900 px-2"
+                                            id="view-parent-father">Richard Samuel Vance</div>
+                                    </div>
+
+                                    <div
+                                        class="grid grid-cols-12 gap-1 items-end pb-1 border-b border-dotted border-slate-300">
+                                        <span
+                                            class="col-span-4 text-slate-500 uppercase tracking-wider text-[10px] font-bold">3.
+                                            Father's Qualification / Occ.:</span>
+                                        <div class="col-span-8 text-slate-700 border-b-2 border-slate-900 px-2 italic"
+                                            id="view-parent-fatherinfo">M.D. Pediatrics, Chief Consultant Physician
+                                        </div>
+                                    </div>
+
+                                    <div
+                                        class="grid grid-cols-12 gap-1 items-end pb-1 border-b border-dotted border-slate-300">
+                                        <span
+                                            class="col-span-4 text-slate-500 uppercase tracking-wider text-[10px] font-bold">4.
+                                            Mother's Name:</span>
+                                        <div class="col-span-8 font-semibold text-slate-900 border-b-2 border-slate-900 px-2"
+                                            id="view-parent-mother">Lillian Grace Vance</div>
+                                    </div>
+
+                                    <div
+                                        class="grid grid-cols-12 gap-1 items-end pb-1 border-b border-dotted border-slate-300">
+                                        <span
+                                            class="col-span-4 text-slate-500 uppercase tracking-wider text-[10px] font-bold">5.
+                                            Mother's Qualification / Occ.:</span>
+                                        <div class="col-span-8 text-slate-700 border-b-2 border-slate-900 px-2 italic"
+                                            id="view-parent-motherinfo">M.Sc. Education, Senior Lecturer</div>
+                                    </div>
+
+                                    <div class="grid grid-cols-12 gap-2 pb-1 border-b border-dotted border-slate-300">
+                                        <div class="col-span-4 flex items-end">
+                                            <span
+                                                class="text-slate-500 uppercase tracking-wider text-[10px] font-bold">6.
+                                                Nationality:</span>
+                                            <div class="flex-1 font-semibold text-slate-950 border-b-2 border-slate-900 px-2 text-center"
+                                                id="view-student-nationality">British</div>
+                                        </div>
+                                        <div class="col-span-4 flex items-end">
+                                            <span
+                                                class="text-slate-500 uppercase tracking-wider text-[10px] font-bold">7.
+                                                Religion:</span>
+                                            <div class="flex-1 font-semibold text-slate-950 border-b-2 border-slate-900 px-2 text-center"
+                                                id="view-student-religion">Christianity</div>
+                                        </div>
+                                        <div class="col-span-4 flex items-end">
+                                            <span
+                                                class="text-slate-500 uppercase tracking-wider text-[10px] font-bold">8.
+                                                Aadhar No:</span>
+                                            <div class="flex-1 font-mono font-semibold text-slate-950 border-b-2 border-slate-900 px-2 text-center"
+                                                id="view-student-aadhar">9876-5432-1098</div>
+                                        </div>
+                                    </div>
+
+                                    <div class="grid grid-cols-12 gap-2 pb-1 border-b border-dotted border-slate-300">
+                                        <div class="col-span-6 flex items-end">
+                                            <span
+                                                class="text-slate-500 uppercase tracking-wider text-[10px] font-bold">9.
+                                                Caste:</span>
+                                            <div class="flex-1 font-semibold text-slate-950 border-b-2 border-slate-900 px-2 text-center"
+                                                id="view-student-caste">General</div>
+                                        </div>
+                                        <div class="col-span-6 flex items-end">
+                                            <span
+                                                class="text-slate-500 uppercase tracking-wider text-[10px] font-bold">10.
+                                                Sub-Caste:</span>
+                                            <div class="flex-1 font-semibold text-slate-950 border-b-2 border-slate-900 px-2 text-center"
+                                                id="view-student-subcaste">N/A</div>
+                                        </div>
+                                    </div>
+
+                                    <div
+                                        class="grid grid-cols-12 gap-1 items-end pb-1 border-b border-dotted border-slate-300">
+                                        <span
+                                            class="col-span-4 text-slate-500 uppercase tracking-wider text-[10px] font-bold">11.
+                                            Place of Birth:</span>
+                                        <div class="col-span-8 font-semibold text-slate-900 border-b-2 border-slate-900 px-2"
+                                            id="view-student-pob">Westminster, London</div>
+                                    </div>
+
+                                    <div
+                                        class="grid grid-cols-12 gap-1 items-end pb-1 border-b border-dotted border-slate-300">
+                                        <span
+                                            class="col-span-4 text-slate-500 uppercase tracking-wider text-[10px] font-bold">12.
+                                            Date of Birth (in Figures):</span>
+                                        <div class="col-span-8 font-mono font-bold text-slate-950 border-b-2 border-slate-900 px-2 flex justify-between"
+                                            id="view-student-dob-numerical">
+                                            <span>14-May-2012</span>
+                                            <span class="text-xs text-slate-500 font-normal">Gender: <span
+                                                    class="font-semibold text-slate-850"
+                                                    id="view-student-gender">Female</span></span>
+                                        </div>
+                                    </div>
+
+                                    <div
+                                        class="grid grid-cols-12 gap-1 items-end pb-1 border-b border-dotted border-slate-300">
+                                        <span
+                                            class="col-span-4 text-slate-500 uppercase tracking-wider text-[10px] font-bold">13.
+                                            Date of Birth (in Words):</span>
+                                        <div class="col-span-8 font-semibold text-slate-900 border-b-2 border-slate-900 px-2 italic text-[11px]"
+                                            id="view-student-dob-word">Fourteenth of May, Two Thousand Twelve</div>
+                                    </div>
+
+                                    <div
+                                        class="grid grid-cols-12 gap-1 items-end pb-1 border-b border-dotted border-slate-300">
+                                        <span
+                                            class="col-span-4 text-slate-500 uppercase tracking-wider text-[10px] font-bold">14.
+                                            Last School Attended:</span>
+                                        <div class="col-span-8 text-slate-900 border-b-2 border-slate-900 px-2"
+                                            id="view-student-lastschool">St. Paul Primary School</div>
+                                    </div>
+
+                                    <div
+                                        class="grid grid-cols-12 gap-1 items-end pb-1 border-b border-dotted border-slate-300">
+                                        <span
+                                            class="col-span-4 text-slate-500 uppercase tracking-wider text-[10px] font-bold">15.
+                                            Date of Admission & Class:</span>
+                                        <div class="col-span-8 text-slate-900 border-b-2 border-slate-900 px-2 font-medium"
+                                            id="view-enroll-adm">03-Sep-2018 in Grade V (Fifth)</div>
+                                    </div>
+
+                                    <div
+                                        class="grid grid-cols-12 gap-1 items-end pb-1 border-b border-dotted border-slate-300">
+                                        <span
+                                            class="col-span-4 text-slate-500 uppercase tracking-wider text-[10px] font-bold">16.
+                                            Class Last Studied:</span>
+                                        <div class="col-span-8 text-slate-950 font-bold border-b-2 border-slate-900 px-2"
+                                            id="view-enroll-class">Class VIII (Eighth)</div>
+                                    </div>
+
+                                    <div
+                                        class="grid grid-cols-12 gap-1 items-end pb-1 border-b border-dotted border-slate-300">
+                                        <span
+                                            class="col-span-4 text-slate-500 uppercase tracking-wider text-[10px] font-bold">17.
+                                            Promotion Qualified:</span>
+                                        <div class="col-span-8 text-slate-950 font-semibold border-b-2 border-slate-900 px-2"
+                                            id="view-leave-promotion">Yes, Promoted to Class IX (Ninth)</div>
+                                    </div>
+
+                                    <div
+                                        class="grid grid-cols-12 gap-1 items-end pb-1 border-b border-dotted border-slate-300">
+                                        <span
+                                            class="col-span-4 text-slate-500 uppercase tracking-wider text-[10px] font-bold">18.
+                                            General Conduct:</span>
+                                        <div class="col-span-8 text-slate-900 border-b-2 border-slate-900 px-2"
+                                            id="view-leave-conduct">Exemplary & Cooperative</div>
+                                    </div>
+
+                                    <div
+                                        class="grid grid-cols-12 gap-1 items-end pb-1 border-b border-dotted border-slate-300">
+                                        <span
+                                            class="col-span-4 text-slate-500 uppercase tracking-wider text-[10px] font-bold">19.
+                                            Reason for Leaving:</span>
+                                        <div class="col-span-8 text-slate-900 border-b-2 border-slate-900 px-2"
+                                            id="view-leave-reason">Father Relocated / Transferred to Edinburgh Office
+                                        </div>
+                                    </div>
+
+                                    <div
+                                        class="grid grid-cols-12 gap-1 items-end pb-1 border-b border-dotted border-slate-300">
+                                        <span
+                                            class="col-span-4 text-slate-500 uppercase tracking-wider text-[10px] font-bold">20.
+                                            Application Received On:</span>
+                                        <div class="col-span-8 text-slate-900 border-b-2 border-slate-900 px-2 font-mono"
+                                            id="view-student-recieved">18-Jun-2026</div>
+                                    </div>
+
+                                    <div
+                                        class="grid grid-cols-12 gap-1 items-end pb-1 border-b border-dotted border-slate-300">
+                                        <span
+                                            class="col-span-4 text-slate-500 uppercase tracking-wider text-[10px] font-bold">21.
+                                            Permanent Address:</span>
+                                        <div class="col-span-8 text-slate-700 border-b-2 border-slate-900 px-2 italic text-[11px]"
+                                            id="view-student-address">74 Eaton Place, Belgravia, London</div>
+                                    </div>
+
+                                </div>
+                            </div>
+
+                            <!-- Statutory Certification & Signature Line Block -->
+                            <div class="relative z-10 pt-4 mt-4">
+                                <p class="text-[10px] text-slate-500 leading-snug italic text-center mb-6">
+                                    Certified that the above declarations and statistics have been verified with
+                                    official school records and found true to the best of our knowledge.
+                                </p>
+
+                                <div class="grid grid-cols-3 gap-4 text-center mt-6">
+                                    <!-- Signee 1 -->
+                                    <div class="flex flex-col items-center">
+                                        <div
+                                            class="w-full max-w-[120px] border-b border-slate-800 h-8 flex items-end justify-center">
+                                            <span class="cert-font-handwritten text-lg text-slate-700 select-none">R. K.
+                                                Sharma</span>
+                                        </div>
+                                        <span
+                                            class="text-[10px] text-slate-500 font-bold uppercase tracking-wider mt-1.5">Class
+                                            Teacher</span>
+                                    </div>
+
+                                    <!-- Office Seal -->
+                                    <div class="flex flex-col items-center justify-center -mt-4">
+                                        <div
+                                            class="w-16 h-16 border-2 border-dashed rounded-full flex flex-col items-center justify-center border-slate-400 select-none opacity-40">
+                                            <span
+                                                class="text-[8px] font-extrabold uppercase tracking-widest text-slate-500 text-center leading-none">School<br>Office<br>Stamp</span>
+                                        </div>
+                                    </div>
+
+                                    <!-- Signee 2 -->
+                                    <div class="flex flex-col items-center">
+                                        <div
+                                            class="w-full max-w-[120px] border-b border-slate-800 h-8 flex items-end justify-center">
+                                            <!-- Simulated Principal sign -->
+                                            <span
+                                                class="cert-font-handwritten text-lg text-blue-800 font-semibold select-none">M.
+                                                Vance</span>
+                                        </div>
+                                        <span
+                                            class="text-[10px] text-slate-500 font-bold uppercase tracking-wider mt-1.5">Principal
+                                            / Authorized</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Global Footer -->
+    <footer class="no-print bg-slate-950 border-t border-slate-800/80 py-6 mt-12 text-center text-xs text-slate-400">
+        <div class="max-w-4xl mx-auto px-4 flex flex-col md:flex-row justify-between items-center gap-4">
+            <p>&copy; 2026 Academic Transfer Engine. Designed for modern database integrations.</p>
+            <div class="flex items-center gap-4">
+                <a href="#" class="hover:text-white transition">Documentation</a>
+                <span class="text-slate-800">|</span>
+                <a href="#" class="hover:text-white transition">Prisma Best Practices</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- State Engine JavaScript -->
+    <script>
+        // Initialize Lucide icons on system load
+        lucide.createIcons();
+
+        // Application state
+        let isTemplateSyntaxMode = false;
+        let customColor = '#1e3a8a';
+
+        // Comprehensive standard database mapping mock data model
+        const mockStudentData = {
+            "org-name": "St. Xavier International Academy",
+            "org-reg": "Affiliation / Reg No: AFF-908231-CBSE",
+            "org-address": "Sector 42, Oxford Road, London, UK",
+            "org-contact": "+44 20 7946 0192 | admin@stxavier.edu",
+            "student-status": "ACTIVE",
+            "student-gr": "GR-10492",
+            "student-name": "Eleanor Vance Vance",
+            "student-roll": "Roll No. 34",
+            "student-aadhar": "9876-5432-1098",
+            "student-gender": "Female",
+            "student-nationality": "British",
+            "student-religion": "Christianity",
+            "student-caste": "General",
+            "student-subcaste": "N/A",
+            "student-dob-numerical": "14-May-2012",
+            "student-dob-word": "Fourteenth of May, Two Thousand Twelve",
+            "student-pob": "Westminster, London",
+            "parent-father": "Richard Samuel Vance",
+            "parent-fatherinfo": "M.D. Pediatrics, Chief Consultant Physician",
+            "parent-mother": "Lillian Grace Vance",
+            "parent-motherinfo": "M.Sc. Education, Senior Lecturer",
+            "student-lastschool": "St. Paul Primary School",
+            "enroll-adm": "03-Sep-2018 in Grade V (Fifth)",
+            "enroll-class": "Class VIII (Eighth)",
+            "leave-promotion": "Yes, Promoted to Class IX (Ninth)",
+            "leave-conduct": "Exemplary & Cooperative",
+            "leave-reason": "Father Relocated / Transferred to Edinburgh Office",
+            "student-recieved": "18-Jun-2026",
+            "student-address": "74 Eaton Place, Belgravia, London"
+        };
+
+        // Syntactical structural representations map (Prisma DB)
+        const templateSyntaxData = {
+            "org-name": "{{student.organization.name}}",
+            "org-reg": "Affiliation / Reg No: {{student.organization.registrationNo}}",
+            "org-address": "{{student.organization.address}}",
+            "org-contact": "{{student.organization.contactNumber}} | {{student.organization.email}}",
+            "student-status": "{{student.status}}",
+            "student-gr": "{{student.grNo}}",
+            "student-name": "{{student.name}}",
+            "student-roll": "Roll No: {{student.rollNumber}}",
+            "student-aadhar": "{{student.aadharNo}}",
+            "student-gender": "{{student.gender}}",
+            "student-nationality": "{{student.nationality}}",
+            "student-religion": "{{student.religion}}",
+            "student-caste": "{{student.caste}}",
+            "student-subcaste": "{{student.subCaste}}",
+            "student-dob-numerical": "{{formatDate student.dateOfBirth 'DD-MMM-YYYY'}}",
+            "student-dob-word": "{{dateToWords student.dateOfBirth}}",
+            "student-pob": "{{student.placeOfBirth}}",
+            "parent-father": "{{student.fatherName}}",
+            "parent-fatherinfo": "{{student.fatherQualification}} | {{student.fatherOccupation}}",
+            "parent-mother": "{{student.motherName}}",
+            "parent-motherinfo": "{{student.motherQualification}} | {{student.motherOccupation}}",
+            "student-lastschool": "{{student.lastSchoolAttended}}",
+            "enroll-adm": "{{formatDate student.enrollments[0].dateOfAdmission 'DD-MMM-YYYY'}} in Class {{student.enrollments[0].classAdmitted}}",
+            "enroll-class": "{{student.enrollments[0].currentClass}}",
+            "leave-promotion": "{{student.enrollments[0].promotionStatus}}",
+            "leave-conduct": "Exemplary & Cooperative",
+            "leave-reason": "{{student.enrollments[0].reasonForLeaving}}",
+            "student-recieved": "{{formatDate student.receivedApplicationOf 'DD-MMM-YYYY'}}",
+            "student-address": "{{student.address}}"
+        };
+
+        // Helper: Change active visual accent color
+        function changeColorTheme(colorHex) {
+            customColor = colorHex;
+            document.documentElement.style.setProperty('--primary-color', colorHex);
+
+            // Update targeted elements
+            const mainHeader = document.getElementById('view-org-name');
+            const innerBorder = document.getElementById('certInnerBorder');
+            const outerBorder = document.querySelector('.cert-border-outer');
+            const headerBorder = document.querySelector('.border-b-2');
+
+            mainHeader.style.color = colorHex;
+            innerBorder.style.borderColor = colorHex;
+            outerBorder.style.borderColor = colorHex;
+            headerBorder.style.borderColor = colorHex;
+
+            // Update color representation rings
+            const buttons = document.querySelectorAll('button[title]');
+            buttons.forEach(btn => {
+                if (btn.style.backgroundColor === colorHex) {
+                    btn.classList.add('border-white');
+                } else {
+                    btn.classList.remove('border-white');
+                }
+            });
+        }
+
+        // Helper: Modify certificate outer border style decoration
+        function changeBorderStyle(styleName) {
+            const innerBorder = document.getElementById('certInnerBorder');
+            const outerBorder = document.querySelector('.cert-border-outer');
+
+            // Reset defaults first
+            innerBorder.style.borderStyle = 'double';
+            innerBorder.style.borderWidth = '4px';
+            outerBorder.style.borderStyle = 'solid';
+            outerBorder.style.borderWidth = '2px';
+
+            if (styleName === 'solid') {
+                innerBorder.style.borderStyle = 'none';
+                outerBorder.style.borderWidth = '3px';
+            } else if (styleName === 'thick-thin') {
+                innerBorder.style.borderStyle = 'solid';
+                innerBorder.style.borderWidth = '1px';
+                outerBorder.style.borderStyle = 'solid';
+                outerBorder.style.borderWidth = '6px';
+            } else if (styleName === 'none') {
+                innerBorder.style.borderStyle = 'none';
+                outerBorder.style.borderStyle = 'none';
+            }
+        }
+
+        // Update Watermark content live
+        function updateWatermark(text) {
+            const watermark = document.getElementById('certWatermark');
+            watermark.textContent = text || 'TRANSFERRED';
+        }
+
+        // Dynamic state renderer
+        function renderCertificate() {
+            const sourceData = isTemplateSyntaxMode ? templateSyntaxData : mockStudentData;
+
+            // Iterate through fields in dataset
+            for (const [key, value] of Object.entries(sourceData)) {
+                const viewEl = document.getElementById(`view-${key}`);
+                if (viewEl) {
+                    if (key === 'student-roll') {
+                        viewEl.textContent = isTemplateSyntaxMode ? value : `Roll No: ${value}`;
+                    } else if (key === 'student-status') {
+                        viewEl.textContent = value;
+                        if (value === 'ACTIVE') {
+                            viewEl.className = "font-black text-emerald-700 bg-emerald-50 rounded border border-emerald-200 px-1 py-1 text-center uppercase tracking-wide";
+                        } else {
+                            viewEl.className = "font-black text-amber-700 bg-amber-50 rounded border border-amber-200 px-1 py-1 text-center uppercase tracking-wide";
+                        }
+                    } else {
+                        viewEl.textContent = value;
+                    }
+                }
+            }
+        }
+
+        // Toggle active view modes (Developer Tokens vs Live Data)
+        function toggleViewMode() {
+            isTemplateSyntaxMode = !isTemplateSyntaxMode;
+            const btn = document.getElementById('viewModeBtn');
+
+            if (isTemplateSyntaxMode) {
+                btn.innerHTML = `<i data-lucide="eye" class="w-4 h-4"></i><span>Show Live Preview</span>`;
+                btn.classList.remove('bg-slate-800', 'hover:bg-slate-700');
+                btn.classList.add('bg-blue-600', 'hover:bg-blue-500', 'text-white');
+            } else {
+                btn.innerHTML = `<i data-lucide="code-2" class="w-4 h-4"></i><span>Show Template Syntax</span>`;
+                btn.classList.add('bg-slate-800', 'hover:bg-slate-700');
+                btn.classList.remove('bg-blue-600', 'hover:bg-blue-500', 'text-white');
+            }
+
+            lucide.createIcons();
+            renderCertificate();
+        }
+
+        // Capture changes on input values
+        function updateLiveField(inputElement) {
+            const fieldId = inputElement.getAttribute('data-field');
+            if (fieldId) {
+                mockStudentData[fieldId] = inputElement.value;
+                if (!isTemplateSyntaxMode) {
+                    renderCertificate();
+                }
+            }
+        }
+
+        // Special Formatter for complex structures (Date of birth helper)
+        function formatAndSetDOB(dateValue) {
+            if (!dateValue) return;
+            const dateObj = new Date(dateValue);
+
+            // Numerical representation format
+            const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+            const formattedNum = `${String(dateObj.getDate()).padStart(2, '0')}-${months[dateObj.getMonth()]}-${dateObj.getFullYear()}`;
+
+            // Word conversion structure helper
+            const numToWords = {
+                1: 'First', 2: 'Second', 3: 'Third', 4: 'Fourth', 5: 'Fifth', 6: 'Sixth', 7: 'Seventh', 8: 'Eighth', 9: 'Ninth', 10: 'Tenth',
+                11: 'Eleventh', 12: 'Twelfth', 13: 'Thirteenth', 14: 'Fourteenth', 15: 'Fifteenth', 16: 'Sixteenth', 17: 'Seventeenth',
+                18: 'Eighteenth', 19: 'Nineteenth', 20: 'Twentieth', 21: 'Twenty-First', 22: 'Twenty-Second', 23: 'Twenty-Third',
+                24: 'Twenty-Fourth', 25: 'Twenty-Fifth', 26: 'Twenty-Sixth', 27: 'Twenty-Seventh', 28: 'Twenty-Eighth', 29: 'Twenty-Ninth',
+                30: 'Thirtieth', 31: 'Thirty-First'
+            };
+
+            const monthToWords = {
+                0: 'January', 1: 'February', 2: 'March', 3: 'April', 4: 'May', 5: 'June',
+                6: 'July', 7: 'August', 8: 'September', 9: 'October', 10: 'November', 11: 'December'
+            };
+
+            const yearToWords = (year) => {
+                if (year === 2012) return "Two Thousand Twelve";
+                // basic procedural translation logic for modern range values
+                const thousands = Math.floor(year / 1000);
+                const remainder = year % 1000;
+                if (thousands === 2) {
+                    const ones = ["", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen", "Seventeen", "Eighteen", "Nineteen"];
+                    const tens = ["", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety"];
+                    if (remainder < 20) {
+                        return `Two Thousand ${ones[remainder]}`;
+                    } else {
+                        const tenDigit = Math.floor(remainder / 10);
+                        const unitDigit = remainder % 10;
+                        return `Two Thousand ${tens[tenDigit]} ${ones[unitDigit]}`.trim();
+                    }
+                }
+                return year.toString(); // Fallback string representation
+            };
+
+            const dayWord = numToWords[dateObj.getDate()];
+            const monthWord = monthToWords[dateObj.getMonth()];
+            const yearWord = yearToWords[dateObj.getFullYear()];
+
+            const formattedWord = `${dayWord} of ${monthWord}, ${yearWord}`;
+
+            mockStudentData['student-dob-numerical'] = formattedNum;
+            mockStudentData['student-dob-word'] = formattedWord;
+
+            if (!isTemplateSyntaxMode) {
+                renderCertificate();
+            }
+        }
+
+        // Set Initial state render
+        window.onload = function () {
+            renderCertificate();
+        }
+    </script>
+</body>
+
+</html>

@@ -17,6 +17,7 @@ import {
   AlertCircle,
   Download,
   Printer,
+  ArrowLeftRight,
 } from "lucide-react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { Pagination } from "@/components/shared/Pagination";
@@ -28,6 +29,7 @@ import { PermissionGate } from "@/components/auth/PermissionGate";
 import { ReceiptTemplate } from "@/modules/document/templates/receipt.template";
 import { logDocumentAction } from "@/modules/document/actions/audit.actions";
 import { DocumentErrorBoundary } from "@/modules/document/components/ErrorBoundary";
+import { showToast } from "@/components/shared/Toast";
 
 interface Receipt {
   id: string;
@@ -83,6 +85,7 @@ export function ReceiptsClient({
   const [searchVal, setSearchVal] = useState(filters.query);
   const [printingReceipt, setPrintingReceipt] = useState<Receipt | null>(null);
   const [isExporting, setIsExporting] = useState(false);
+  const [switchingId, setSwitchingId] = useState<string | null>(null);
 
   useEffect(() => {
     setSearchVal(filters.query);
@@ -416,6 +419,51 @@ export function ReceiptsClient({
                           <Printer className="h-3.5 w-3.5" />
                         </button>
                       </PermissionGate>
+                      {r.status === "ACTIVE" && (
+                        <button
+                          onClick={async () => {
+                            if (switchingId) return;
+                            setSwitchingId(r.id);
+                            if (!r.id) {
+                              showToast(
+                                "Receipt ID is missing. Cannot switch account.",
+                                "error",
+                              );
+                              setSwitchingId(null);
+                              return;
+                            }
+                            try {
+                              const res = await fetch(
+                                `/api/receipts/${r.id}/switch-account`,
+                                { method: "POST" },
+                              );
+                              const data = await res.json();
+                              if (!res.ok) throw new Error(data.error);
+                              showToast(
+                                `Receipt ${r.receiptNumber} switched to ${r.paymentMode === "CASH" ? "BANK" : "CASH"}`,
+                                "success",
+                              );
+                              router.refresh();
+                            } catch (err: any) {
+                              showToast(
+                                err.message || "Failed to switch account",
+                                "error",
+                              );
+                            } finally {
+                              setSwitchingId(null);
+                            }
+                          }}
+                          disabled={switchingId === r.id}
+                          className="p-2 rounded-xl bg-amber-500/10 text-amber-600 hover:bg-amber-500 hover:text-white transition-all active:scale-95 disabled:opacity-50"
+                          title={`Switch to ${r.paymentMode === "CASH" ? "BANK" : "CASH"}`}
+                        >
+                          {switchingId === r.id ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <ArrowLeftRight className="h-3.5 w-3.5" />
+                          )}
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))
@@ -458,7 +506,8 @@ export function ReceiptsClient({
                 rollNumber: printingReceipt.rollNumber,
                 studentClass: `${printingReceipt.studentClass}${printingReceipt.divisionName ? " - " + printingReceipt.divisionName : ""}`,
                 sessionName: printingReceipt.sessionName,
-                organizationName: organizationName || "Wisdom Academy of Excellence",
+                organizationName:
+                  organizationName || "Wisdom Academy of Excellence",
               }}
             />
           </DocumentErrorBoundary>
