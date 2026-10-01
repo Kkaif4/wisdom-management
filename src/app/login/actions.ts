@@ -15,8 +15,9 @@ export async function loginAction(formData: {
     // 3. Modify the login flow to use redirect: false
     // Note: On the server side, NextAuth v5 might still trigger a redirect on SUCCESS,
     // which we catch below.
+    const email = formData.email?.trim().toLowerCase();
     await signIn("credentials", {
-      email: formData.email,
+      email,
       password: formData.password,
       redirect: false,
     });
@@ -26,8 +27,15 @@ export async function loginAction(formData: {
     if (error instanceof AuthError) {
       // 2. Meaningful errors instead of failing silently
       switch (error.type) {
-        case "CredentialsSignin":
-          return { success: false, error: "Invalid email or password" };
+        case "CredentialsSignin": {
+          const customMessage =
+            (error as any).cause?.err?.message ||
+            (error as any).cause?.message;
+          return {
+            success: false,
+            error: customMessage || "Invalid email or password",
+          };
+        }
         default:
           return {
             success: false,

@@ -8,9 +8,10 @@ export class AuthService {
    * Handles failed attempts, account lockout, and active status checks.
    */
   static async validateCredentials(email: string, password?: string) {
-    if (!password) return null;
+    if (!password || !email) return null;
+    const normalizedEmail = email.trim().toLowerCase();
     const user = await prisma.user.findUnique({
-      where: { email },
+      where: { email: normalizedEmail },
       include: { role: true },
     });
 

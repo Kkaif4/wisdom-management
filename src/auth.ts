@@ -12,8 +12,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [
     Credentials({
       async authorize(credentials, req) {
-        const email = credentials?.email as string | undefined;
+        const rawEmail = credentials?.email as string | undefined;
         const password = credentials?.password as string | undefined;
+        const email = rawEmail?.trim().toLowerCase();
         const ip = (req as any).ip || "unknown";
         const userAgent = (req as any).headers?.get("user-agent") || "unknown";
 
