@@ -9,6 +9,9 @@ import {
   CreditCard,
   Calendar as CalendarIcon,
   FileText,
+  CheckCircle2,
+  AlertCircle,
+  Edit3,
 } from "lucide-react";
 import { showToast } from "@/components/shared/Toast";
 import { StudentSearchSelect } from "./StudentSearchSelect";
@@ -90,6 +93,7 @@ export function ReceiptEntryModal({
   });
 
   const formRef = React.useRef<HTMLFormElement>(null);
+  const prevFeeInputRef = React.useRef<HTMLInputElement>(null);
 
   // Filter out Previous Fee from general Income Purpose dropdown
   const visibleCategories = categories.filter(
@@ -199,6 +203,25 @@ export function ReceiptEntryModal({
     ),
   );
 
+  const enteredAmount = parseFloat(formData.amount) || 0;
+  const isPartial =
+    isPreviousFee &&
+    pendingPreviousFees > 0 &&
+    enteredAmount > 0 &&
+    enteredAmount < pendingPreviousFees;
+  const isFullPayment =
+    isPreviousFee &&
+    pendingPreviousFees > 0 &&
+    enteredAmount >= pendingPreviousFees;
+  const remainingPrevFee = Math.max(0, pendingPreviousFees - enteredAmount);
+
+  // Auto-reset isPreviousFee if pending previous fee becomes 0 (e.g. switching student/enrollment)
+  useEffect(() => {
+    if (pendingPreviousFees <= 0 && isPreviousFee) {
+      setIsPreviousFee(false);
+    }
+  }, [pendingPreviousFees, isPreviousFee]);
+
   const activeCategory = isPreviousFee ? prevFeeCategory : selectedCategory;
 
   const pendingAmount = isPreviousFee
@@ -228,6 +251,13 @@ export function ReceiptEntryModal({
       return;
     }
 
+    const remarksText = formData.remarks.trim();
+    const finalRemarks = remarksText
+      ? remarksText
+      : isPartial
+        ? `Partial Previous Fee payment: ₹${enteredAmount.toLocaleString("en-IN")} of ₹${pendingPreviousFees.toLocaleString("en-IN")} (Remaining: ₹${remainingPrevFee.toLocaleString("en-IN")})`
+        : undefined;
+
     setLoading(true);
     try {
       const res = await fetch("/api/dashboard/receipts", {
@@ -239,7 +269,7 @@ export function ReceiptEntryModal({
           amount: formData.amount,
           paymentMode: formData.paymentMode,
           date: formData.date,
-          remarks: formData.remarks,
+          remarks: finalRemarks,
           incomeCategoryId: isPreviousFee
             ? prevFeeCategory?.id || formData.incomeCategoryId
             : formData.incomeCategoryId,
@@ -388,81 +418,280 @@ export function ReceiptEntryModal({
             )}
 
             {/* Previous Fee Session Area when Student is Selected */}
-            {selectedStudent && selectedEnrollment && (
-              <div
-                className={`rounded-2xl border p-4 transition-all ${
-                  isPreviousFee
-                    ? "bg-amber-500/15 border-amber-500/40 ring-1 ring-amber-500/30"
-                    : totalPreviousFees > 0
-                      ? "bg-amber-500/5 border-amber-500/20"
-                      : "bg-muted/10 border-border/40"
-                }`}
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <span className="text-[10px] font-black uppercase tracking-widest text-amber-700 dark:text-amber-400">
-                        Previous Pending Fee
-                      </span>
-                      {totalPreviousFees > 0 && (
-                        <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-900 dark:text-amber-300">
-                          Carry Forward
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-lg font-mono font-black text-foreground">
-                        ₹{pendingPreviousFees.toLocaleString("en-IN")}
-                      </span>
-                      {totalPreviousFees > 0 && (
-                        <span className="text-xs text-muted-foreground font-medium">
-                          due (assigned: ₹{totalPreviousFees.toLocaleString("en-IN")})
-                        </span>
-                      )}
+            {selectedStudent && selectedEnrollment && totalPreviousFees > 0 && (
+              <>
+                {/* Fully Cleared State: totalPreviousFees > 0 but pendingPreviousFees === 0 */}
+                {pendingPreviousFees === 0 ? (
+                  <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-3.5 transition-all flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <div className="h-7 w-7 rounded-full bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                        <CheckCircle2 className="h-4 w-4" />
+                      </div>
+                      <div>
+                        <div className="text-xs font-bold text-emerald-900 dark:text-emerald-200">
+                          Previous Fees Cleared
+                        </div>
+                        <div className="text-[11px] text-emerald-700 dark:text-emerald-400">
+                          Carry forward of ₹{totalPreviousFees.toLocaleString("en-IN")} has been fully paid.
+                        </div>
+                      </div>
                     </div>
                   </div>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const next = !isPreviousFee;
-                      setIsPreviousFee(next);
-                      if (next && pendingPreviousFees > 0) {
-                        setFormData((prev) => ({
-                          ...prev,
-                          amount: String(pendingPreviousFees),
-                        }));
-                      }
-                    }}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 ${
+                ) : (
+                  /* Pending Previous Fees > 0: Show Due & Action Button */
+                  <div
+                    className={`rounded-2xl border p-4 transition-all ${
                       isPreviousFee
-                        ? "bg-amber-600 text-white shadow-amber-600/30"
-                        : "bg-background border border-amber-500/30 text-amber-800 dark:text-amber-300 hover:bg-amber-500/10"
+                        ? "bg-amber-500/10 border-amber-500/40 ring-1 ring-amber-500/30"
+                        : "bg-amber-500/5 border-amber-500/20"
                     }`}
                   >
-                    {isPreviousFee ? "✓ Paying Previous Fee" : "Pay Previous Fee"}
-                  </button>
-                </div>
-                {isPreviousFee ? (
-                  <p className="mt-2 text-[11px] font-medium text-amber-800 dark:text-amber-300">
-                    Applying receipt directly towards Previous Fee carry-forward balance.
-                  </p>
-                ) : (
-                  totalPreviousFees > 0 && pendingPreviousFees === 0 && (
-                    <p className="mt-2 text-[11px] font-medium text-emerald-600">
-                      Previous fees for this enrollment period have been cleared.
-                    </p>
-                  )
+                    <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                      <div className="space-y-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="text-[10px] font-black uppercase tracking-widest text-amber-700 dark:text-amber-400">
+                            Previous Pending Fee
+                          </span>
+                          <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-900 dark:text-amber-300">
+                            Carry Forward
+                          </span>
+                          {isPreviousFee && isPartial && (
+                            <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-amber-600 text-white shadow-xs">
+                              Partial Mode ({pendingPreviousFees > 0 ? ((enteredAmount / pendingPreviousFees) * 100).toFixed(0) : 0}%)
+                            </span>
+                          )}
+                          {isPreviousFee && isFullPayment && (
+                            <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-emerald-600 text-white shadow-xs">
+                              Full Payment (100%)
+                            </span>
+                          )}
+                          {isPreviousFee && enteredAmount === 0 && (
+                            <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+                              Enter Amount
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-xl font-mono font-black text-foreground">
+                            ₹{pendingPreviousFees.toLocaleString("en-IN")}
+                          </span>
+                          <span className="text-xs text-muted-foreground font-medium">
+                            due (assigned: ₹{totalPreviousFees.toLocaleString("en-IN")})
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 shrink-0">
+                        {!isPreviousFee ? (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setIsPreviousFee(true);
+                                setFormData((prev) => ({
+                                  ...prev,
+                                  amount: String(pendingPreviousFees),
+                                }));
+                              }}
+                              className="px-3 py-1.5 rounded-xl text-xs font-bold transition-all shadow-sm bg-amber-600 text-white hover:bg-amber-700 active:scale-95 flex items-center gap-1"
+                            >
+                              Pay Full
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setIsPreviousFee(true);
+                                setFormData((prev) => ({
+                                  ...prev,
+                                  amount: "",
+                                }));
+                                setTimeout(() => prevFeeInputRef.current?.focus(), 50);
+                              }}
+                              className="px-3 py-1.5 rounded-xl text-xs font-bold transition-all border border-amber-500/40 text-amber-800 dark:text-amber-300 bg-background/80 hover:bg-amber-500/10 active:scale-95 flex items-center gap-1.5"
+                            >
+                              <Edit3 className="h-3 w-3" />
+                              Pay Partial
+                            </button>
+                          </>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setIsPreviousFee(false);
+                              setFormData((prev) => ({
+                                ...prev,
+                                amount: "",
+                              }));
+                            }}
+                            className="px-3 py-1.5 rounded-xl text-xs font-bold transition-all border border-amber-500/30 text-amber-800 dark:text-amber-300 hover:bg-amber-500/15"
+                          >
+                            ✕ Cancel Previous Fee
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    {isPreviousFee && (
+                      <div className="mt-4 pt-3.5 border-t border-amber-500/25 space-y-3.5 animate-in fade-in-50 duration-200">
+                        {/* Dynamic Manual Amount Input */}
+                        <div className="space-y-1.5">
+                          <div className="flex items-center justify-between">
+                            <label className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                              <span>Paying Amount (Manual / Dynamic)</span>
+                              <span className="text-[10px] text-muted-foreground font-normal">
+                                · Type any custom amount
+                              </span>
+                            </label>
+                            {formData.amount && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setFormData((prev) => ({ ...prev, amount: "" }));
+                                  prevFeeInputRef.current?.focus();
+                                }}
+                                className="text-[10px] font-bold text-muted-foreground hover:text-foreground transition-colors px-1.5 py-0.5 rounded hover:bg-muted"
+                              >
+                                Clear
+                              </button>
+                            )}
+                          </div>
+
+                          <div className="relative">
+                            <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground font-bold text-sm">
+                              ₹
+                            </span>
+                            <input
+                              ref={prevFeeInputRef}
+                              type="number"
+                              step="0.01"
+                              min="0.01"
+                              max={pendingPreviousFees}
+                              placeholder={`Enter custom amount (e.g. 500, 1200, ${pendingPreviousFees})`}
+                              value={formData.amount}
+                              onChange={(e) =>
+                                setFormData({ ...formData, amount: e.target.value })
+                              }
+                              className="w-full bg-background border border-amber-500/40 focus:border-amber-500 rounded-xl pl-8 pr-4 py-2.5 text-sm font-mono font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-amber-500/20 transition-all placeholder:text-muted-foreground/40 placeholder:font-sans placeholder:font-normal"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Real-time Dynamic Feedback & Progress */}
+                        {enteredAmount > 0 && (
+                          <div className="space-y-2 rounded-xl bg-background/60 p-2.5 border border-amber-500/20">
+                            {/* Progress bar */}
+                            <div className="h-1.5 w-full bg-amber-500/20 rounded-full overflow-hidden">
+                              <div
+                                className={`h-full transition-all duration-300 rounded-full ${
+                                  enteredAmount >= pendingPreviousFees ? "bg-emerald-500" : "bg-amber-500"
+                                }`}
+                                style={{
+                                  width: `${Math.min(100, Math.max(0, (enteredAmount / pendingPreviousFees) * 100))}%`,
+                                }}
+                              />
+                            </div>
+
+                            <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+                              <div>
+                                {isPartial ? (
+                                  <span className="text-amber-800 dark:text-amber-300 font-medium">
+                                    Partial payment: Paying{" "}
+                                    <b className="font-mono font-bold text-foreground">
+                                      ₹{enteredAmount.toLocaleString("en-IN")}
+                                    </b>
+                                    {" "}
+                                    <span className="text-muted-foreground font-normal">
+                                      ({((enteredAmount / pendingPreviousFees) * 100).toFixed(1)}% of pending fee)
+                                    </span>
+                                  </span>
+                                ) : enteredAmount === pendingPreviousFees ? (
+                                  <span className="text-emerald-700 dark:text-emerald-400 font-semibold flex items-center gap-1">
+                                    <CheckCircle2 className="h-3.5 w-3.5" />
+                                    Full clearance payment of ₹{pendingPreviousFees.toLocaleString("en-IN")}
+                                  </span>
+                                ) : enteredAmount > pendingPreviousFees ? (
+                                  <span className="text-rose-500 font-semibold flex items-center gap-1">
+                                    <AlertCircle className="h-3.5 w-3.5" />
+                                    Amount exceeds pending fee by ₹{(enteredAmount - pendingPreviousFees).toLocaleString("en-IN")}
+                                  </span>
+                                ) : null}
+                              </div>
+
+                              {isPartial && (
+                                <span className="font-bold text-amber-950 dark:text-amber-200 bg-amber-500/20 px-2 py-0.5 rounded-md text-[11px]">
+                                  Remaining After Payment: ₹{remainingPrevFee.toLocaleString("en-IN")}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Quick Presets (Optional Shortcuts) */}
+                        <div className="pt-0.5 space-y-1.5">
+                          <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center justify-between">
+                            <span>Quick Presets (or type custom amount above)</span>
+                          </div>
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setFormData((prev) => ({
+                                  ...prev,
+                                  amount: String(pendingPreviousFees),
+                                }))
+                              }
+                              className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all border ${
+                                enteredAmount === pendingPreviousFees
+                                  ? "bg-amber-600 text-white border-amber-700 shadow-xs"
+                                  : "bg-background/90 hover:bg-amber-500/10 text-foreground border-border/60 hover:border-amber-500/40"
+                              }`}
+                            >
+                              Full Due (₹{pendingPreviousFees.toLocaleString("en-IN")})
+                            </button>
+
+                            {[75, 50, 25].map((pct) => {
+                              const val = Math.round((pendingPreviousFees * pct) / 100);
+                              if (val <= 0 || val >= pendingPreviousFees) return null;
+                              return (
+                                <button
+                                  key={pct}
+                                  type="button"
+                                  onClick={() =>
+                                    setFormData((prev) => ({
+                                      ...prev,
+                                      amount: String(val),
+                                    }))
+                                  }
+                                  className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all border ${
+                                    enteredAmount === val
+                                      ? "bg-amber-600 text-white border-amber-700 shadow-xs"
+                                      : "bg-background/90 hover:bg-amber-500/10 text-foreground border-border/60 hover:border-amber-500/40"
+                                  }`}
+                                >
+                                  {pct}% (₹{val.toLocaleString("en-IN")})
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 )}
-              </div>
+              </>
             )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Amount */}
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
-                    {isPreviousFee ? "Previous Fee Amount" : "Payment Amount"}
+                  <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1 flex items-center gap-1.5">
+                    <span>{isPreviousFee ? "Previous Fee Amount" : "Payment Amount"}</span>
+                    {isPreviousFee && (
+                      <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-800 dark:text-amber-300">
+                        Dynamic / Synced
+                      </span>
+                    )}
                   </label>
                   {isPreviousFee && pendingPreviousFees > 0 && (
                     <span className="text-[10px] font-bold text-amber-700 dark:text-amber-400">
@@ -480,20 +709,51 @@ export function ReceiptEntryModal({
                     step="0.01"
                     min="0.01"
                     max={
-                      pendingAmount !== null && (isPreviousFee || activeCategory?.affectsTuition)
-                        ? pendingAmount > 0
+                      isPreviousFee
+                        ? pendingPreviousFees
+                        : pendingAmount !== null && activeCategory?.affectsTuition && pendingAmount > 0
                           ? pendingAmount
                           : undefined
-                        : undefined
                     }
                     placeholder="0.00"
-                    className="w-full bg-muted/20 border border-border/50 rounded-2xl pl-8 pr-5 py-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all font-bold"
+                    className={`w-full bg-muted/20 border rounded-2xl pl-8 pr-5 py-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all font-bold ${
+                      isPreviousFee
+                        ? "border-amber-500/40 bg-amber-500/5 focus:ring-amber-500/20 focus:border-amber-500"
+                        : "border-border/50"
+                    }`}
                     value={formData.amount}
                     onChange={(e) =>
                       setFormData({ ...formData, amount: e.target.value })
                     }
                   />
                 </div>
+                {/* Visual feedback for partial payment */}
+                {isPreviousFee && enteredAmount > 0 && (
+                  <div className="flex items-center justify-between text-[11px] pt-1 px-1">
+                    {isPartial ? (
+                      <>
+                        <span className="text-amber-600 dark:text-amber-400 font-semibold">
+                          Partial payment ({pendingPreviousFees > 0 ? ((enteredAmount / pendingPreviousFees) * 100).toFixed(1) : 0}%)
+                        </span>
+                        <span className="text-muted-foreground font-medium">
+                          Remaining:{" "}
+                          <b className="font-mono text-foreground font-bold">
+                            ₹{remainingPrevFee.toLocaleString("en-IN")}
+                          </b>
+                        </span>
+                      </>
+                    ) : enteredAmount === pendingPreviousFees ? (
+                      <span className="text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
+                        <CheckCircle2 className="h-3.5 w-3.5" />
+                        Full clearance payment
+                      </span>
+                    ) : enteredAmount > pendingPreviousFees ? (
+                      <span className="text-rose-500 font-semibold">
+                        Amount exceeds pending previous fees (₹{pendingPreviousFees.toLocaleString("en-IN")})
+                      </span>
+                    ) : null}
+                  </div>
+                )}
               </div>
 
               {/* Payment Mode */}
