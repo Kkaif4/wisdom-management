@@ -312,62 +312,75 @@ export async function POST(req: Request) {
 
       // Create student + enrollment in a transaction
       try {
-        await prisma.$transaction(async (tx) => {
-          const student = await tx.student.create({
-            data: {
-              grNo: admNo,
-              name,
-              rollNumber: row.rollNumber ? row.rollNumber.toString() : null,
-              dateOfBirth: parsedDob,
-              gender: row.gender || null,
-              placeOfBirth: row.placeOfBirth || null,
-              aadharNo: aadhar || null,
-              lastSchoolAttended: row.lastSchoolAttended || null,
-              religion: row.religion || null,
-              caste: row.caste || null,
-              subCaste: row.subCaste || null,
-              nationality: row.nationality || null,
-              fatherName: row.fatherName || null,
-              fatherQualification: row.fatherQualification || null,
-              fatherOccupation: row.fatherOccupation || null,
-              motherName: row.motherName || null,
-              motherQualification: row.motherQualification || null,
-              motherOccupation: row.motherOccupation || null,
-              contactNumber: row.contactNumber ? row.contactNumber.toString() : null,
-              telNo: row.telNo ? row.telNo.toString() : null,
-              email: row.email || null,
-              address: row.address || null,
-              receivedApplicationOf: row.receivedApplicationOf || null,
-              organizationId: orgId,
-            },
-          });
+        await prisma.$transaction(
+          async (tx) => {
+            const student = await tx.student.create({
+              data: {
+                grNo: admNo,
+                name,
+                rollNumber: row.rollNumber ? row.rollNumber.toString() : null,
+                dateOfBirth: parsedDob,
+                gender: row.gender || null,
+                placeOfBirth: row.placeOfBirth || null,
+                aadharNo: aadhar || null,
+                lastSchoolAttended: row.lastSchoolAttended || null,
+                religion: row.religion || null,
+                caste: row.caste || null,
+                subCaste: row.subCaste || null,
+                nationality: row.nationality || null,
+                fatherName: row.fatherName || null,
+                fatherQualification: row.fatherQualification || null,
+                fatherOccupation: row.fatherOccupation || null,
+                motherName: row.motherName || null,
+                motherQualification: row.motherQualification || null,
+                motherOccupation: row.motherOccupation || null,
+                contactNumber: row.contactNumber ? row.contactNumber.toString() : null,
+                telNo: row.telNo ? row.telNo.toString() : null,
+                email: row.email || null,
+                address: row.address || null,
+                receivedApplicationOf: row.receivedApplicationOf || null,
+                organizationId: orgId,
+              },
+            });
 
-          const prevFees = Number(
-            row.previousFees ?? row.previousFee ?? (row as any).previous_fees ?? 0
-          );
+            const prevFees = Number(
+              row.previousFees ?? row.previousFee ?? (row as any).previous_fees ?? 0
+            );
 
-          await tx.studentEnrollment.create({
-            data: {
-              studentId: student.id,
-              classId: cls.id,
-              divisionId: div.id,
-              academicSessionId: activeSession.id,
-              totalFeesAssigned: Number(row.totalFeesAssigned || 0),
-              previousFees: isNaN(prevFees) ? 0 : prevFees,
-              discount: Number(row.discount || 0),
-              totalPaid: Number(row.totalPaid || 0),
-              status: EnrollmentStatus.ACTIVE,
-              organizationId: orgId,
-            },
-          });
-
-          await OrganizationService.adjustStudentCount(tx, orgId, 1);
-        });
+            await tx.studentEnrollment.create({
+              data: {
+                studentId: student.id,
+                classId: cls.id,
+                divisionId: div.id,
+                academicSessionId: activeSession.id,
+                totalFeesAssigned: Number(row.totalFeesAssigned || 0),
+                previousFees: isNaN(prevFees) ? 0 : prevFees,
+                discount: Number(row.discount || 0),
+                totalPaid: Number(row.totalPaid || 0),
+                status: EnrollmentStatus.ACTIVE,
+                organizationId: orgId,
+              },
+            });
+          },
+          {
+            maxWait: 15000,
+            timeout: 30000,
+          },
+        );
 
         existingAdmNos.add(admNo.toLowerCase());
         created++;
       } catch (err: any) {
         skipped.push({ name, reason: err.message || "Database error" });
+      }
+    }
+
+    // Adjust student count ONCE for the entire batch to eliminate row lock contention
+    if (created > 0) {
+      try {
+        await OrganizationService.adjustStudentCount(prisma, orgId, created);
+      } catch (countErr) {
+        console.error("Failed to adjust organization student count after bulk import:", countErr);
       }
     }
 
