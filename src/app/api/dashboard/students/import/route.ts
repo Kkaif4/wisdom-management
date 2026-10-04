@@ -131,6 +131,7 @@ export async function POST(req: Request) {
 
     const skipped: { name: string; reason: string }[] = [];
     let created = 0;
+    let updated = 0;
 
     for (const row of rows) {
       const name = row.name?.trim();
@@ -147,17 +148,11 @@ export async function POST(req: Request) {
         skipped.push({ name, reason: "G.R. No. is missing" });
         continue;
       }
-      if (existingAdmNos.has(admNo.toLowerCase())) {
-        skipped.push({ name, reason: "G.R. No. already exists" });
-        continue;
-      }
 
-      if (aadhar) {
-        if (!/^\d{12}$/.test(aadhar)) {
-          skipped.push({ name, reason: "Aadhar number must be a 12-digit number" });
-          continue;
-        }
-      }
+      const rawPrev =
+        row.previousFees ?? row.previousFee ?? (row as any).previous_fees;
+      const prevFees = rawPrev !== undefined ? Number(rawPrev) : 0;
+      const safePrevFees = isNaN(prevFees) ? 0 : prevFees;
 
       let parsedDob: Date | null = null;
       if (row.dateOfBirth) {
@@ -171,6 +166,84 @@ export async function POST(req: Request) {
         }
         parsedDob = dobRes.date;
       }
+
+      if (existingAdmNos.has(admNo.toLowerCase())) {
+        // If student exists, update their active session enrollment and demographics
+        try {
+          const existingStudent = await prisma.student.findUnique({
+            where: {
+              grNo_organizationId: {
+                grNo: admNo,
+                organizationId: orgId,
+              },
+            },
+            include: {
+              enrollments: {
+                where: { academicSessionId: activeSession.id },
+                orderBy: { updatedAt: "desc" },
+                take: 1,
+              },
+            },
+          });
+
+          if (existingStudent && existingStudent.enrollments.length > 0) {
+            const enrollment = existingStudent.enrollments[0];
+            await prisma.studentEnrollment.update({
+              where: { id: enrollment.id },
+              data: {
+                previousFees: safePrevFees,
+                ...(row.totalFeesAssigned !== undefined
+                  ? { totalFeesAssigned: Number(row.totalFeesAssigned || 0) }
+                  : {}),
+                ...(row.discount !== undefined
+                  ? { discount: Number(row.discount || 0) }
+                  : {}),
+              },
+            });
+
+            await prisma.student.update({
+              where: { id: existingStudent.id },
+              data: {
+                ...(name ? { name } : {}),
+                ...(row.rollNumber
+                  ? { rollNumber: row.rollNumber.toString() }
+                  : {}),
+                ...(parsedDob ? { dateOfBirth: parsedDob } : {}),
+                ...(row.gender ? { gender: row.gender } : {}),
+                ...(aadhar ? { aadharNo: aadhar } : {}),
+                ...(row.contactNumber
+                  ? { contactNumber: row.contactNumber.toString() }
+                  : {}),
+                ...(row.email ? { email: row.email } : {}),
+                ...(row.address ? { address: row.address } : {}),
+              },
+            });
+
+            updated++;
+            continue;
+          } else {
+            skipped.push({
+              name,
+              reason: "G.R. No. already exists in a different academic session",
+            });
+            continue;
+          }
+        } catch (err: any) {
+          skipped.push({
+            name,
+            reason: err.message || "Failed to update existing student record",
+          });
+          continue;
+        }
+      }
+
+      if (aadhar) {
+        if (!/^\d{12}$/.test(aadhar)) {
+          skipped.push({ name, reason: "Aadhar number must be a 12-digit number" });
+          continue;
+        }
+      }
+
 
       // Resolve class
       let cls = classMap.get(className?.toLowerCase() || "");
@@ -298,7 +371,7 @@ export async function POST(req: Request) {
       }
     }
 
-    return NextResponse.json({ created, skipped });
+    return NextResponse.json({ created, updated, skipped });
   } catch (error: any) {
     return NextResponse.json(
       { error: error.message || "Failed to import students" },

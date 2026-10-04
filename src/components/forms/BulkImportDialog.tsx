@@ -62,6 +62,7 @@ interface SkippedItem {
 
 interface ImportResult {
   created: number;
+  updated?: number;
   skipped: SkippedItem[];
 }
 
@@ -106,7 +107,7 @@ const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
 function generateTemplateCsv() {
   const header = [...REQUIRED_COLUMNS, ...OPTIONAL_COLUMNS].join(",");
   const rows = [
-    "GR-2026-001,Rahul Sharma,Class 5,A,30000,10000,2000,0,15,Male,2015-05-15,Mumbai,123456789012,Hindu,General,None,Indian,Vijay Sharma,Graduate,Business,Rita Sharma,Graduate,Homemaker,9876543210,022-123456,rahul@mail.com,123 Main St Mumbai,Online",
+    "GR-2026-001,Rahul Sharma,Class 5,A,30000,10000,2000,5000,15,Male,2015-05-15,Mumbai,123456789012,Hindu,General,None,Indian,Vijay Sharma,Graduate,Business,Rita Sharma,Graduate,Homemaker,9876543210,022-123456,rahul@mail.com,123 Main St Mumbai,Online",
     "GR-2026-002,Aman Patel,Class 6,B,35000,5000,0,3000,10,Male,2014-08-20,Surat,987654321098,Hindu,OBC,None,Indian,Kiran Patel,Graduate,Service,Sonal Patel,Undergraduate,Homemaker,8765432109,,aman@mail.com,456 Park St Surat,Referral",
   ].join("\n");
   return `${header}\n${rows}`;
@@ -163,19 +164,41 @@ function parseDateString(dateStr: string | undefined | null): { isValid: boolean
   return { isValid: false, date: null };
 }
 
+function parseCurrencyNumber(val: any): number {
+  if (val === undefined || val === null) return 0;
+  if (typeof val === "number") return isNaN(val) ? 0 : val;
+  const str = String(val).trim();
+  if (!str) return 0;
+  const cleaned = str.replace(/[^0-9.-]/g, "");
+  const num = parseFloat(cleaned);
+  return isNaN(num) ? 0 : num;
+}
+
 function getColValue(row: Record<string, string>, aliases: string[]): string | undefined {
   for (const alias of aliases) {
-    if (row[alias] !== undefined && row[alias] !== null && row[alias].trim() !== "") {
-      return row[alias];
+    if (row[alias] !== undefined && row[alias] !== null && String(row[alias]).trim() !== "") {
+      return String(row[alias]).trim();
     }
   }
-  // Case-insensitive / format-agnostic lookup
-  const normalizedAliases = aliases.map((a) => a.toLowerCase().replace(/[\s_.-]/g, ""));
+  // Case-insensitive / format-agnostic lookup (strips all non-alphanumeric chars including spaces, brackets, hyphens)
+  const normalizedAliases = aliases.map((a) => a.toLowerCase().replace(/[^a-z0-9]/g, ""));
   for (const [key, value] of Object.entries(row)) {
-    const normKey = key.toLowerCase().replace(/[\s_.-]/g, "");
+    const normKey = key.toLowerCase().replace(/[^a-z0-9]/g, "");
     if (normalizedAliases.includes(normKey)) {
-      if (value !== undefined && value !== null && value.trim() !== "") {
-        return value;
+      if (value !== undefined && value !== null && String(value).trim() !== "") {
+        return String(value).trim();
+      }
+    }
+  }
+  // Fallback: check if the key contains both "prev" and ("fee" or "due" or "bal" or "arrear")
+  for (const [key, value] of Object.entries(row)) {
+    const normKey = key.toLowerCase().replace(/[^a-z0-9]/g, "");
+    if (
+      (normKey.includes("prev") && (normKey.includes("fee") || normKey.includes("due") || normKey.includes("bal") || normKey.includes("arrear"))) ||
+      (normKey.includes("pending") && (normKey.includes("fee") || normKey.includes("due")))
+    ) {
+      if (value !== undefined && value !== null && String(value).trim() !== "") {
+        return String(value).trim();
       }
     }
   }
@@ -222,6 +245,8 @@ export function BulkImportDialog({
         const { data, errors } = Papa.parse<Record<string, string>>(text, {
           header: true,
           skipEmptyLines: true,
+          transformHeader: (h) =>
+            h.trim().replace(/^[\uFEFF\xA0]+|[\uFEFF\xA0]+$/g, ""),
         });
         if (errors.length) {
           throw new Error("CSV parse error: " + errors[0].message);
@@ -240,19 +265,39 @@ export function BulkImportDialog({
 
         const rows: Record<string, string>[] = [];
         const headerRow = worksheet.getRow(1);
-        const headers: string[] = [];
+        const headers: Record<number, string> = {};
 
-        headerRow.eachCell((cell) => {
-          headers.push(cell.text.trim());
+        headerRow.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+          const headerText =
+            cell.text?.trim() ||
+            (cell.value != null ? String(cell.value).trim() : "");
+          if (headerText) {
+            headers[colNumber] = headerText;
+          }
         });
 
         worksheet.eachRow((row, rowNumber) => {
           if (rowNumber === 1) return; // Skip headers
           const rowData: Record<string, string> = {};
           row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
-            const header = headers[colNumber - 1];
+            const header = headers[colNumber];
             if (header) {
-              rowData[header] = cell.text.trim();
+              let val = "";
+              if (cell.value != null) {
+                if (typeof cell.value === "object" && "result" in cell.value) {
+                  val = String((cell.value as any).result ?? "");
+                } else if (
+                  typeof cell.value === "object" &&
+                  "text" in cell.value
+                ) {
+                  val = String((cell.value as any).text ?? "");
+                } else {
+                  val = String(cell.value);
+                }
+              } else if (cell.text) {
+                val = cell.text;
+              }
+              rowData[header] = val.trim();
             }
           });
           if (Object.keys(rowData).length > 0) {
@@ -295,17 +340,23 @@ export function BulkImportDialog({
         const rawPreviousFees = getColValue(row, [
           "Previous Fees",
           "Previous Fee",
+          "Previous Fee (Pending)",
+          "Previous Fees (Pending)",
           "Previous Dues",
           "Previous Due",
           "Pending Fees",
           "Pending Fee",
+          "Prev Fees",
+          "Prev Fee",
           "Previous Balance",
           "Carry Forward",
           "Arrears",
         ])?.trim();
         const rawPaid = row["Paid Fees"]?.trim() || "0";
-        const discount = Number(row["Fee Discount"] || row["Discount"] || "0");
-        const previousFees = rawPreviousFees ? Number(rawPreviousFees) : 0;
+        const discount = parseCurrencyNumber(row["Fee Discount"] || row["Discount"] || "0");
+        const totalFeesAssigned = parseCurrencyNumber(rawFees);
+        const totalPaid = parseCurrencyNumber(rawPaid);
+        const previousFees = rawPreviousFees ? parseCurrencyNumber(rawPreviousFees) : 0;
 
         // Optional/Demographics
         const rollNumber = row["Roll Number"]?.trim();
@@ -352,7 +403,6 @@ export function BulkImportDialog({
           return;
         }
 
-        const totalFeesAssigned = Number(rawFees);
         if (!rawFees || isNaN(totalFeesAssigned) || totalFeesAssigned < 0) {
           skipped.push({ name, reason: "Invalid total fees" });
           return;
@@ -363,7 +413,6 @@ export function BulkImportDialog({
           return;
         }
 
-        const totalPaid = Number(rawPaid);
         if (isNaN(totalPaid) || totalPaid < 0) {
           skipped.push({ name, reason: "Invalid paid fees" });
           return;
@@ -436,6 +485,7 @@ export function BulkImportDialog({
 
       // Prepare API call
       let apiCreated = 0;
+      let apiUpdated = 0;
       let apiSkipped: SkippedItem[] = [];
 
       const artificialDelay = new Promise((resolve) =>
@@ -458,6 +508,7 @@ export function BulkImportDialog({
         const [apiData] = await Promise.all([apiPromise, artificialDelay]);
 
         apiCreated = apiData.created || 0;
+        apiUpdated = apiData.updated || 0;
         apiSkipped = apiData.skipped || [];
       } else {
         // No valid rows, but still wait 3 seconds for UX consistency
@@ -466,6 +517,7 @@ export function BulkImportDialog({
 
       setResult({
         created: apiCreated,
+        updated: apiUpdated,
         skipped: [...skipped, ...apiSkipped],
       });
       setStage("result");
@@ -620,7 +672,7 @@ export function BulkImportDialog({
         {stage === "result" && result && (
           <div className="flex flex-col h-full max-h-[70vh]">
             <div className="p-6 sm:p-8 pb-4 sm:pb-6 flex flex-col items-center justify-center text-center shrink-0">
-              {result.created > 0 ? (
+              {result.created > 0 || (result.updated ?? 0) > 0 ? (
                 <div className="h-16 w-16 sm:h-20 sm:w-20 rounded-2xl sm:rounded-3xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center mb-4 sm:mb-6">
                   <CheckCircle2 className="h-8 w-8 sm:h-10 sm:w-10" />
                 </div>
@@ -630,8 +682,14 @@ export function BulkImportDialog({
                 </div>
               )}
               <h3 className="text-xl sm:text-2xl font-black text-foreground">
-                {result.created} Student{result.created !== 1 ? "s" : ""}{" "}
-                Imported
+                {result.created > 0 &&
+                  `${result.created} Student${result.created !== 1 ? "s" : ""} Imported`}
+                {result.created > 0 && (result.updated ?? 0) > 0 && " • "}
+                {(result.updated ?? 0) > 0 &&
+                  `${result.updated} Record${result.updated !== 1 ? "s" : ""} Updated`}
+                {result.created === 0 &&
+                  (result.updated ?? 0) === 0 &&
+                  "0 Students Imported"}
               </h3>
               {result.skipped.length > 0 && (
                 <p className="text-xs sm:text-sm font-medium text-rose-500 mt-2 bg-rose-500/10 px-3 py-1 rounded-full">
